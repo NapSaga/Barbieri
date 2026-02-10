@@ -16,7 +16,7 @@ Piattaforma SaaS completa per barberie: prenotazioni online, calendario multi-ba
 | **Notifiche** | Twilio WhatsApp Business API (dual-mode: live / mock) |
 | **Linting** | Biome 2.3.14 |
 | **Package Manager** | pnpm |
-| **Deploy** | Vercel (previsto) + Cloudflare DNS |
+| **Deploy** | Vercel + Cloudflare DNS (previsto) |
 
 ## Funzionalità
 
@@ -213,15 +213,15 @@ Crea i prezzi ricorrenti mensili su Stripe e aggiorna `.env.local` con i price I
 | **A — Infrastruttura** | ✅ Completata | Supabase, Next.js, DB, Auth, Layout |
 | **B — Funzionalità Core** | ✅ Completata | Calendario, CRUD, CRM Clienti |
 | **C — Automazioni e Business** | ✅ Completata | WhatsApp, Billing, Analytics, Waitlist |
-| **D — Polish e Deploy** | ⬜ Da fare | Dominio, PWA, Performance, Deploy |
+| **D — Polish e Deploy** | 🔧 In corso | Deploy Vercel ✅, Dominio, PWA, Performance |
 
 ### Prossimi Passi (Fase D)
+- ~~Deploy produzione su Vercel~~ ✅
 - Acquisto dominio + DNS Cloudflare
 - Configurazione webhook Stripe (richiede URL pubblica)
 - PWA con Serwist (service worker, manifest, installabilità)
 - Test flussi end-to-end
 - Performance optimization
-- Deploy produzione su Vercel
 - Audit sicurezza (rate limiting, CSP headers, CORS)
 
 ## Note Tecniche

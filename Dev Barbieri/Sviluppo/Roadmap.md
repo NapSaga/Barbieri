@@ -1,6 +1,6 @@
 BARBEROS MVP — ROADMAP SVILUPPO
 
-Ultimo aggiornamento: 9 febbraio 2026
+Ultimo aggiornamento: 10 febbraio 2026
 
 ---
 
@@ -9,7 +9,7 @@ PANORAMICA FASI
 Fase A — Infrastruttura         ✅ COMPLETATA
 Fase B — Funzionalità core      ✅ COMPLETATA
 Fase C — Automazioni e business  ✅ COMPLETATA
-Fase D — Polish e deploy         ⬜ DA FARE
+Fase D — Polish e deploy         🔧 IN CORSO
 
 ---
 
@@ -149,25 +149,33 @@ FASE C — AUTOMAZIONI E BUSINESS 🔧
     - Integrazione Booking Wizard: date chiuse disabilitate
     - Integrazione Calendario: banner arancione su giorni chiusi
 
-FASE D — POLISH E DEPLOY ⬜
+FASE D — POLISH E DEPLOY 🔧
+
+[x] Deploy produzione
+    - Vercel collegato (cartella .vercel presente)
+    - Server Actions e API routes funzionanti su Vercel
+    - Supabase Cloud già attivo per database, auth, edge functions, pg_cron
+
+[x] Subscription gating
+    - proxy.ts aggiornato con gating sulle route /dashboard/*
+    - Se subscription_status non è active/trialing/past_due → redirect a /dashboard/expired
+    - Pagina /dashboard/expired con ExpiredView component
+    - Settings e expired page esenti dal gating (per permettere riattivazione)
 
 [ ] Dominio + Infrastruttura
     - Acquisto dominio
-    - DNS Cloudflare
-    - Configurare webhook Stripe (richiede URL pubblica)
-    - Aggiungere STRIPE_WEBHOOK_SECRET a .env.local
-
-[ ] Subscription gating
-    - Blocco funzionalità se abbonamento scaduto/cancellato
-    - Banner "Abbonamento scaduto" con redirect a pagina piani
+    - DNS Cloudflare + CDN + SSL/TLS
+    - Configurare webhook Stripe live (richiede URL pubblica)
+    - Aggiornare NEXT_PUBLIC_APP_URL con dominio produzione
 
 [ ] Test flussi end-to-end
     - Registrazione → onboarding → creazione servizi/staff
-    - Prenotazione online → reminder → completamento → review
+    - Prenotazione online → conferma smart → completamento → review
     - Walk-in → completamento
     - Cancellazione → notifica waitlist
     - No-show → incremento contatore → tag automatico
     - Checkout piano → pagamento → webhook → status active
+    - Subscription expired → gating → riattivazione
 
 [ ] PWA con Serwist
     - Service worker per offline caching
@@ -181,13 +189,10 @@ FASE D — POLISH E DEPLOY ⬜
     - Ottimizzazione immagini (logo barberia)
     - Prefetch route frequenti
 
-[ ] Deploy produzione
-    - Vercel per frontend + server actions
-    - Configurazione dominio personalizzato
-    - Cloudflare DNS + CDN
-    - SSL/TLS
-    - Monitoring (Sentry)
-    - Vercel Analytics
+[ ] Monitoring
+    - Sentry per error tracking
+    - Vercel Analytics per Core Web Vitals
+    - Configurazione dominio personalizzato su Vercel
 
 [ ] Sicurezza finale
     - Audit RLS policies
@@ -236,10 +241,12 @@ DECISIONI TECNICHE PRESE
 
 DEBITO TECNICO NOTO
 
-- Middleware da migrare a proxy convention (Next.js 16)
 - date-fns importato nel booking wizard ma slot calculation in lib/slots.ts non usato dal calendario
 - Nessun test automatico
 - Nessuna validazione Zod sugli input delle Server Actions (Zod installato ma non usato)
 - window.location.reload() usato dopo create/update in alcuni componenti (da sostituire con router.refresh())
 - Booking wizard non verifica conflitti con appuntamenti esistenti (solo slot basati su orari staff)
 - settings-manager.tsx è 811 righe — potrebbe essere spezzato in sotto-componenti
+- Drag and drop per spostare appuntamenti non implementato (previsto nella scheda tecnica)
+- Logo e colori brand: campi in DB ma non usati nella pagina booking
+- Staff photo: campo photo_url in DB ma upload non implementato

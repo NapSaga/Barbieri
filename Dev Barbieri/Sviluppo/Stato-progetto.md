@@ -298,16 +298,29 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
 
 ---
 
-FASI SUCCESSIVE — DA FARE
+FASE D — IN CORSO 🔧
 
-Fase D — Polish e Deploy
-- Acquisto dominio + DNS Cloudflare
-- Configurare webhook Stripe (richiede dominio pubblico)
-- Aggiungere subscription gating (blocco funzionalità se abbonamento scaduto)
-- Test flussi end-to-end (prenotazione → conferma → completamento → review)
-- PWA con Serwist (service worker, manifest, installabilità)
-- Performance optimization
-- Deploy produzione su Vercel + Cloudflare DNS
+Polish, deploy, sicurezza.
+
+1. Deploy Vercel ✅
+   - Progetto collegato a Vercel (cartella .vercel presente)
+   - Server Actions e API routes funzionanti su Vercel
+   - Supabase Cloud già attivo per database, auth, edge functions, pg_cron
+
+2. Subscription Gating ✅
+   - proxy.ts aggiornato con gating sulle route /dashboard/*
+   - Se subscription_status non è active/trialing/past_due → redirect a /dashboard/expired
+   - Pagina /dashboard/expired con ExpiredView component (info piano + link settings)
+   - Settings e expired page esenti dal gating (per permettere riattivazione)
+
+3. Da fare:
+   - Acquisto dominio + DNS Cloudflare
+   - Configurare webhook Stripe live (richiede URL pubblica)
+   - Aggiornare NEXT_PUBLIC_APP_URL con dominio produzione
+   - Test flussi end-to-end (prenotazione → conferma → completamento → review)
+   - PWA con Serwist (service worker, manifest, installabilità)
+   - Performance optimization (bundle size, lazy loading, prefetch)
+   - Audit sicurezza (rate limiting, CSP headers, CORS, sanitizzazione input)
 
 ---
 
@@ -327,8 +340,11 @@ Pagina /book/[slug] completamente funzionante:
 NOTE TECNICHE
 
 - Next.js 16 usa proxy.ts invece di middleware.ts per la protezione route e il refresh sessione.
+- proxy.ts gestisce anche il subscription gating: verifica subscription_status e redirect a /dashboard/expired se non valido.
 - Le policy RLS per booking anonimo (INSERT su clients e appointments) sono state ristrette a richiedere un business_id valido (non più WITH CHECK true).
 - Il trigger on_auth_user_created genera uno slug unico per la business appendendo i primi 8 caratteri dell'UUID utente.
 - WhatsApp dual-mode: se variabili TWILIO_* configurate → invio reale via Twilio API. Altrimenti → mock con console.log dettagliato. Trasparente per il resto del codice.
 - Webhook WhatsApp usa Supabase admin client (service role key) per bypassare RLS nelle operazioni server-to-server.
 - Template messaggi: default italiani hardcoded in lib/templates.ts, personalizzabili dal barbiere via UI e salvati su DB (message_templates).
+- Stripe: getStripe() con lazy init + Proxy per alias. stripe-plans.ts separato (importabile da client components). STRIPE_PRICES server-only da env.
+- Deploy: Vercel per frontend/server actions/API routes. Supabase Cloud per DB/auth/edge functions/pg_cron (già attivo).

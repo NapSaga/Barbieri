@@ -60,15 +60,30 @@ Possibilità di aggiungere cliente manualmente (senza che prenoti online).
 
 ---
 
-CORE 6: NOTIFICHE WHATSAPP AUTOMATICHE
+CORE 6: NOTIFICHE WHATSAPP AUTOMATICHE (Sistema Conferma Intelligente)
 
-Messaggio di conferma prenotazione: inviato istantaneamente dopo la prenotazione con data, ora, servizio, indirizzo barberia.
-Reminder 24 ore prima: "Ciao [nome], ti ricordiamo l'appuntamento domani alle [ora] per [servizio]. Per disdire rispondi ANNULLA."
-Reminder 2 ore prima: "Ci vediamo tra 2 ore! [nome barberia], [indirizzo]."
-Notifica cancellazione: se il cliente cancella, messaggio di conferma cancellazione + lo slot torna disponibile.
-Tutti i messaggi personalizzabili dal barbiere (testo, tono, emoji).
-Integrazione tramite WhatsApp Business API (Twilio o 360dialog).
+Sistema di conferma basato su pg_cron + Edge Functions + Twilio WhatsApp API.
+
+Flusso per ogni appuntamento:
+1. Richiesta conferma: messaggio con timing smart basato sull'orario dell'appuntamento (sera prima alle 20:00 per appuntamenti pomeridiani, giorno prima alle 12:00 per mattina presto).
+2. Secondo reminder: se il cliente non risponde entro la mattina del giorno dell'appuntamento.
+3. Auto-cancellazione: alla deadline se non conferma → slot liberato → notifica automatica al primo in waitlist.
+4. Pre-appuntamento: "Ci vediamo tra poco!" ~2h prima (solo per confermati).
+
+Comandi WhatsApp gestiti dal webhook:
+- CONFERMA → booked → confirmed
+- CANCELLA / ANNULLA → cancella appuntamento + notifica waitlist
+- CAMBIA ORARIO → invia link prenotazione
+- SI → conferma dalla waitlist
+
+Altre automazioni:
+- Richiesta recensione Google: ~2h dopo completamento (con link diretto).
+- Riattivazione clienti dormienti: 1x/giorno per clienti inattivi > soglia configurabile.
+
+Tutti i messaggi personalizzabili dal barbiere (testo, tono, emoji) tramite UI settings.
+Integrazione tramite Twilio WhatsApp Business API. Dual-mode: live (Twilio) o mock (console.log).
 Il barbiere NON deve fare nulla manualmente: tutto automatico dopo il setup.
+6 Edge Functions + 6 pg_cron schedules + 6 SQL helper functions.
 
 ---
 
@@ -140,7 +155,7 @@ Backend: Supabase (PostgreSQL 17 + Auth + Row Level Security + Edge Functions De
 
 ORM e database: Drizzle ORM per query type-safe e migrazioni. Supabase come provider PostgreSQL. Migrazioni versionata con drizzle-kit.
 
-Notifiche WhatsApp: Twilio o 360dialog tramite WhatsApp Business API. Webhook endpoint su Supabase Edge Functions per gestione risposte in ingresso (ANNULLA, SI). Queue con pg_cron + pg_net per scheduling messaggi (reminder 24h, 2h, recensioni, riattivazione).
+Notifiche WhatsApp: Twilio (^5.12.1) tramite WhatsApp Business API. Dual-mode: live Twilio o mock console.log. Webhook /api/whatsapp/webhook per risposte in ingresso (CONFERMA, CANCELLA, CAMBIA ORARIO, SI). pg_cron + pg_net + 6 Edge Functions Deno per scheduling automatico (conferma intelligente, review, riattivazione).
 
 Autenticazione: Supabase Auth con magic link email + password. JWT con refresh token. RLS policies per isolamento dati tra barberie.
 
@@ -152,7 +167,7 @@ Monitoring: Sentry per error tracking. Vercel Analytics per performance. Supabas
 
 AI (fase 2 post-MVP): Claude API via Anthropic SDK per suggerimenti automatici, previsione no-show, generazione testi marketing.
 
-Hosting (previsto): Vercel per frontend, Server Actions e API routes. Supabase Cloud per database, auth, edge functions, cron (già attivo). Dominio custom con Cloudflare per DNS e CDN.
+Hosting: Vercel per frontend, Server Actions e API routes (collegato). Supabase Cloud per database, auth, edge functions, cron (già attivo). Dominio custom con Cloudflare per DNS e CDN (da configurare).
 
 CI/CD (previsto): GitHub Actions per test e deploy automatico. Vercel Preview Deployments. Lint con Biome.
 
@@ -198,13 +213,15 @@ appointments: id (uuid), business_id (fk), client_id (fk), staff_id (fk), servic
 
 waitlist: id (uuid), business_id (fk), client_id (fk), service_id (fk), desired_date (date), desired_start_time (time), desired_end_time (time), status (enum: waiting, notified, converted, expired), notified_at (timestamptz nullable), created_at.
 
-messages: id (uuid), business_id (fk), client_id (fk), appointment_id (fk nullable), type (enum: confirmation, reminder_24h, reminder_2h, cancellation, review_request, reactivation, waitlist_notify), whatsapp_message_id (text), status (enum: queued, sent, delivered, read, failed), scheduled_for (timestamptz), sent_at (timestamptz nullable), created_at.
+messages: id (uuid), business_id (fk), client_id (fk), appointment_id (fk nullable), type (enum: confirmation, confirm_request, confirm_reminder, pre_appointment, cancellation, review_request, reactivation, waitlist_notify), whatsapp_message_id (text), status (enum: queued, sent, delivered, read, failed), scheduled_for (timestamptz), sent_at (timestamptz nullable), created_at.
 
 message_templates: id (uuid), business_id (fk), type (enum), body_template (text con placeholder tipo {{client_name}}, {{service_name}}, {{date}}, {{time}}, {{booking_link}}, {{review_link}}), active, created_at, updated_at.
 
 analytics_daily: id (uuid), business_id (fk), date (date), total_revenue_cents (int), appointments_completed (int), appointments_cancelled (int), appointments_no_show (int), new_clients (int), returning_clients (int), created_at. Calcolata da cron job notturno.
 
-Indici: appointments (business_id, date), clients (business_id, phone), messages (scheduled_for, status), analytics_daily (business_id, date). RLS policy su ogni tabella filtrando per business_id dell'utente autenticato.
+business_closures: id (uuid), business_id (fk), date (date), reason (text nullable), created_at. Per gestione chiusure straordinarie (feste, ferie). Integrato nel booking wizard (date disabilitate) e nel calendario (banner arancione).
+
+Indici: appointments (business_id+date, staff_id+date), clients (business_id+phone, business_id), staff (business_id), services (business_id), messages (scheduled_for+status, business_id), analytics_daily (business_id+date), waitlist (business_id+desired_date), business_closures (business_id+date, business_id). RLS policy su ogni tabella filtrando per business_id dell'utente autenticato.
 
 ---
 
@@ -212,14 +229,14 @@ FLUSSI PRINCIPALI
 
 Flusso prenotazione: cliente apre link (barberia.barberos.it o slug custom) → sceglie servizio → sceglie barbiere → sistema mostra solo slot realmente disponibili calcolati su orari staff, durata servizio, appuntamenti esistenti → cliente inserisce nome e telefono → conferma → server action crea appointment con status booked + crea client se non esiste + schedula messaggio WhatsApp conferma + broadcast realtime aggiorna calendario dashboard.
 
-Flusso cancellazione: cliente risponde ANNULLA al reminder → webhook riceve messaggio → edge function trova appointment attivo per quel numero → aggiorna status a cancelled + cancella reminder pendenti → se waitlist presente per quello slot, notifica primo in coda → primo che risponde SI, sistema crea nuovo appointment con source waitlist.
+Flusso cancellazione: cliente risponde CANCELLA/ANNULLA al messaggio WhatsApp → webhook /api/whatsapp/webhook riceve messaggio → trova client per telefono → trova prossimo appuntamento attivo → aggiorna status a cancelled + cancella messaggi pendenti → se waitlist presente per quello slot, notifica primo in coda con WhatsApp → primo che risponde SI, sistema crea nuovo appointment con source waitlist.
 
 Flusso walk-in: barbiere clicca aggiungi walk-in → seleziona cliente esistente (ricerca per nome o telefono) o ne crea uno nuovo → seleziona servizio → appointment creato con source walk_in e status confirmed.
 
 Flusso no-show: il barbiere segna manualmente come no-show dalla dashboard → incrementa no_show_count del client → se count supera soglia (default 2), badge alert visibile nella lista clienti.
 
-Flusso recensione: pg_cron ogni ora cerca appuntamenti completati da più di 2 ore senza messaggio review_request inviato → controlla che ultimo review_request per quel client sia più vecchio di 30 giorni → schedula messaggio WhatsApp con link Google review.
+Flusso recensione: pg_cron ogni ora (:15) → review-request Edge Function → find_review_appointments() cerca appuntamenti completati 1.5-2.5h fa con Google review link configurato e senza review_request già inviato → invia messaggio WhatsApp con link Google review.
 
-Flusso riattivazione: pg_cron giornaliero alle 10:00 cerca clienti con last_visit_at più vecchio di soglia configurata (default 28 giorni) → controlla che non esista messaggio reactivation inviato negli ultimi 28 giorni → schedula messaggio WhatsApp con link booking.
+Flusso riattivazione: pg_cron giornaliero alle 11:00 Roma (10:00 UTC) → reactivation Edge Function → find_dormant_clients() cerca clienti con last_visit_at più vecchio di soglia configurata (default 28 giorni) e senza messaggio reactivation recente → invia messaggio WhatsApp con link booking.
 
 Flusso analytics: pg_cron alle 02:05 UTC (03:05 Roma) calcola metriche del giorno precedente → UPSERT su analytics_daily → dashboard legge da questa tabella per visualizzazione veloce senza query pesanti sugli appuntamenti.

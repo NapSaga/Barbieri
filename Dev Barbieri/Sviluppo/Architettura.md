@@ -51,6 +51,7 @@ barberos-mvp/
     │   │       ├── staff/page.tsx    # STAFF — CRUD con orari di lavoro
     │   │       ├── waitlist/page.tsx # LISTA D'ATTESA — gestione waitlist con filtri
     │   │       ├── analytics/page.tsx# ANALYTICS — dashboard KPI, grafici, top servizi
+    │   │       ├── expired/page.tsx  # ABBONAMENTO SCADUTO — redirect qui se subscription non valida
     │   │       └── settings/page.tsx # IMPOSTAZIONI — 8 sezioni: info, orari, WhatsApp, template, review, soglie, chiusure, billing
     │   │
     │   └── book/
@@ -86,6 +87,13 @@ barberos-mvp/
     │   │   ├── appointment-sheet.tsx # Pannello dettaglio appuntamento + azioni rapide
     │   │   └── walk-in-dialog.tsx # Dialog modale per aggiunta walk-in
     │   │
+    │   ├── analytics/
+    │   │   └── analytics-dashboard.tsx # Dashboard KPI: 4 cards, grafici fatturato/appuntamenti,
+    │   │                              # top servizi, breakdown clienti, selector periodo
+    │   │
+    │   ├── billing/
+    │   │   └── expired-view.tsx   # Vista abbonamento scaduto: info stato, link a settings per riattivazione
+    │   │
     │   ├── clients/
     │   │   └── clients-manager.tsx # CRM clienti: lista, ricerca, form creazione, scheda espandibile con tag/note
     │   │
@@ -99,6 +107,9 @@ barberos-mvp/
     │   ├── staff/
     │   │   └── staff-manager.tsx  # Gestione staff: lista, form create/edit, editor orari, toggle, delete
     │   │
+    │   ├── waitlist/
+    │   │   └── waitlist-manager.tsx # Gestione waitlist: filtri stato, ricerca, badge colorati, rimozione, bulk-expire
+    │   │
     │   └── shared/
     │       └── sidebar.tsx        # Sidebar navigazione dashboard (mobile + desktop)
     │
@@ -109,7 +120,10 @@ barberos-mvp/
     ├── lib/
     │   ├── utils.ts              # Utility cn() per class names (clsx + tailwind-merge)
     │   ├── slots.ts              # Algoritmo calcolo slot disponibili (orari staff - appuntamenti - pausa)
-    │   ├── stripe.ts             # Stripe server client + PLANS (3 piani) + STRIPE_CONFIG (trial, URLs)
+    │   ├── stripe.ts             # Stripe server client (lazy init + Proxy alias), re-export PLANS,
+    │   │                         # STRIPE_PRICES server-only da env
+    │   ├── stripe-plans.ts       # Definizione piani (Essential, Professional, Enterprise),
+    │   │                         # prezzi, features, product IDs — importabile da client components
     │   ├── whatsapp.ts           # WhatsApp dual-mode: Twilio live o mock console.log
     │   │                         # sendWhatsAppMessage(), renderTemplate(), isWhatsAppEnabled()
     │   ├── templates.ts          # Template messaggi WhatsApp: 8 tipi, DEFAULT_TEMPLATES,
@@ -294,17 +308,22 @@ CONTEGGIO FILE
 
 Codebase Next.js (locale):
 - 9 Server Actions (analytics, appointments, billing, business, clients, closures, services, staff, waitlist)
-- 17 route/pagine (incluso layout, callback, booking, 2 webhook)
-- 14 componenti React (6 calendar, 1 analytics, 1 booking, 1 clients, 1 services, 1 settings, 1 staff, 1 waitlist, 1 shared)
-- 8 file lib/utility (utils, slots, stripe, whatsapp, templates, 3 supabase clients)
+- 18 route/pagine (incluso layout, callback, booking, expired, 2 webhook)
+- 16 componenti React (6 calendar, 1 analytics, 1 billing, 1 booking, 1 clients, 1 services, 1 settings, 1 staff, 1 waitlist, 1 shared)
+- 9 file lib/utility (utils, slots, stripe, stripe-plans, whatsapp, templates, 3 supabase clients)
 - 2 file database (schema, index)
 - 1 file types
+- 1 file proxy (proxy.ts — auth + subscription gating)
 - 1 script setup (scripts/setup-stripe.ts)
-- Totale: ~48 file TypeScript/TSX
+- Totale: ~52 file TypeScript/TSX
 
 Supabase Cloud:
 - 6 Edge Functions attive (confirmation-request/reminder, auto-cancel, pre-appointment, review-request, reactivation)
 - 7 SQL helper/functions (6 conferma + calculate_analytics_daily)
 - 7 pg_cron schedules (6 conferma + analytics-daily-calc)
 - 13 migrazioni applicate
-- 1 tabella extra: business_closures (con RLS)
+- 11 tabelle (10 originali + business_closures)
+
+Deploy:
+- Vercel: frontend, Server Actions, API routes (collegato)
+- Supabase Cloud: database, auth, edge functions, pg_cron (attivo)

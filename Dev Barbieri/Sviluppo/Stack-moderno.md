@@ -10,7 +10,7 @@ ORM e database: Drizzle ORM 0.45.x per query type-safe, migrazioni e schema-as-c
 
 Notifiche WhatsApp: Twilio (^5.12.1) tramite WhatsApp Business API. Webhook /api/whatsapp/webhook per risposte in ingresso (CONFERMA, CANCELLA, CAMBIA ORARIO, SI). Comandi gestiti con risposta automatica. Dual-mode: Twilio live o mock console.log. pg_cron + pg_net nativi per scheduling (6 cron jobs: conferma intelligente, review, riattivazione).
 
-Autenticazione: Supabase Auth con email + password e magic link. JWT con refresh token automatico. RLS policies su ogni tabella per isolamento dati completo tra barberie. proxy.ts (Next.js 16) per protezione route lato server.
+Autenticazione: Supabase Auth con email + password e magic link. JWT con refresh token automatico. RLS policies su ogni tabella per isolamento dati completo tra barberie. proxy.ts (Next.js 16) per protezione route lato server + subscription gating.
 
 Pagamenti abbonamento barbiere: Stripe Billing (stripe@20.3.1, API 2026-01-28.clover). 3 piani: Essential €300/mese (prod_TwyoUI0JLvWcj3), Professional €500/mese (prod_TwypWo5jLd3doz), Enterprise custom (prod_TwyphvT1F82GrB). Trial 30gg. Stripe Checkout con selezione piano. Stripe Webhook /api/stripe/webhook per sync stato su DB (da configurare con dominio). Stripe Customer Portal per self-service. Setup €1.000 una tantum fatturato separatamente. Nessun pagamento del cliente finale nell'MVP.
 
@@ -20,9 +20,11 @@ Monitoring e observability (previsto): Sentry per error tracking. Vercel Analyti
 
 AI (fase 2 post-MVP): Anthropic Claude API per suggerimenti automatici, previsione no-show, generazione testi marketing.
 
-Hosting (previsto): Vercel per frontend, Server Actions e API routes. Supabase Cloud per database, auth, edge functions, pg_cron (già attivo). Dominio custom con Cloudflare per DNS e CDN.
+Hosting: Vercel per frontend, Server Actions e API routes (collegato, deploy attivo). Supabase Cloud per database, auth, edge functions, pg_cron (già attivo). Dominio custom con Cloudflare per DNS e CDN (da configurare).
 
 CI/CD (previsto): GitHub Actions per test e deploy. Vercel Preview Deployments. Lint con Biome. Type check con tsc --noEmit.
+
+Subscription gating: proxy.ts verifica subscription_status su ogni richiesta dashboard. Se non active/trialing/past_due → redirect a /dashboard/expired. Settings e expired page esenti (per permettere riattivazione). ExpiredView component per UI abbonamento scaduto.
 
 Package manager: pnpm 10.29.2 (più veloce di npm, gestione dipendenze strict, disk-efficient).
 

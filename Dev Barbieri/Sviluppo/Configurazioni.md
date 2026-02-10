@@ -116,7 +116,7 @@ Enums (6):
 - message_status: queued, sent, delivered, read, failed
 - subscription_status: active, past_due, cancelled, trialing, incomplete
 
-Tabelle (10):
+Tabelle (11):
 
 1. businesses
    - id (uuid PK), owner_id (uuid, auth.uid), name, slug (unique), address, phone, logo_url, google_review_link, opening_hours (jsonb), brand_colors (jsonb), timezone (default Europe/Rome), stripe_customer_id, subscription_status (default trialing), dormant_threshold_days (default 28), no_show_threshold (default 2), created_at, updated_at
@@ -157,6 +157,11 @@ Tabelle (10):
 10. analytics_daily
     - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), date, total_revenue_cents (default 0), appointments_completed (default 0), appointments_cancelled (default 0), appointments_no_show (default 0), new_clients (default 0), returning_clients (default 0), created_at
     - Unique index: analytics_daily_business_date_idx(business_id, date)
+
+11. business_closures
+    - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), date, reason (text nullable), created_at
+    - Unique index: business_closures_business_date_idx(business_id, date)
+    - Index: business_closures_business_id_idx
 
 ---
 
@@ -256,19 +261,24 @@ Comandi utili per debug:
 
 ---
 
-HOSTING (non ancora configurato)
+HOSTING
 
-Previsto:
-- Vercel per frontend, Server Actions, middleware
-- Supabase Cloud per database, auth, realtime, edge functions (già attivo)
-- Cloudflare per DNS e CDN (da configurare)
-- Dominio: da acquistare
+Attivo:
+- Vercel: frontend, Server Actions, API routes (progetto collegato, cartella .vercel presente)
+- Supabase Cloud: database, auth, edge functions, pg_cron (già attivo, regione eu-central-1)
+
+Da configurare:
+- Dominio custom: da acquistare
+- Cloudflare: DNS + CDN (da configurare dopo acquisto dominio)
+- Webhook Stripe: richiede URL pubblica (dominio)
+- NEXT_PUBLIC_APP_URL: da aggiornare con dominio produzione
 
 ---
 
 SERVIZI ESTERNI
 
-- WhatsApp API: integrazione Twilio completata (dual-mode: live o mock). Webhook pronto su /api/whatsapp/webhook. Serve configurare credenziali Twilio per invio reale.
-- Stripe: integrazione completata. 3 piani: Essential €300/mese (prod_TwyoUI0JLvWcj3), Professional €500/mese (prod_TwypWo5jLd3doz), Enterprise custom (prod_TwyphvT1F82GrB). Trial 30gg. Webhook su /api/stripe/webhook (da configurare con dominio). Customer Portal per self-service.
+- WhatsApp API: integrazione Twilio completata (dual-mode: live o mock). Webhook pronto su /api/whatsapp/webhook. Serve configurare credenziali Twilio per invio reale. Edge Functions usano Twilio REST API direttamente (fetch, no npm).
+- Stripe: integrazione completata (stripe@20.3.1, API 2026-01-28.clover). 3 piani: Essential €300/mese (prod_TwyoUI0JLvWcj3, price_1Sz4yuK75hVrlrva5iqHgE52), Professional €500/mese (prod_TwypWo5jLd3doz, price_1Sz4yvK75hVrlrvaemSc8lLf), Enterprise custom (prod_TwyphvT1F82GrB). Trial 30gg. Webhook su /api/stripe/webhook (da configurare con dominio). Customer Portal per self-service. Setup script: npx tsx scripts/setup-stripe.ts.
+- Vercel: deploy collegato. Da configurare dominio personalizzato.
 - Sentry: non configurato (monitoring errori).
 - Vercel Analytics: non configurato.
