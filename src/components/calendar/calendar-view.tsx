@@ -161,49 +161,49 @@ export function CalendarView({
       </div>
 
       {/* Navigation bar */}
-      <div className="flex flex-col gap-3 rounded-xl bg-card p-3 shadow-md sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => navigate(-1)}
-            className="rounded-lg p-2 hover:bg-accent"
+            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             onClick={() => navigate(1)}
-            className="rounded-lg p-2 hover:bg-accent"
+            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
           <button
             onClick={goToToday}
             className={cn(
-              "rounded-lg px-3 py-1.5 text-sm font-medium",
+              "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
               isToday
-                ? "bg-secondary text-foreground"
+                ? "bg-primary text-primary-foreground"
                 : "text-foreground hover:bg-accent",
             )}
           >
             Oggi
           </button>
-          <h2 className="ml-2 text-sm font-semibold text-foreground sm:text-base">
+          <h2 className="ml-2 text-sm font-semibold capitalize text-foreground sm:text-base">
             {viewMode === "day"
               ? formatDateHeader(currentDate)
               : formatWeekHeader(weekStart, weekEnd)}
           </h2>
           {isPending && (
-            <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+            <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-foreground/30 border-t-foreground" />
           )}
         </div>
 
-        <div className="flex rounded-lg bg-secondary p-0.5">
+        <div className="flex rounded-lg bg-muted p-0.5">
           <button
             onClick={() => switchView("day")}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               viewMode === "day"
-                ? "bg-accent text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-accent-foreground",
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <CalendarIcon className="h-4 w-4" />
@@ -214,8 +214,8 @@ export function CalendarView({
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               viewMode === "week"
-                ? "bg-accent text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-accent-foreground",
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <CalendarDays className="h-4 w-4" />
@@ -233,7 +233,7 @@ export function CalendarView({
       )}
 
       {/* Calendar grid */}
-      <div className="rounded-xl bg-card shadow-md overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         {viewMode === "day" ? (
           <DayView
             date={currentDate}

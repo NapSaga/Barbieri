@@ -31,6 +31,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
+import { LogoIcon, LogoFull } from "@/components/shared/barberos-logo";
 
 const navSections = [
   {
@@ -150,43 +151,38 @@ export function DashboardSidebar() {
             isCollapsed ? "justify-center px-2" : "justify-between px-4",
           )}
         >
-          <AnimatePresence mode="wait">
-            {isCollapsed ? (
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setCollapsed(false)}
+                  className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                >
+                  <LogoIcon size={32} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={8}>
+                BarberOS — Espandi
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <>
+              <LogoFull />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => setCollapsed(false)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-sidebar-accent/50"
+                    onClick={() => setCollapsed(true)}
+                    className="rounded-md p-1.5 text-sidebar-foreground/30 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   >
-                    <PanelLeftOpen className="h-4 w-4 text-sidebar-foreground/50" />
+                    <PanelLeftClose className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={8}>
-                  Espandi
+                <TooltipContent side="right" sideOffset={4}>
+                  Comprimi
                 </TooltipContent>
               </Tooltip>
-            ) : (
-              <>
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="text-lg font-extrabold tracking-tight text-sidebar-foreground"
-                >
-                  Barber<span className="text-sidebar-primary">OS</span>
-                </motion.span>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => setCollapsed(true)}
-                  className="text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-                >
-                  <PanelLeftClose className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </AnimatePresence>
+            </>
+          )}
         </div>
 
         {/* Navigation */}

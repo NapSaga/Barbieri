@@ -89,7 +89,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                     <span
                       className={cn(
                         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                        appointment.status === "booked" && "bg-blue-500/20 text-blue-300",
+                        appointment.status === "booked" && "bg-violet-500/20 text-violet-300",
                         appointment.status === "confirmed" && "bg-emerald-500/20 text-emerald-300",
                         appointment.status === "completed" && "bg-secondary text-muted-foreground",
                         appointment.status === "cancelled" && "bg-red-500/20 text-red-400",

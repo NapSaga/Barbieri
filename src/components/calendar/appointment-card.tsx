@@ -8,10 +8,10 @@ const STATUS_STYLES: Record<
   { accent: string; bg: string; text: string; muted: string }
 > = {
   booked: {
-    accent: "bg-blue-500",
-    bg: "bg-blue-500/10 hover:bg-blue-500/15",
-    text: "text-blue-300",
-    muted: "text-blue-400/70",
+    accent: "bg-violet-500",
+    bg: "bg-violet-500/10 hover:bg-violet-500/15",
+    text: "text-violet-300",
+    muted: "text-violet-400/70",
   },
   confirmed: {
     accent: "bg-emerald-500",

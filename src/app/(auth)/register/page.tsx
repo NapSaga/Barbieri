@@ -4,8 +4,8 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LogoIcon } from "@/components/shared/barberos-logo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -55,9 +55,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <Scissors className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <LogoIcon size={48} />
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Barberos
