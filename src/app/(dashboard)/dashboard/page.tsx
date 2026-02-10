@@ -1,0 +1,62 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getAppointmentsForDate, getStaffForCalendar } from "@/actions/appointments";
+import { CalendarView } from "@/components/calendar/calendar-view";
+import { getClosureDates } from "@/actions/closures";
+
+function toISODate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!business) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+        <p className="text-lg font-medium">Nessuna barberia configurata</p>
+        <p className="mt-2 text-sm">Vai alle impostazioni per configurare la tua barberia.</p>
+      </div>
+    );
+  }
+
+  const today = toISODate(new Date());
+
+  const [appointments, staffMembers, servicesResult, closureDates] = await Promise.all([
+    getAppointmentsForDate(today),
+    getStaffForCalendar(),
+    supabase
+      .from("services")
+      .select("id, name, duration_minutes, price_cents")
+      .eq("business_id", business.id)
+      .eq("active", true)
+      .order("display_order", { ascending: true }),
+    getClosureDates(business.id),
+  ]);
+
+  const services = servicesResult.data || [];
+
+  return (
+    <CalendarView
+      initialDate={today}
+      initialAppointments={appointments}
+      staffMembers={staffMembers as any}
+      services={services}
+      closureDates={closureDates}
+    />
+  );
+}
