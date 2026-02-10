@@ -44,9 +44,9 @@ export function DashboardSidebar({ user }: { user: User }) {
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-2 border-b border-gray-200 px-6">
-        <Scissors className="h-6 w-6 text-blue-600" />
-        <span className="text-lg font-bold text-gray-900">Barberos</span>
+      <div className="flex h-16 items-center gap-2 border-b border-zinc-800 px-6">
+        <Scissors className="h-6 w-6 text-zinc-300" />
+        <span className="text-lg font-bold text-white">Barberos</span>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -64,8 +64,8 @@ export function DashboardSidebar({ user }: { user: User }) {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                  ? "border-l-2 border-zinc-400 bg-zinc-800 text-white"
+                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200",
               )}
             >
               <item.icon className="h-5 w-5 shrink-0" />
@@ -75,11 +75,11 @@ export function DashboardSidebar({ user }: { user: User }) {
         })}
       </nav>
 
-      <div className="border-t border-gray-200 p-4">
-        <div className="mb-3 truncate text-xs text-gray-500">{user.email}</div>
+      <div className="border-t border-zinc-800 p-4">
+        <div className="mb-3 truncate text-xs text-zinc-600">{user.email}</div>
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
         >
           <LogOut className="h-4 w-4" />
           Esci
@@ -93,19 +93,19 @@ export function DashboardSidebar({ user }: { user: User }) {
       {/* Mobile menu button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed left-4 top-4 z-40 rounded-lg bg-white p-2 shadow-md lg:hidden"
+        className="fixed left-4 top-4 z-40 rounded-lg bg-zinc-900 p-2 shadow-lg shadow-black/30 lg:hidden"
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="h-5 w-5 text-zinc-300" />
       </button>
 
       {/* Mobile overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-black/30" onClick={() => setMobileOpen(false)} />
-          <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl">
+          <div className="fixed inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+          <div className="fixed inset-y-0 left-0 w-64 bg-zinc-950 shadow-lg shadow-black/40">
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute right-3 top-4 rounded p-1 hover:bg-gray-100"
+              className="absolute right-3 top-4 rounded p-1 text-zinc-400 hover:bg-zinc-800"
             >
               <X className="h-5 w-5" />
             </button>
@@ -115,7 +115,7 @@ export function DashboardSidebar({ user }: { user: User }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-gray-200 bg-white lg:block">
+      <aside className="hidden w-64 shrink-0 border-r border-zinc-800 bg-zinc-950 lg:block">
         {sidebarContent}
       </aside>
     </>

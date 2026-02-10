@@ -40,11 +40,11 @@ interface StaffMemberData {
 }
 
 const DAY_LABELS: Record<string, string> = {
-  monday: "Lunedì",
-  tuesday: "Martedì",
-  wednesday: "Mercoledì",
-  thursday: "Giovedì",
-  friday: "Venerdì",
+  monday: "Lunedi",
+  tuesday: "Martedi",
+  wednesday: "Mercoledi",
+  thursday: "Giovedi",
+  friday: "Venerdi",
   saturday: "Sabato",
   sunday: "Domenica",
 };
@@ -119,46 +119,46 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <UserCog className="h-7 w-7 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Staff</h1>
-          <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+          <UserCog className="h-7 w-7 text-zinc-300" />
+          <h1 className="text-2xl font-bold text-zinc-100">Staff</h1>
+          <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
             {staff.length}
           </span>
         </div>
         <button
           onClick={() => { setShowForm(true); setEditingId(null); }}
-          className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
+          className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200"
         >
           <Plus className="h-4 w-4" />
           Nuovo barbiere
         </button>
       </div>
 
-      {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {error && <div className="mb-4 rounded-lg bg-red-950/50 p-3 text-sm text-red-400">{error}</div>}
 
       {/* Create form */}
       {showForm && (
-        <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
+        <div className="mb-4 rounded-xl bg-zinc-900 border border-zinc-800 p-4 shadow-md shadow-black/20">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Nuovo barbiere</h3>
-            <button onClick={() => setShowForm(false)} className="rounded p-1 hover:bg-gray-100">
+            <h3 className="font-semibold text-zinc-100">Nuovo barbiere</h3>
+            <button onClick={() => setShowForm(false)} className="rounded p-1 hover:bg-zinc-800">
               <X className="h-4 w-4" />
             </button>
           </div>
           <form action={handleCreate} className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <label className="block text-sm font-medium text-zinc-300">Nome</label>
               <input
                 name="name"
                 required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
                 placeholder="Mario Rossi"
               />
             </div>
             <button
               type="submit"
               disabled={isPending}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
             >
               {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               Aggiungi
@@ -169,8 +169,8 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
 
       {/* Staff list */}
       {staff.length === 0 && !showForm ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
-          <UserCog className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-500">
+          <UserCog className="mx-auto mb-3 h-10 w-10 text-zinc-700" />
           <p className="font-medium">Nessun barbiere</p>
           <p className="mt-1 text-sm">Aggiungi il primo barbiere per iniziare.</p>
         </div>
@@ -180,14 +180,14 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
             <div
               key={member.id}
               className={cn(
-                "rounded-xl bg-white shadow-sm transition-opacity",
+                "rounded-xl bg-zinc-900 border border-zinc-800 transition-opacity",
                 !member.active && "opacity-60",
               )}
             >
               {/* Main row */}
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-sm font-bold text-zinc-300">
                     {member.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -201,27 +201,27 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
                           name="name"
                           required
                           defaultValue={member.name}
-                          className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="rounded-lg border border-zinc-700 bg-zinc-800/50 px-2 py-1 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
                         />
                         <button
                           type="submit"
                           disabled={isPending}
-                          className="rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-500"
+                          className="rounded bg-white px-2 py-1 text-xs font-medium text-zinc-900 hover:bg-zinc-200"
                         >
                           Salva
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100"
+                          className="rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-800"
                         >
                           Annulla
                         </button>
                       </form>
                     ) : (
                       <>
-                        <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                        <p className="text-xs text-gray-500">
+                        <h3 className="font-semibold text-zinc-100">{member.name}</h3>
+                        <p className="text-xs text-zinc-500">
                           {member.active ? "Attivo" : "Disattivato"}
                         </p>
                       </>
@@ -234,7 +234,7 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
                     onClick={() =>
                       setExpandedHours(expandedHours === member.id ? null : member.id)
                     }
-                    className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100"
+                    className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-800"
                   >
                     <Clock className="h-3.5 w-3.5" />
                     Orari
@@ -247,7 +247,7 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
                   <button
                     onClick={() => handleToggle(member.id, member.active)}
                     disabled={isPending}
-                    className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
+                    className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300"
                     title={member.active ? "Disattiva" : "Attiva"}
                   >
                     {member.active ? (
@@ -258,14 +258,14 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
                   </button>
                   <button
                     onClick={() => setEditingId(member.id)}
-                    className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(member.id)}
                     disabled={isPending}
-                    className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                    className="rounded-lg p-2 text-zinc-600 hover:bg-red-950/50 hover:text-red-400"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -332,19 +332,19 @@ function WorkingHoursEditor({ staffId, workingHours, onSave }: WorkingHoursEdito
   }
 
   return (
-    <div className="border-t border-gray-100 px-4 pb-4 pt-3">
+    <div className="border-t border-zinc-800 px-4 pb-4 pt-3">
       <div className="space-y-2">
         {DAY_ORDER.map((day) => (
           <div key={day} className="flex items-center gap-3 text-sm">
-            <span className="w-20 shrink-0 font-medium text-gray-700">{DAY_LABELS[day]}</span>
+            <span className="w-20 shrink-0 font-medium text-zinc-300">{DAY_LABELS[day]}</span>
             <label className="flex items-center gap-1.5 cursor-pointer">
               <input
                 type="checkbox"
                 checked={!hours[day].off}
                 onChange={(e) => updateDay(day, "off", !e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-zinc-600 text-zinc-300 focus:ring-zinc-500"
               />
-              <span className="text-xs text-gray-500">{hours[day].off ? "Chiuso" : "Aperto"}</span>
+              <span className="text-xs text-zinc-500">{hours[day].off ? "Chiuso" : "Aperto"}</span>
             </label>
             {!hours[day].off && (
               <>
@@ -352,14 +352,14 @@ function WorkingHoursEditor({ staffId, workingHours, onSave }: WorkingHoursEdito
                   type="time"
                   value={hours[day].start}
                   onChange={(e) => updateDay(day, "start", e.target.value)}
-                  className="rounded border border-gray-200 px-2 py-1 text-xs"
+                  className="rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1 text-xs"
                 />
-                <span className="text-gray-400">—</span>
+                <span className="text-zinc-600">&mdash;</span>
                 <input
                   type="time"
                   value={hours[day].end}
                   onChange={(e) => updateDay(day, "end", e.target.value)}
-                  className="rounded border border-gray-200 px-2 py-1 text-xs"
+                  className="rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1 text-xs"
                 />
               </>
             )}
@@ -370,12 +370,12 @@ function WorkingHoursEditor({ staffId, workingHours, onSave }: WorkingHoursEdito
         <button
           onClick={handleSave}
           disabled={isPending}
-          className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
         >
           {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
           Salva orari
         </button>
-        {saved && <span className="text-xs text-emerald-600">Salvato!</span>}
+        {saved && <span className="text-xs text-emerald-400">Salvato!</span>}
       </div>
     </div>
   );

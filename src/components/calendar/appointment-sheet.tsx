@@ -68,10 +68,10 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-[2px]"
+        className="fixed inset-0 bg-black/70 backdrop-blur-[2px]"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md animate-in slide-in-from-bottom-4 rounded-t-2xl bg-white shadow-2xl sm:mx-4 sm:rounded-2xl">
+      <div className="relative z-10 w-full max-w-md animate-in slide-in-from-bottom-4 rounded-t-2xl bg-zinc-900 border border-zinc-800 shadow-2xl shadow-black/50 sm:mx-4 sm:rounded-2xl">
         {/* Accent bar */}
         <div className={cn("h-1.5 w-full rounded-t-2xl", style.accent)} />
 
@@ -84,22 +84,22 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                   {clientName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-gray-900">{clientName}</h2>
+                  <h2 className="text-base font-bold text-zinc-100">{clientName}</h2>
                   <div className="mt-0.5 flex items-center gap-2">
                     <span
                       className={cn(
                         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                        appointment.status === "booked" && "bg-blue-100 text-blue-700",
-                        appointment.status === "confirmed" && "bg-emerald-100 text-emerald-700",
-                        appointment.status === "completed" && "bg-gray-100 text-gray-500",
-                        appointment.status === "cancelled" && "bg-red-100 text-red-600",
-                        appointment.status === "no_show" && "bg-amber-100 text-amber-700",
+                        appointment.status === "booked" && "bg-blue-500/20 text-blue-300",
+                        appointment.status === "confirmed" && "bg-emerald-500/20 text-emerald-300",
+                        appointment.status === "completed" && "bg-zinc-800 text-zinc-400",
+                        appointment.status === "cancelled" && "bg-red-500/20 text-red-400",
+                        appointment.status === "no_show" && "bg-amber-500/20 text-amber-300",
                       )}
                     >
                       <span className={cn("h-1.5 w-1.5 rounded-full", style.accent)} />
                       {STATUS_LABELS[appointment.status] || appointment.status}
                     </span>
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
+                    <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
                       {SOURCE_LABELS[appointment.source] || appointment.source}
                     </span>
                   </div>
@@ -108,31 +108,31 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Details */}
-          <div className="space-y-1 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+          <div className="space-y-1 rounded-xl border border-zinc-800 bg-zinc-800/30 p-3">
             <div className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm">
-              <Clock className="h-4 w-4 shrink-0 text-gray-400" />
+              <Clock className="h-4 w-4 shrink-0 text-zinc-500" />
               <div>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-zinc-100">
                   {appointment.start_time.slice(0, 5)} — {appointment.end_time.slice(0, 5)}
                 </span>
-                <span className="ml-2 text-xs text-gray-400">{appointment.date}</span>
+                <span className="ml-2 text-xs text-zinc-500">{appointment.date}</span>
               </div>
             </div>
 
             {appointment.service && (
               <div className="flex items-center justify-between rounded-lg px-2 py-2 text-sm">
                 <div className="flex items-center gap-3">
-                  <Scissors className="h-4 w-4 shrink-0 text-gray-400" />
-                  <span className="text-gray-700">{appointment.service.name}</span>
+                  <Scissors className="h-4 w-4 shrink-0 text-zinc-500" />
+                  <span className="text-zinc-300">{appointment.service.name}</span>
                 </div>
-                <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-900">
+                <span className="rounded-md bg-zinc-800 px-2 py-0.5 text-xs font-bold text-zinc-200">
                   {formatPrice(appointment.service.price_cents)}
                 </span>
               </div>
@@ -140,17 +140,17 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
 
             {appointment.staff && (
               <div className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm">
-                <User className="h-4 w-4 shrink-0 text-gray-400" />
-                <span className="text-gray-700">{appointment.staff.name}</span>
+                <User className="h-4 w-4 shrink-0 text-zinc-500" />
+                <span className="text-zinc-300">{appointment.staff.name}</span>
               </div>
             )}
 
             {appointment.client?.phone && (
               <div className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm">
-                <Phone className="h-4 w-4 shrink-0 text-gray-400" />
+                <Phone className="h-4 w-4 shrink-0 text-zinc-500" />
                 <a
                   href={`tel:${appointment.client.phone}`}
-                  className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  className="font-medium text-zinc-300 hover:text-white hover:underline"
                 >
                   {appointment.client.phone}
                 </a>
@@ -160,25 +160,25 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
 
           {/* Confirmation status */}
           {appointment.confirmationStatus && appointment.confirmationStatus !== "none" && (
-            <div className="mt-3 flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm">
+            <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-zinc-800 px-3 py-2.5 text-sm">
               <MessageCircle className={cn(
                 "h-4 w-4 shrink-0",
-                appointment.confirmationStatus === "pending" && "text-amber-500",
-                appointment.confirmationStatus === "confirmed" && "text-emerald-500",
+                appointment.confirmationStatus === "pending" && "text-amber-400",
+                appointment.confirmationStatus === "confirmed" && "text-emerald-400",
                 appointment.confirmationStatus === "auto_cancelled" && "text-red-400",
               )} />
               <div>
                 {appointment.confirmationStatus === "pending" && (
-                  <span className="text-amber-700">In attesa di conferma WhatsApp</span>
+                  <span className="text-amber-300">In attesa di conferma WhatsApp</span>
                 )}
                 {appointment.confirmationStatus === "confirmed" && (
-                  <span className="text-emerald-700">Confermato via WhatsApp</span>
+                  <span className="text-emerald-300">Confermato via WhatsApp</span>
                 )}
                 {appointment.confirmationStatus === "auto_cancelled" && (
-                  <span className="text-red-600">Non confermato — cancellato automaticamente</span>
+                  <span className="text-red-400">Non confermato — cancellato automaticamente</span>
                 )}
                 {appointment.confirmRequestSentAt && appointment.confirmationStatus === "pending" && (
-                  <span className="ml-1.5 text-xs text-gray-400">
+                  <span className="ml-1.5 text-xs text-zinc-500">
                     · inviato {new Date(appointment.confirmRequestSentAt).toLocaleString("it-IT", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
                   </span>
                 )}
@@ -187,7 +187,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
           )}
 
           {error && (
-            <p className="mt-3 rounded-lg bg-red-50 p-2.5 text-sm text-red-600">{error}</p>
+            <p className="mt-3 rounded-lg bg-red-950/50 p-2.5 text-sm text-red-400">{error}</p>
           )}
 
           {/* Actions */}
@@ -208,7 +208,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                 <button
                   onClick={() => handleAction("completed")}
                   disabled={isPending}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-gray-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 disabled:opacity-50"
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-zinc-200 disabled:opacity-50"
                 >
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   Completato
@@ -219,7 +219,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                 <button
                   onClick={() => handleAction("no_show")}
                   disabled={isPending}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-700/50 bg-amber-950/30 px-3 py-2.5 text-sm font-semibold text-amber-300 transition-colors hover:bg-amber-950/50 disabled:opacity-50"
                 >
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
                   No-show
@@ -230,7 +230,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                 <button
                   onClick={() => handleAction("cancelled")}
                   disabled={isPending}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-red-700/50 bg-red-950/30 px-3 py-2.5 text-sm font-semibold text-red-400 transition-colors hover:bg-red-950/50 disabled:opacity-50"
                 >
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
                   Cancella

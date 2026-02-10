@@ -98,9 +98,9 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Scissors className="h-7 w-7 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Servizi</h1>
-          <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+          <Scissors className="h-7 w-7 text-zinc-300" />
+          <h1 className="text-2xl font-bold text-zinc-100">Servizi</h1>
+          <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
             {services.length}
           </span>
         </div>
@@ -109,7 +109,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
             setShowForm(true);
             setEditingId(null);
           }}
-          className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
+          className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200"
         >
           <Plus className="h-4 w-4" />
           Nuovo servizio
@@ -117,15 +117,15 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+        <div className="mb-4 rounded-lg bg-red-950/50 p-3 text-sm text-red-400">{error}</div>
       )}
 
       {/* Create form */}
       {showForm && (
-        <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
+        <div className="mb-4 rounded-xl bg-zinc-900 border border-zinc-800 p-4 shadow-md shadow-black/20">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Nuovo servizio</h3>
-            <button onClick={() => setShowForm(false)} className="rounded p-1 hover:bg-gray-100">
+            <h3 className="font-semibold text-zinc-100">Nuovo servizio</h3>
+            <button onClick={() => setShowForm(false)} className="rounded p-1 hover:bg-zinc-800">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -139,8 +139,8 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
 
       {/* Services list */}
       {services.length === 0 && !showForm ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
-          <Scissors className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-500">
+          <Scissors className="mx-auto mb-3 h-10 w-10 text-zinc-700" />
           <p className="font-medium">Nessun servizio</p>
           <p className="mt-1 text-sm">Crea il tuo primo servizio per iniziare.</p>
         </div>
@@ -150,17 +150,17 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
             <div
               key={service.id}
               className={cn(
-                "rounded-xl bg-white p-4 shadow-sm transition-opacity",
+                "rounded-xl bg-zinc-900 border border-zinc-800 p-4 transition-opacity",
                 !service.active && "opacity-60",
               )}
             >
               {editingId === service.id ? (
                 <div>
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900">Modifica servizio</h3>
+                    <h3 className="font-semibold text-zinc-100">Modifica servizio</h3>
                     <button
                       onClick={() => setEditingId(null)}
-                      className="rounded p-1 hover:bg-gray-100"
+                      className="rounded p-1 hover:bg-zinc-800"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -180,24 +180,24 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{service.name}</h3>
+                      <h3 className="font-semibold text-zinc-100">{service.name}</h3>
                       {service.is_combo && (
-                        <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+                        <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-xs font-medium text-purple-300">
                           Combo
                         </span>
                       )}
                       {!service.active && (
-                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-500">
+                        <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs font-medium text-zinc-500">
                           Disattivato
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
+                    <div className="mt-1 flex items-center gap-4 text-sm text-zinc-500">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5" />
                         {service.duration_minutes} min
                       </span>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-zinc-100">
                         {formatPrice(service.price_cents)}
                       </span>
                     </div>
@@ -207,7 +207,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
                     <button
                       onClick={() => handleToggle(service.id, service.active)}
                       disabled={isPending}
-                      className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300"
                       title={service.active ? "Disattiva" : "Attiva"}
                     >
                       {service.active ? (
@@ -218,7 +218,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
                     </button>
                     <button
                       onClick={() => setEditingId(service.id)}
-                      className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300"
                       title="Modifica"
                     >
                       <Pencil className="h-4 w-4" />
@@ -226,7 +226,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
                     <button
                       onClick={() => handleDelete(service.id)}
                       disabled={isPending}
-                      className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                      className="rounded-lg p-2 text-zinc-600 hover:bg-red-950/50 hover:text-red-400"
                       title="Elimina"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -260,17 +260,17 @@ function ServiceForm({ onSubmit, isPending, submitLabel, defaultValues }: Servic
     <form action={onSubmit} className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Nome</label>
+          <label className="block text-sm font-medium text-zinc-300">Nome</label>
           <input
             name="name"
             required
             defaultValue={defaultValues?.name}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
             placeholder="Taglio uomo"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Durata (min)</label>
+          <label className="block text-sm font-medium text-zinc-300">Durata (min)</label>
           <input
             name="duration_minutes"
             type="number"
@@ -279,11 +279,11 @@ function ServiceForm({ onSubmit, isPending, submitLabel, defaultValues }: Servic
             step={5}
             defaultValue={defaultValues?.duration_minutes}
             placeholder="30"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Prezzo (€)</label>
+          <label className="block text-sm font-medium text-zinc-300">Prezzo (€)</label>
           <input
             name="price"
             type="number"
@@ -292,14 +292,14 @@ function ServiceForm({ onSubmit, isPending, submitLabel, defaultValues }: Servic
             step={0.5}
             defaultValue={defaultValues?.price}
             placeholder="15.00"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
           />
         </div>
       </div>
       <button
         type="submit"
         disabled={isPending}
-        className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+        className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
       >
         {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         {submitLabel}

@@ -1,0 +1,274 @@
+BARBEROS MVP — CONFIGURAZIONI E INFRASTRUTTURA
+
+Ultimo aggiornamento: 10 febbraio 2026
+
+---
+
+SUPABASE
+
+Project ID: wvxkxutaasrblbdmhsny
+URL: https://wvxkxutaasrblbdmhsny.supabase.co
+Regione: eu-central-1 (Francoforte)
+Organizzazione: Progetti futuri (jdipyszyiijpodyvllfi)
+Database: PostgreSQL 17.6
+Stato: ACTIVE_HEALTHY
+Costo: $10/mese
+
+Anon Key (pubblico): eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2eGt4dXRhYXNyYmxiZG1oc255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2MDA4ODUsImV4cCI6MjA4NjE3Njg4NX0.viUNH8welN0eRR2YrpZ86dFRSX6ETe3Mek4JhoHyD4A
+Publishable Key: sb_publishable_8IT94u1wPKgw-hNCJWAhug_FOuKNjIQ
+
+---
+
+VARIABILI D'AMBIENTE (.env.local)
+
+NEXT_PUBLIC_SUPABASE_URL=https://wvxkxutaasrblbdmhsny.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=[anon key sopra]
+DATABASE_URL=postgresql://postgres.[wvxkxutaasrblbdmhsny]:[PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+DIRECT_URL=postgresql://postgres.[wvxkxutaasrblbdmhsny]:[PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
+
+# Supabase Service Role Key (per webhook e operazioni admin — NON esporre lato client)
+SUPABASE_SERVICE_ROLE_KEY=[service role key da Supabase Dashboard > Settings > API]
+
+# URL pubblica dell'app (per validazione webhook Twilio)
+NEXT_PUBLIC_APP_URL=https://localhost:3000
+
+# Twilio WhatsApp (opzionale — senza queste variabili i messaggi restano in mock)
+TWILIO_ACCOUNT_SID=[dal dashboard Twilio]
+TWILIO_AUTH_TOKEN=[dal dashboard Twilio]
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+
+# Stripe Billing
+STRIPE_SECRET_KEY=[da https://dashboard.stripe.com/apikeys → Secret key]
+STRIPE_WEBHOOK_SECRET=[da https://dashboard.stripe.com/webhooks → Signing Secret — richiede dominio]
+STRIPE_PRICE_ESSENTIAL=[creato da scripts/setup-stripe.ts]
+STRIPE_PRICE_PROFESSIONAL=[creato da scripts/setup-stripe.ts]
+
+Nota: la password del database va recuperata dalla Supabase Dashboard > Settings > Database.
+Nota: SUPABASE_SERVICE_ROLE_KEY è server-only, usata dai webhook per bypassare RLS.
+Nota: Se le variabili TWILIO_* non sono configurate, i messaggi vengono solo loggati in console (mock mode).
+Nota: STRIPE_SECRET_KEY è server-only (sk_live_..., NON pk_live_...).
+Nota: Per creare i prezzi ricorrenti: npx tsx scripts/setup-stripe.ts
+Nota: STRIPE_WEBHOOK_SECRET non configurabile finché non c'è un dominio pubblico.
+
+---
+
+DIPENDENZE INSTALLATE (package.json)
+
+Runtime:
+- next 16.1.6
+- react 19.2.3
+- react-dom 19.2.3
+
+Database e Auth:
+- @supabase/supabase-js ^2.95.3
+- @supabase/ssr ^0.8.0
+- drizzle-orm ^0.45.1
+- postgres ^3.4.8
+- zod ^4.3.6
+
+UI:
+- tailwindcss ^4
+- lucide-react ^0.563.0
+- class-variance-authority ^0.7.1
+- clsx ^2.1.1
+- tailwind-merge ^3.4.0
+
+WhatsApp:
+- twilio ^5.12.1
+
+Pagamenti:
+- stripe 20.3.1
+
+Utility:
+- date-fns ^4.1.0
+
+Dev:
+- typescript ^5
+- @biomejs/biome ^2.3.14
+- drizzle-kit ^0.31.8
+- @tailwindcss/postcss ^4
+- babel-plugin-react-compiler 1.0.0
+
+---
+
+SCRIPTS (pnpm)
+
+pnpm dev           → Dev server con Turbopack (porta 3000)
+pnpm build         → Build di produzione
+pnpm start         → Server di produzione
+pnpm lint          → Lint con Biome
+pnpm lint:fix      → Auto-fix lint
+pnpm format        → Formattazione con Biome
+pnpm typecheck     → Type check TypeScript (tsc --noEmit)
+pnpm db:generate   → Genera migrazioni Drizzle
+pnpm db:push       → Push schema a Supabase
+pnpm db:studio     → UI studio Drizzle
+
+---
+
+DATABASE — SCHEMA COMPLETO
+
+Enums (6):
+- appointment_status: booked, confirmed, completed, cancelled, no_show
+- appointment_source: online, walk_in, manual, waitlist
+- waitlist_status: waiting, notified, converted, expired
+- message_type: confirmation, confirm_request, confirm_reminder, pre_appointment, cancellation, review_request, reactivation, waitlist_notify
+- message_status: queued, sent, delivered, read, failed
+- subscription_status: active, past_due, cancelled, trialing, incomplete
+
+Tabelle (10):
+
+1. businesses
+   - id (uuid PK), owner_id (uuid, auth.uid), name, slug (unique), address, phone, logo_url, google_review_link, opening_hours (jsonb), brand_colors (jsonb), timezone (default Europe/Rome), stripe_customer_id, subscription_status (default trialing), dormant_threshold_days (default 28), no_show_threshold (default 2), created_at, updated_at
+
+2. staff
+   - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), name, photo_url, working_hours (jsonb), active (default true), sort_order (default 0), created_at, updated_at
+   - Index: staff_business_id_idx
+
+3. services
+   - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), name, duration_minutes (int), price_cents (int), is_combo (default false), combo_service_ids (uuid[]), display_order (default 0), active (default true), created_at, updated_at
+   - Index: services_business_id_idx
+
+4. staff_services (tabella ponte many-to-many)
+   - staff_id (FK → staff ON DELETE CASCADE), service_id (FK → services ON DELETE CASCADE)
+   - Unique index: staff_services_pk(staff_id, service_id)
+
+5. clients
+   - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), first_name, last_name, phone, email, notes, tags (text[]), no_show_count (default 0), total_visits (default 0), last_visit_at, created_at, updated_at
+   - Unique index: clients_business_phone_idx(business_id, phone)
+   - Index: clients_business_id_idx
+
+6. appointments
+   - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), client_id (FK → clients ON DELETE SET NULL), staff_id (FK → staff ON DELETE SET NULL), service_id (FK → services ON DELETE SET NULL), date, start_time, end_time, status (default booked), source (default online), cancelled_at, created_at, updated_at
+   - Index: appointments_business_date_idx, appointments_staff_date_idx
+
+7. waitlist
+   - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), client_id (FK → clients ON DELETE CASCADE), service_id (FK → services ON DELETE SET NULL), desired_date, desired_start_time, desired_end_time, status (default waiting), notified_at, created_at
+   - Index: waitlist_business_date_idx
+
+8. messages
+   - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), client_id (FK → clients ON DELETE SET NULL), appointment_id (FK → appointments ON DELETE SET NULL), type, whatsapp_message_id, status (default queued), scheduled_for, sent_at, created_at
+   - Index: messages_scheduled_status_idx, messages_business_id_idx
+
+9. message_templates
+   - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), type, body_template, active (default true), created_at, updated_at
+   - Unique index: message_templates_business_type_idx(business_id, type)
+
+10. analytics_daily
+    - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), date, total_revenue_cents (default 0), appointments_completed (default 0), appointments_cancelled (default 0), appointments_no_show (default 0), new_clients (default 0), returning_clients (default 0), created_at
+    - Unique index: analytics_daily_business_date_idx(business_id, date)
+
+---
+
+RLS POLICIES
+
+Ogni tabella ha RLS abilitato. Struttura per ogni tabella:
+- SELECT/INSERT/UPDATE/DELETE filtrati per business_id dell'utente autenticato
+- Funzione helper: get_user_business_id() restituisce l'id della business dell'utente corrente
+- businesses, staff, services, staff_services: hanno anche policy SELECT pubbliche per il booking
+- clients, appointments: hanno policy INSERT pubbliche per il booking anonimo (ristrette a business_id validi)
+
+Funzioni DB:
+- get_user_business_id() — STABLE, SECURITY DEFINER, search_path = public
+- handle_new_user() — Trigger AFTER INSERT su auth.users, crea automaticamente una riga in businesses
+
+---
+
+MIGRAZIONI APPLICATE
+
+1. create_enums_and_tables — Schema iniziale completo (10 tabelle, 6 enums, tutti gli indici)
+2. enable_rls_and_policies — RLS su tutte le tabelle + policy per owner e booking pubblico
+3. auto_create_business_on_signup — Trigger auto-business + policy anon booking
+4. fix_security_advisors — Fix search_path su get_user_business_id + tightening policy anon
+5. enable_pg_cron_and_pg_net — Abilita pg_cron v1.6.4 e pg_net v0.19.5
+6. create_cron_helper_functions — 4 SQL helper functions (vecchio sistema reminder)
+7. setup_cron_schedules — 5 pg_cron schedules (vecchio sistema reminder)
+8. smart_confirmation_cleanup — Aggiunge enum confirm_request/confirm_reminder/pre_appointment, rimuove vecchi cron (auto-noshow, reminder-24h, reminder-2h), drop vecchie functions
+9. smart_confirmation_functions — 4 nuove SQL functions (find_appointments_needing_confirm_request, find_appointments_needing_confirm_reminder, auto_cancel_unconfirmed, find_confirmed_needing_pre_reminder)
+10. smart_confirmation_cron_schedules — 4 nuovi pg_cron schedules (confirmation-request, confirmation-reminder, auto-cancel, pre-appointment)
+11. analytics_daily_function — Funzione SQL calculate_analytics_daily(target_date) con UPSERT per calcolo metriche giornaliere
+12. analytics_daily_cron — pg_cron schedule analytics-daily-calc alle 02:05 UTC (03:05 Roma), calcola giorno precedente
+13. business_closures_table — Tabella business_closures (id, business_id, date, reason) con RLS + policy owner
+
+---
+
+POSTGRESQL EXTENSIONS ABILITATE
+
+- pgcrypto v1.3 (schema extensions) — funzioni crittografiche
+- pg_stat_statements v1.11 (schema extensions) — statistiche query
+- uuid-ossp v1.1 (schema extensions) — generazione UUID
+- pg_graphql v1.5.11 (schema graphql) — GraphQL support
+- supabase_vault v0.3.1 (schema vault) — gestione secrets
+- pg_cron v1.6.4 (schema pg_catalog) — job scheduler
+- pg_net v0.19.5 (schema extensions) — HTTP async da SQL
+
+---
+
+SUPABASE EDGE FUNCTIONS
+
+6 Edge Functions attive per sistema conferma intelligente + automazioni.
+Runtime: Deno (Supabase Edge Runtime)
+Env vars auto-disponibili: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+
+Per abilitare WhatsApp reale, aggiungere questi secrets alle Edge Functions
+(Supabase Dashboard > Edge Functions > Secrets):
+- TWILIO_ACCOUNT_SID
+- TWILIO_AUTH_TOKEN
+- TWILIO_WHATSAPP_FROM (es. whatsapp:+14155238886)
+
+Senza queste variabili → mock mode (console.log).
+
+Sistema Conferma Intelligente (4 Edge Functions):
+| Nome | Schedule | Cosa fa |
+|------|----------|---------|
+| confirmation-request | */30 * * * * | Richiesta conferma (timing smart basato su orario) |
+| confirmation-reminder | */30 * * * * | Secondo avviso se non ha risposto |
+| auto-cancel | */30 * * * * | Cancella non confermati alla deadline + notifica waitlist |
+| pre-appointment | */30 * * * * | "Ci vediamo!" ~2h prima (solo confermati) |
+
+Automazioni aggiuntive (2 Edge Functions):
+| Nome | Schedule | Cosa fa |
+|------|----------|---------|
+| review-request | 15 * * * * (ogni ora :15) | Richiesta recensione Google post-completamento |
+| reactivation | 0 10 * * * (11:00 Roma) | Riattivazione clienti dormienti |
+
+Timing smart conferma:
+| Orario appuntamento | 1ª richiesta | 2° reminder | Deadline auto-cancel |
+|---------------------|--------------|-------------|----------------------|
+| Pomeriggio (≥14:00) | Sera prima 20:00 | Mattina 08:00 | Ore 12:00 |
+| Tarda mattina (10-14) | Sera prima 20:00 | Mattina 07:30 | Ore 09:00 |
+| Mattina presto (<10) | Giorno prima 12:00 | Sera prima 20:00 | Sera prima 22:00 |
+
+Comandi WhatsApp (webhook /api/whatsapp/webhook):
+| Comando | Azione |
+|---------|--------|
+| CONFERMA | booked → confirmed, risposta "Ci vediamo presto!" |
+| CANCELLA / ANNULLA | Cancella appuntamento, notifica waitlist |
+| CAMBIA ORARIO | Invia link prenotazione |
+| SI / SÌ | Conferma dalla waitlist |
+| Altro | Risposta con lista comandi disponibili |
+
+Comandi utili per debug:
+- Verificare cron jobs: SELECT jobid, jobname, schedule FROM cron.job;
+- Log esecuzioni: SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 20;
+- Testare Edge Function: curl https://wvxkxutaasrblbdmhsny.supabase.co/functions/v1/confirmation-request
+- Log Edge Functions: Supabase Dashboard > Edge Functions > Logs
+
+---
+
+HOSTING (non ancora configurato)
+
+Previsto:
+- Vercel per frontend, Server Actions, middleware
+- Supabase Cloud per database, auth, realtime, edge functions (già attivo)
+- Cloudflare per DNS e CDN (da configurare)
+- Dominio: da acquistare
+
+---
+
+SERVIZI ESTERNI
+
+- WhatsApp API: integrazione Twilio completata (dual-mode: live o mock). Webhook pronto su /api/whatsapp/webhook. Serve configurare credenziali Twilio per invio reale.
+- Stripe: integrazione completata. 3 piani: Essential €300/mese (prod_TwyoUI0JLvWcj3), Professional €500/mese (prod_TwypWo5jLd3doz), Enterprise custom (prod_TwyphvT1F82GrB). Trial 30gg. Webhook su /api/stripe/webhook (da configurare con dominio). Customer Portal per self-service.
+- Sentry: non configurato (monitoring errori).
+- Vercel Analytics: non configurato.

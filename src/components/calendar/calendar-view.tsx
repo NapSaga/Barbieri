@@ -145,14 +145,14 @@ export function CalendarView({
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <CalendarIcon className="h-7 w-7 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Calendario</h1>
+          <CalendarIcon className="h-7 w-7 text-zinc-300" />
+          <h1 className="text-2xl font-bold text-zinc-100">Calendario</h1>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setWalkInOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
+            className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200"
           >
             <Plus className="h-4 w-4" />
             Walk-in
@@ -161,17 +161,17 @@ export function CalendarView({
       </div>
 
       {/* Navigation bar */}
-      <div className="flex flex-col gap-3 rounded-xl bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl bg-zinc-900 p-3 shadow-md shadow-black/20 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
-            className="rounded-lg p-2 hover:bg-gray-100"
+            className="rounded-lg p-2 hover:bg-zinc-800"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             onClick={() => navigate(1)}
-            className="rounded-lg p-2 hover:bg-gray-100"
+            className="rounded-lg p-2 hover:bg-zinc-800"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -180,30 +180,30 @@ export function CalendarView({
             className={cn(
               "rounded-lg px-3 py-1.5 text-sm font-medium",
               isToday
-                ? "bg-blue-50 text-blue-700"
-                : "text-gray-700 hover:bg-gray-100",
+                ? "bg-zinc-800 text-white"
+                : "text-zinc-300 hover:bg-zinc-800",
             )}
           >
             Oggi
           </button>
-          <h2 className="ml-2 text-sm font-semibold text-gray-900 sm:text-base">
+          <h2 className="ml-2 text-sm font-semibold text-zinc-100 sm:text-base">
             {viewMode === "day"
               ? formatDateHeader(currentDate)
               : formatWeekHeader(weekStart, weekEnd)}
           </h2>
           {isPending && (
-            <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="ml-2 h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-transparent" />
           )}
         </div>
 
-        <div className="flex rounded-lg bg-gray-100 p-0.5">
+        <div className="flex rounded-lg bg-zinc-800 p-0.5">
           <button
             onClick={() => switchView("day")}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               viewMode === "day"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900",
+                ? "bg-zinc-700 text-white shadow-sm"
+                : "text-zinc-500 hover:text-zinc-200",
             )}
           >
             <CalendarIcon className="h-4 w-4" />
@@ -214,8 +214,8 @@ export function CalendarView({
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               viewMode === "week"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900",
+                ? "bg-zinc-700 text-white shadow-sm"
+                : "text-zinc-500 hover:text-zinc-200",
             )}
           >
             <CalendarDays className="h-4 w-4" />
@@ -226,14 +226,14 @@ export function CalendarView({
 
       {/* Closure banner */}
       {viewMode === "day" && closureDates.includes(toISODate(currentDate)) && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
-          <CalendarOff className="h-5 w-5 shrink-0 text-orange-500" />
+        <div className="flex items-center gap-2.5 rounded-xl border border-orange-800/50 bg-orange-950/30 px-4 py-3 text-sm text-orange-400">
+          <CalendarOff className="h-5 w-5 shrink-0 text-orange-400" />
           <span className="font-medium">Chiusura straordinaria — la barberia è chiusa in questa data.</span>
         </div>
       )}
 
       {/* Calendar grid */}
-      <div className="rounded-xl bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl bg-zinc-900 shadow-md shadow-black/20 overflow-hidden">
         {viewMode === "day" ? (
           <DayView
             date={currentDate}

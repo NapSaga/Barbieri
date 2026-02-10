@@ -129,8 +129,8 @@ export function SettingsManager({ business, initialTemplates, whatsappEnabled, i
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Settings className="h-7 w-7 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Impostazioni</h1>
+        <Settings className="h-7 w-7 text-zinc-300" />
+        <h1 className="text-2xl font-bold text-zinc-100">Impostazioni</h1>
       </div>
 
       <div className="space-y-3">
@@ -246,28 +246,28 @@ function SettingsSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+        className="flex w-full items-center justify-between p-4 text-left hover:bg-zinc-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800 text-zinc-300">
             {icon}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-500">{description}</p>
+            <h3 className="font-semibold text-zinc-100">{title}</h3>
+            <p className="text-sm text-zinc-500">{description}</p>
           </div>
         </div>
         {isOpen ? (
-          <ChevronUp className="h-5 w-5 text-gray-400" />
+          <ChevronUp className="h-5 w-5 text-zinc-600" />
         ) : (
-          <ChevronDown className="h-5 w-5 text-gray-400" />
+          <ChevronDown className="h-5 w-5 text-zinc-600" />
         )}
       </button>
-      {isOpen && <div className="border-t border-gray-100 p-4">{children}</div>}
+      {isOpen && <div className="border-t border-zinc-800 p-4">{children}</div>}
     </div>
   );
 }
@@ -287,7 +287,7 @@ function SaveButton({
     <button
       type="submit"
       disabled={isPending}
-      className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+      className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
     >
       {isPending ? (
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -333,54 +333,54 @@ function BusinessInfoForm({ business }: { business: BusinessData }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Nome barberia</label>
+          <label className="block text-sm font-medium text-zinc-300">Nome barberia</label>
           <input
             name="name"
             required
             defaultValue={business.name}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Telefono</label>
+          <label className="block text-sm font-medium text-zinc-300">Telefono</label>
           <input
             name="phone"
             type="tel"
             defaultValue={business.phone || ""}
             placeholder="+39 333 1234567"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
           />
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Indirizzo</label>
+        <label className="block text-sm font-medium text-zinc-300">Indirizzo</label>
         <input
           name="address"
           defaultValue={business.address || ""}
           placeholder="Via Roma 1, 20100 Milano"
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Link recensione Google</label>
+        <label className="block text-sm font-medium text-zinc-300">Link recensione Google</label>
         <input
           name="google_review_link"
           type="url"
           defaultValue={business.google_review_link || ""}
           placeholder="https://g.page/r/..."
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
         />
-        <p className="mt-1 text-xs text-gray-400">
+        <p className="mt-1 text-xs text-zinc-500">
           Cerca la tua attività su Google Maps → Condividi → Copia link recensione
         </p>
       </div>
 
-      <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
+      <div className="rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-500">
         <span className="font-medium">Slug prenotazione:</span>{" "}
-        <code className="rounded bg-gray-200 px-1.5 py-0.5 text-blue-700">/book/{business.slug}</code>
+        <code className="rounded bg-zinc-700 px-1.5 py-0.5 text-zinc-300">/book/{business.slug}</code>
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {error && <div className="rounded-lg bg-red-950/50 p-3 text-sm text-red-400">{error}</div>}
 
       <SaveButton isPending={isPending} saved={saved} />
     </form>
@@ -435,15 +435,15 @@ function OpeningHoursForm({
       <div className="space-y-2">
         {DAY_ORDER.map((day) => (
           <div key={day} className="flex items-center gap-3 text-sm">
-            <span className="w-24 shrink-0 font-medium text-gray-700">{DAY_LABELS[day]}</span>
+            <span className="w-24 shrink-0 font-medium text-zinc-300">{DAY_LABELS[day]}</span>
             <label className="flex items-center gap-1.5 cursor-pointer">
               <input
                 type="checkbox"
                 checked={!hours[day].closed}
                 onChange={(e) => updateDay(day, "closed", !e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-zinc-600 text-zinc-300 focus:ring-zinc-500"
               />
-              <span className="text-xs text-gray-500 w-12">
+              <span className="text-xs text-zinc-500 w-12">
                 {hours[day].closed ? "Chiuso" : "Aperto"}
               </span>
             </label>
@@ -453,14 +453,14 @@ function OpeningHoursForm({
                   type="time"
                   value={hours[day].open}
                   onChange={(e) => updateDay(day, "open", e.target.value)}
-                  className="rounded border border-gray-200 px-2 py-1 text-xs"
+                  className="rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1 text-xs"
                 />
-                <span className="text-gray-400">—</span>
+                <span className="text-zinc-600">—</span>
                 <input
                   type="time"
                   value={hours[day].close}
                   onChange={(e) => updateDay(day, "close", e.target.value)}
-                  className="rounded border border-gray-200 px-2 py-1 text-xs"
+                  className="rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1 text-xs"
                 />
               </>
             )}
@@ -468,13 +468,13 @@ function OpeningHoursForm({
         ))}
       </div>
 
-      <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+      <div className="mt-3 rounded-lg bg-amber-950/30 px-3 py-2 text-xs text-amber-300">
         <Info className="mr-1 inline h-3.5 w-3.5" />
         Questi orari determinano gli slot disponibili nella pagina di prenotazione pubblica.
         Gli orari dei singoli barbieri sono configurabili dalla sezione Staff.
       </div>
 
-      {error && <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {error && <div className="mt-3 rounded-lg bg-red-950/50 p-3 text-sm text-red-400">{error}</div>}
 
       <div className="mt-4">
         <SaveButton isPending={isPending} saved={saved} label="Salva orari" />
@@ -505,35 +505,35 @@ function MessageTemplatesForm({
 
   return (
     <div>
-      <div className="mb-3 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
+      <div className="mb-3 rounded-lg bg-zinc-800 px-3 py-2 text-xs text-zinc-300">
         <Info className="mr-1 inline h-3.5 w-3.5" />
         Variabili disponibili:{" "}
         {Object.entries(TEMPLATE_VARIABLES).map(([key, desc]) => (
           <span key={key} className="inline-block mr-2" title={desc}>
-            <code className="rounded bg-blue-100 px-1 py-0.5">{key}</code>
+            <code className="rounded bg-zinc-700 px-1 py-0.5">{key}</code>
           </span>
         ))}
       </div>
 
       <div className="space-y-2">
         {TEMPLATE_TYPES.map((type) => (
-          <div key={type} className="rounded-lg border border-gray-200 overflow-hidden">
+          <div key={type} className="rounded-lg border border-zinc-800 overflow-hidden">
             <div className="flex items-center justify-between p-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-medium text-gray-900">{TEMPLATE_LABELS[type]}</h4>
+                  <h4 className="text-sm font-medium text-zinc-100">{TEMPLATE_LABELS[type]}</h4>
                   {!isTemplateActive(type) && (
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                    <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-500">
                       Disattivato
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">{TEMPLATE_DESCRIPTIONS[type]}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{TEMPLATE_DESCRIPTIONS[type]}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingType(editingType === type ? null : type)}
-                className="ml-3 shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                className="ml-3 shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
               >
                 {editingType === type ? "Chiudi" : "Modifica"}
               </button>
@@ -599,12 +599,12 @@ function TemplateEditor({
   }
 
   return (
-    <div className="border-t border-gray-100 p-3 bg-gray-50">
+    <div className="border-t border-zinc-800 p-3 bg-zinc-800/30">
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={3}
-        className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
       />
 
       <div className="mt-3 flex items-center justify-between">
@@ -613,7 +613,7 @@ function TemplateEditor({
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
           >
             {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
             Salva template
@@ -621,7 +621,7 @@ function TemplateEditor({
           <button
             type="button"
             onClick={handleReset}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-200"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-800"
           >
             Ripristina default
           </button>
@@ -630,7 +630,7 @@ function TemplateEditor({
         <button
           type="button"
           onClick={() => setActive(!active)}
-          className="flex items-center gap-1.5 text-xs text-gray-500"
+          className="flex items-center gap-1.5 text-xs text-zinc-500"
         >
           {active ? (
             <ToggleRight className="h-5 w-5 text-emerald-500" />
@@ -641,7 +641,7 @@ function TemplateEditor({
         </button>
       </div>
 
-      {error && <div className="mt-2 rounded-lg bg-red-50 p-2 text-xs text-red-600">{error}</div>}
+      {error && <div className="mt-2 rounded-lg bg-red-950/50 p-2 text-xs text-red-400">{error}</div>}
     </div>
   );
 }
@@ -655,32 +655,32 @@ function GoogleReviewInfo({ business }: { business: BusinessData }) {
     <div>
       {hasLink ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
+          <div className="flex items-center gap-2 rounded-lg bg-emerald-950/30 p-3 text-sm text-emerald-300">
             <Check className="h-4 w-4" />
             Link Google Review configurato
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-zinc-400">
             Dopo ogni appuntamento completato, il sistema invierà automaticamente un messaggio
             WhatsApp con il link alla tua recensione Google (max 1 ogni 30 giorni per cliente).
           </p>
-          <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500 break-all">
+          <div className="rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-500 break-all">
             {business.google_review_link}
           </div>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-zinc-500">
             Puoi modificare il link dalla sezione &quot;Dati barberia&quot; sopra.
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+          <div className="flex items-center gap-2 rounded-lg bg-amber-950/30 p-3 text-sm text-amber-300">
             <Info className="h-4 w-4" />
             Link Google Review non configurato
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-zinc-400">
             Per attivare le richieste automatiche di recensione, aggiungi il link dalla sezione
             &quot;Dati barberia&quot;.
           </p>
-          <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
+          <div className="rounded-lg bg-zinc-800/50 p-3 text-xs text-zinc-400">
             <p className="font-medium mb-1">Come trovare il link:</p>
             <ol className="list-decimal list-inside space-y-1">
               <li>Cerca la tua barberia su Google Maps</li>
@@ -724,10 +724,10 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-zinc-300">
           Soglia cliente dormiente (giorni)
         </label>
-        <p className="text-xs text-gray-500 mb-1">
+        <p className="text-xs text-zinc-500 mb-1">
           Dopo quanti giorni senza prenotazione inviare il messaggio di riattivazione
         </p>
         <input
@@ -739,15 +739,15 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
             setDormantDays(Number(e.target.value));
             setSaved(false);
           }}
-          className="mt-1 block w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-32 rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-zinc-300">
           Soglia no-show (numero)
         </label>
-        <p className="text-xs text-gray-500 mb-1">
+        <p className="text-xs text-zinc-500 mb-1">
           Dopo quanti no-show il cliente viene flaggato come &quot;alto rischio&quot;
         </p>
         <input
@@ -759,11 +759,11 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
             setNoShowThreshold(Number(e.target.value));
             setSaved(false);
           }}
-          className="mt-1 block w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mt-1 block w-32 rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
         />
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {error && <div className="rounded-lg bg-red-950/50 p-3 text-sm text-red-400">{error}</div>}
 
       <SaveButton isPending={isPending} saved={saved} />
     </form>
@@ -776,29 +776,29 @@ function WhatsAppStatusSection({ enabled }: { enabled: boolean }) {
   if (enabled) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
+        <div className="flex items-center gap-2 rounded-lg bg-emerald-950/30 p-3 text-sm text-emerald-300">
           <CheckCircle className="h-4 w-4 shrink-0" />
           <div>
             <span className="font-medium">WhatsApp attivo</span> — I messaggi vengono inviati ai clienti tramite Twilio.
           </div>
         </div>
 
-        <div className="text-sm text-gray-600 space-y-2">
+        <div className="text-sm text-zinc-400 space-y-2">
           <p>
             I messaggi automatici (conferma, reminder, recensioni, riattivazione) sono attivi
             e verranno inviati ai clienti secondo i template configurati nella sezione
             &quot;Messaggi WhatsApp&quot;.
           </p>
           <p>
-            I clienti possono rispondere <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium">ANNULLA</code> per
-            cancellare un appuntamento, o <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium">SI</code> per
+            I clienti possono rispondere <code className="rounded bg-zinc-700 px-1.5 py-0.5 text-xs font-medium">ANNULLA</code> per
+            cancellare un appuntamento, o <code className="rounded bg-zinc-700 px-1.5 py-0.5 text-xs font-medium">SI</code> per
             confermare dalla lista d&apos;attesa.
           </p>
         </div>
 
-        <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">
+        <div className="rounded-lg bg-zinc-800/50 p-3 text-xs text-zinc-500">
           <p className="font-medium mb-1">Webhook configurato su:</p>
-          <code className="text-blue-700">{`{tuodominio}/api/whatsapp/webhook`}</code>
+          <code className="text-zinc-300">{`{tuodominio}/api/whatsapp/webhook`}</code>
         </div>
       </div>
     );
@@ -806,14 +806,14 @@ function WhatsAppStatusSection({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+      <div className="flex items-center gap-2 rounded-lg bg-amber-950/30 p-3 text-sm text-amber-300">
         <AlertCircle className="h-4 w-4 shrink-0" />
         <div>
           <span className="font-medium">Modalità test</span> — I messaggi vengono solo registrati nel log, non inviati ai clienti.
         </div>
       </div>
 
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-zinc-400">
         <p>
           Per attivare l&apos;invio reale di messaggi WhatsApp, serve configurare un account Twilio
           con WhatsApp Business API. Nessuna azione richiesta da parte tua — il tuo sviluppatore
@@ -821,19 +821,19 @@ function WhatsAppStatusSection({ enabled }: { enabled: boolean }) {
         </p>
       </div>
 
-      <div className="rounded-lg border border-gray-200 p-3 text-xs text-gray-600">
+      <div className="rounded-lg border border-zinc-800 p-3 text-xs text-zinc-400">
         <p className="font-medium mb-2">Guida setup per sviluppatore:</p>
         <ol className="list-decimal list-inside space-y-1.5">
           <li>
             Crea account su{" "}
-            <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-0.5">
+            <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:underline inline-flex items-center gap-0.5">
               twilio.com <ExternalLink className="h-3 w-3" />
             </a>
           </li>
           <li>Abilita WhatsApp Sandbox per testing</li>
           <li>
             Aggiungi le variabili d&apos;ambiente:
-            <div className="mt-1 ml-4 space-y-0.5 font-mono text-[11px] text-gray-500">
+            <div className="mt-1 ml-4 space-y-0.5 font-mono text-[11px] text-zinc-500">
               <div>TWILIO_ACCOUNT_SID</div>
               <div>TWILIO_AUTH_TOKEN</div>
               <div>TWILIO_WHATSAPP_FROM</div>
@@ -842,7 +842,7 @@ function WhatsAppStatusSection({ enabled }: { enabled: boolean }) {
           </li>
           <li>
             Configura il webhook URL nella console Twilio:
-            <div className="mt-1 ml-4 font-mono text-[11px] text-blue-700">
+            <div className="mt-1 ml-4 font-mono text-[11px] text-zinc-300">
               POST https://tuodominio.com/api/whatsapp/webhook
             </div>
           </li>
@@ -905,29 +905,29 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
       {/* Add new closure */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Data</label>
+          <label className="block text-xs font-medium text-zinc-400 mb-1">Data</label>
           <input
             type="date"
             value={newDate}
             min={today}
             onChange={(e) => setNewDate(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Motivo (opzionale)</label>
+          <label className="block text-xs font-medium text-zinc-400 mb-1">Motivo (opzionale)</label>
           <input
             type="text"
             value={newReason}
             onChange={(e) => setNewReason(e.target.value)}
             placeholder="Es. Ferie, Festivo..."
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
           />
         </div>
         <button
           onClick={handleAdd}
           disabled={!newDate || isPending}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
           Aggiungi
@@ -939,17 +939,17 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
       {/* Future closures */}
       {futureClosures.length > 0 ? (
         <div className="space-y-1.5">
-          <h4 className="text-xs font-semibold uppercase text-gray-400">Prossime chiusure</h4>
+          <h4 className="text-xs font-semibold uppercase text-zinc-600">Prossime chiusure</h4>
           {futureClosures.map((c) => (
-            <div key={c.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+            <div key={c.id} className="flex items-center justify-between rounded-lg border border-zinc-800 px-3 py-2">
               <div>
-                <span className="text-sm font-medium text-gray-900">{formatDate(c.date)}</span>
-                {c.reason && <span className="ml-2 text-xs text-gray-500">— {c.reason}</span>}
+                <span className="text-sm font-medium text-zinc-100">{formatDate(c.date)}</span>
+                {c.reason && <span className="ml-2 text-xs text-zinc-500">— {c.reason}</span>}
               </div>
               <button
                 onClick={() => handleRemove(c.id)}
                 disabled={deletingId === c.id}
-                className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                className="rounded-md p-1.5 text-zinc-600 hover:bg-red-950/50 hover:text-red-400 disabled:opacity-50"
               >
                 {deletingId === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               </button>
@@ -957,16 +957,16 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-400">Nessuna chiusura programmata.</p>
+        <p className="text-sm text-zinc-600">Nessuna chiusura programmata.</p>
       )}
 
       {/* Past closures (collapsed) */}
       {pastClosures.length > 0 && (
-        <details className="text-xs text-gray-400">
-          <summary className="cursor-pointer hover:text-gray-600">{pastClosures.length} chiusure passate</summary>
+        <details className="text-xs text-zinc-600">
+          <summary className="cursor-pointer hover:text-zinc-400">{pastClosures.length} chiusure passate</summary>
           <div className="mt-2 space-y-1">
             {pastClosures.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 text-gray-400">
+              <div key={c.id} className="flex items-center gap-2 text-zinc-600">
                 <span>{formatDate(c.date)}</span>
                 {c.reason && <span>— {c.reason}</span>}
               </div>

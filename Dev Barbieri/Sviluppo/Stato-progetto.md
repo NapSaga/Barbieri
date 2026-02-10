@@ -1,0 +1,334 @@
+BARBEROS MVP — STATO DEL PROGETTO
+
+Ultimo aggiornamento: 10 febbraio 2026
+
+---
+
+FASE A — COMPLETATA ✅
+
+Infrastruttura, database, autenticazione, layout base.
+
+1. Progetto Supabase creato via MCP
+   - Project ID: wvxkxutaasrblbdmhsny
+   - Regione: eu-central-1 (Francoforte)
+   - Organizzazione: Progetti futuri
+   - Database: PostgreSQL 17.6
+   - Stato: ACTIVE_HEALTHY
+   - Costo: $10/mese
+
+2. Scaffold Next.js
+   - Next.js 16.1.6 con App Router e Turbopack
+   - React 19.2.3 con React Compiler
+   - TypeScript 5.9.3 in strict mode
+   - Tailwind CSS v4.1.18
+   - Biome 2.3.14 (sostituto di ESLint + Prettier)
+   - pnpm 10.29.2 come package manager
+
+3. Database migrato
+   - 10 tabelle create con tutti gli enums, indici e foreign keys
+   - RLS abilitato su ogni tabella con policy per isolamento business_id
+   - Funzione helper get_user_business_id() con search_path fissato
+   - Trigger on_auth_user_created per auto-creazione business alla registrazione
+   - Policy pubbliche per booking anonimo (clients + appointments INSERT)
+   - Security advisors risolti (3 warning → 0)
+
+4. Autenticazione Supabase
+   - Login con email + password
+   - Login con magic link via email
+   - Callback route per OAuth/magic link
+   - Middleware Next.js per protezione route (redirect a /login se non autenticato)
+   - Sessione persistente con JWT refresh automatico
+
+5. Layout dashboard
+   - Sidebar responsive con navigazione a 7 sezioni
+   - Mobile: hamburger menu con overlay
+   - Desktop: sidebar fissa 256px
+   - Logout con invalidazione sessione
+
+---
+
+FASE B — COMPLETATA ✅
+
+Calendario interattivo, CRUD servizi, CRUD staff, CRM clienti.
+
+1. Calendario interattivo (/dashboard)
+   - Vista giornaliera: timeline oraria (07:00-21:00) con colonne per barbiere
+   - Vista settimanale: griglia 7 giorni con card compatte
+   - Navigazione: prev/next giorno o settimana, bottone "Oggi", toggle Giorno/Settimana
+   - Appuntamenti posizionati come blocchi colorati nella timeline
+   - 5 stati con colori distinti: Prenotato (blu), Confermato (verde), Completato (grigio), Cancellato (rosso barrato), No-show (arancione)
+   - Current time indicator: linea rossa per l'ora corrente
+   - Walk-in dialog: form modale per aggiungere clienti walk-in (nome, telefono, servizio, barbiere, ora)
+   - Appointment sheet: pannello dettaglio con info cliente, servizio, prezzo, telefono cliccabile
+   - Azioni rapide: Conferma, Completato, No-show, Cancella (con aggiornamento stato e revalidazione)
+   - Data fetching server-side con Promise.all per appuntamenti + staff + servizi
+
+2. CRUD Servizi (/dashboard/services)
+   - Lista servizi con nome, durata (minuti), prezzo (€), badge combo/disattivato
+   - Creazione servizio: form inline con nome, durata, prezzo
+   - Modifica servizio: form inline con valori precompilati
+   - Toggle attiva/disattiva senza eliminare (soft disable)
+   - Eliminazione con conferma dialog
+   - Contatore servizi totali nell'header
+
+3. CRUD Staff (/dashboard/staff)
+   - Lista barbieri con avatar iniziale, stato attivo/disattivo
+   - Creazione barbiere con nome (orari di default precompilati: lun-ven 09:00-19:00, sab 09:00-17:00, dom chiuso)
+   - Modifica nome inline con salvataggio
+   - Editor orari di lavoro: pannello espandibile per ogni barbiere con 7 giorni, toggle aperto/chiuso, ora inizio e fine per ogni giorno
+   - Salvataggio orari separato con feedback "Salvato!"
+   - Toggle attiva/disattiva barbiere
+   - Eliminazione con conferma dialog e avviso appuntamenti
+
+4. CRM Clienti (/dashboard/clients)
+   - Lista clienti ordinata per ultima visita
+   - Ricerca per nome o telefono (filtro client-side istantaneo)
+   - Creazione manuale: nome, cognome, telefono, email, note
+   - Scheda cliente espandibile con:
+     - Stats: visite totali, no-show count, ultima visita, email
+     - Tag: VIP, Nuovo, Problematico, Alto rischio no-show (toggle click, salvati su DB)
+     - Note: textarea con salvataggio automatico on blur
+   - Badge alert arancione per clienti con 2+ no-show
+   - Contatore clienti totali nell'header
+   - Empty state differenziato per lista vuota vs ricerca senza risultati
+
+---
+
+FASE C — COMPLETATA ✅
+
+Automazioni WhatsApp, impostazioni, webhook, billing.
+
+1. Impostazioni barberia (/dashboard/settings) ✅
+   - Sezioni collassabili con icone (accordion pattern)
+   - Dati barberia: nome, indirizzo, telefono, link Google Review, slug prenotazione
+   - Orari di apertura: 7 giorni, toggle aperto/chiuso, ora apertura e chiusura
+   - Nota informativa: orari determinano slot disponibili nella pagina booking
+   - Sezione WhatsApp: stato connessione (live vs mock), guida setup per sviluppatore
+   - Template messaggi WhatsApp: 7 template personalizzabili con variabili ({{client_name}}, ecc.)
+   - Editor template: textarea, toggle attivo/disattivo, ripristina default, salva
+   - Recensioni Google: istruzioni per trovare il link, stato configurazione
+   - Regole automatiche: soglia cliente dormiente (giorni), soglia no-show (numero)
+   - Tutte le sezioni con SaveButton e feedback "Salvato!" temporaneo
+
+2. Integrazione WhatsApp Twilio ✅
+   - Modulo src/lib/whatsapp.ts: dual-mode (live Twilio vs mock console.log)
+   - isWhatsAppEnabled(): check automatico variabili ambiente
+   - sendWhatsAppMessage(): normalizzazione numeri (whatsapp:+...), error handling
+   - renderTemplate(): sostituzione variabili {{...}} nei template
+   - Se TWILIO_ACCOUNT_SID/AUTH_TOKEN/WHATSAPP_FROM configurate → invio reale
+   - Altrimenti → mock con log dettagliato in console (sviluppo locale)
+
+3. Template messaggi (src/lib/templates.ts) ✅
+   - 7 tipi: confirmation, reminder_24h, reminder_2h, cancellation, review_request, reactivation, waitlist_notify
+   - Testi italiani con variabili placeholder
+   - DEFAULT_TEMPLATES, TEMPLATE_LABELS, TEMPLATE_DESCRIPTIONS
+   - Personalizzabili dal barbiere tramite UI settings
+   - Salvati su DB (message_templates) con upsert per business
+
+4. Webhook WhatsApp (/api/whatsapp/webhook) ✅
+   - Endpoint POST per messaggi in ingresso da Twilio
+   - Validazione firma Twilio in produzione (x-twilio-signature)
+   - Supabase admin client (bypassa RLS con service role key)
+   - Comando "ANNULLA": trova cliente per telefono → cancella prossimo appuntamento → notifica waitlist
+   - Comando "SI"/"SÌ": conferma prenotazione dalla waitlist → crea appuntamento → aggiorna waitlist
+   - Notifica waitlist automatica: su cancellazione, notifica primo in coda con messaggio WhatsApp
+   - Risposta TwiML vuota per evitare loop
+
+5. Server Actions business.ts (refactored) ✅
+   - getCurrentBusiness(): fetch dati barberia dell'utente autenticato
+   - updateBusinessInfo(): aggiorna nome, indirizzo, telefono, link Google
+   - updateBusinessOpeningHours(): aggiorna orari apertura (jsonb)
+   - updateBusinessThresholds(): aggiorna soglie dormiente e no-show
+   - getMessageTemplates(): fetch template personalizzati per business
+   - upsertMessageTemplate(): crea o aggiorna template messaggio per tipo
+
+6. Bug fix sessione precedente ✅
+   - Prezzi servizi: form defaultValue concatenava invece di sostituire (15+25=1525)
+     Fix: defaultValue solo in edit, placeholder in create + DB corretto
+   - Walk-in ora fine: addMinutesToTime overflow (53:30)
+     Fix: Math.min(total, 23*60+59) + DB duration corretto
+   - total_visits: updateAppointmentStatus settava undefined
+     Fix: ora legge valore attuale e incrementa di 1
+
+7. Sistema Conferma Intelligente (pg_cron + Edge Functions) ✅
+   Architettura: pg_cron schedula → pg_net chiama Edge Function → SQL helper + Twilio WhatsApp
+
+   Flusso smart per ogni appuntamento:
+   a) Richiesta conferma (timing basato sull'orario appuntamento):
+      - Appuntamento pomeriggio (≥14:00): messaggio sera prima alle 20:00
+      - Appuntamento tarda mattina (10:00-13:59): messaggio sera prima alle 20:00
+      - Appuntamento mattina presto (<10:00): messaggio giorno prima alle 12:00
+   b) Secondo reminder (se non risponde):
+      - Pomeriggio: mattina stessa alle 08:00
+      - Tarda mattina: mattina stessa alle 07:30
+      - Mattina presto: sera prima alle 20:00
+   c) Auto-cancellazione (se non conferma):
+      - Pomeriggio: ore 12:00 stesso giorno → slot liberato → notifica waitlist
+      - Tarda mattina: ore 09:00 stesso giorno
+      - Mattina presto: ore 22:00 sera prima
+   d) Pre-appuntamento (~2h prima, solo confermati):
+      - "Ci vediamo tra poco! Presentati a [indirizzo]"
+
+   Comandi WhatsApp (gestiti dal webhook):
+   - CONFERMA → booked → confirmed, risposta "Perfetto! Ci vediamo presto!"
+   - CANCELLA / ANNULLA → cancella appuntamento, notifica waitlist, risposta con link booking
+   - CAMBIA ORARIO → invia link prenotazione per riprogrammare
+   - SI → conferma prenotazione dalla waitlist
+   - Qualsiasi altro testo → risposta con lista comandi disponibili
+
+   SQL Helper Functions (6):
+   - find_appointments_needing_confirm_request() — timing smart basato su orario
+   - find_appointments_needing_confirm_reminder() — secondo avviso non confermati
+   - auto_cancel_unconfirmed() — cancella + restituisce dettagli per notifica
+   - find_confirmed_needing_pre_reminder() — confermati ~2h prima
+   - find_review_appointments(hours_min, hours_max) — completati con Google review link
+   - find_dormant_clients(min_days_since_last_msg) — clienti inattivi > soglia
+
+   Edge Functions deployate su Supabase (6 attive, tutte ACTIVE):
+   - confirmation-request: ogni 30min → richiesta conferma (timing smart)
+   - confirmation-reminder: ogni 30min → secondo avviso non confermati
+   - auto-cancel: ogni 30min → cancella non confermati alla deadline
+   - pre-appointment: ogni 30min → "ci vediamo!" per confermati
+   - review-request: ogni ora (:15) → richiesta recensione Google
+   - reactivation: 1x/giorno (11:00 Roma) → clienti dormienti
+
+   Cron Schedules attivi (6):
+   - confirmation-request: */30 * * * * → pg_net → Edge Function
+   - confirmation-reminder: */30 * * * * → pg_net → Edge Function
+   - auto-cancel: */30 * * * * → pg_net → Edge Function
+   - pre-appointment: */30 * * * * → pg_net → Edge Function
+   - review-request: 15 * * * * → pg_net → Edge Function
+   - reactivation: 0 10 * * * → pg_net → Edge Function
+
+   Template messaggi aggiornati (8 tipi):
+   - confirmation, confirm_request, confirm_reminder, pre_appointment
+   - cancellation, review_request, reactivation, waitlist_notify
+   - Ogni messaggio include comandi disponibili (CONFERMA, CANCELLA, CAMBIA ORARIO)
+   - Personalizzabili dal barbiere tramite Settings
+
+   Caratteristiche:
+   - Timing intelligente: orario invio basato sull'ora dell'appuntamento
+   - Anti-spam: max 2 messaggi per appuntamento (richiesta + reminder) + 1 pre-appuntamento
+   - Slot liberation: auto-cancel libera slot e notifica primo in waitlist
+   - Deduplicazione: SQL verifica NOT EXISTS su messages per tipo
+   - Dual-mode WhatsApp: Twilio live o mock console.log
+   - Timezone-aware: AT TIME ZONE con timezone business
+   - Idempotenti: chiamate multiple non producono duplicati
+
+8. Badge Conferma nel Calendario ✅
+   - CalendarAppointment arricchito con confirmationStatus e confirmRequestSentAt
+   - Query batch su tabella messages (confirm_request/confirm_reminder) per appointment_id
+   - Pallino 🟡 pulsante sulla card se status="pending" (attesa conferma)
+   - AppointmentSheet mostra sezione "Stato conferma WhatsApp":
+     - "In attesa di conferma WhatsApp" (amber, con timestamp invio)
+     - "Confermato via WhatsApp" (emerald)
+     - "Non confermato — cancellato automaticamente" (red)
+
+9. Waitlist UI Funzionale ✅
+   - Server actions: getWaitlistEntries(), removeWaitlistEntry(), expireOldEntries()
+   - Componente WaitlistManager con:
+     - Filtro per stato (tutti, in attesa, notificato, convertito, scaduto)
+     - Ricerca per nome, telefono, servizio
+     - Badge colorati per stato (🟡 In attesa, 🔔 Notificato, ✅ Convertito, ⏰ Scaduto)
+     - Azione rimuovi entry, pulsante "Scaduti" per bulk-expire
+   - Pagina /dashboard/waitlist funzionale (sostituito placeholder)
+
+10. Tag Automatici Clienti ✅
+    - Nuovi tag disponibili: "Affidabile" (emerald), "Non conferma" (arancione)
+    - Auto-tag su conferma WhatsApp (CONFERMA): ≥3 conferme → tag "Affidabile"
+    - Auto-tag su cancellazione (CANCELLA/auto-cancel): ≥2 cancellazioni → tag "Non conferma"
+    - Tags mutuamente esclusivi: aggiungere uno rimuove l'altro
+    - Logica nel webhook (/api/whatsapp/webhook)
+
+11. Fix Schema Drizzle ✅
+    - messageTypeEnum aggiornato: rimossi reminder_24h/reminder_2h, aggiunti confirm_request/confirm_reminder/pre_appointment
+    - settings-manager.tsx aggiornato con nuovi template types + variabile {{deadline}}
+
+12. Calcolo Analytics Daily (Cron SQL) ✅
+    - Funzione SQL calculate_analytics_daily(target_date): per ogni business calcola revenue, completati, cancellati, no-show, nuovi clienti, ricorrenti
+    - UPSERT su analytics_daily (ON CONFLICT update)
+    - pg_cron schedule: analytics-daily-calc, ogni notte alle 02:05 UTC (03:05 Roma)
+    - Calcolo giorno precedente (CURRENT_DATE - 1)
+
+13. Analytics Dashboard UI ✅
+    - Server actions: getAnalyticsSummary(period), getAnalyticsDaily(start, end), getTopServices(period)
+    - Selector periodo: 7 giorni / 30 giorni / 90 giorni
+    - 4 KPI cards: Fatturato, Completati, No-show rate, Nuovi clienti (con delta % vs periodo precedente)
+    - Grafico fatturato giornaliero (barre blu con tooltip)
+    - Grafico appuntamenti giornaliero (stacked: completati verde, cancellati rosso, no-show amber)
+    - Tabella servizi più richiesti con progress bar e revenue
+    - Breakdown clienti nuovi vs ricorrenti con barra proporzionale
+
+14. Chiusure Straordinarie ✅
+    - Tabella business_closures: id, business_id, date, reason, created_at (con RLS)
+    - Schema Drizzle: businessClosures + relazione con businesses
+    - Server actions: getClosures(), getClosureDates(businessId), addClosure(), removeClosure()
+    - Sezione in Settings: "Chiusure straordinarie" con date picker, motivo, lista prossime chiusure, rimozione
+    - Integrazione Booking Wizard: date di chiusura disabilitate nel selettore date
+    - Integrazione Calendario: banner arancione "Chiusura straordinaria" quando si visualizza un giorno chiuso
+
+15. Stripe Billing — Multi-Piano ✅
+    - 3 prodotti Stripe:
+      - BarberOS Essential (prod_TwyoUI0JLvWcj3) → €300/mese (price_1Sz4yuK75hVrlrva5iqHgE52)
+      - BarberOS Professional (prod_TwypWo5jLd3doz) → €500/mese (price_1Sz4yvK75hVrlrvaemSc8lLf)
+      - BarberOS Enterprise (prod_TwyphvT1F82GrB) → prezzo custom (gestito manualmente)
+    - Vecchio prodotto "Barberos Pro" (prod_TwyPNdkh0a8xAT) deprecato
+    - Trial: 30 giorni gratuiti (configurabile in STRIPE_CONFIG.trialDays)
+    - stripe@20.3.1 installato, API version 2026-01-28.clover
+    - src/lib/stripe.ts: Stripe server client + PLANS config (3 piani con features, prezzi, product/price IDs)
+    - src/actions/billing.ts: 3 server actions
+      - createCheckoutSession(planId): crea/ensure Stripe Customer + Checkout Session per piano scelto
+      - createPortalSession(): redirect a Stripe Customer Portal per self-service
+      - getSubscriptionInfo(): legge status + piano attivo da Stripe API, fallback a DB
+    - src/app/api/stripe/webhook/route.ts: webhook handler
+      - Verifica firma Stripe (STRIPE_WEBHOOK_SECRET)
+      - Supabase admin client (service role, bypassa RLS)
+      - Eventi gestiti: subscription.created/updated/deleted, invoice.paid/failed
+      - mapStatus(): mappa stati Stripe → enum DB (active, past_due, cancelled, trialing, incomplete)
+    - Sezione "Abbonamento" in Settings:
+      - Banner stato colorato (emerald/blue/amber/red per active/trial/past_due/cancelled)
+      - 3 card piani con features, prezzo, badge "Consigliato" su Professional
+      - Enterprise: pulsante "Contattaci" via email
+      - Pulsante "Gestisci abbonamento" → Stripe Customer Portal (per abbonati attivi)
+      - Info trial con durata e data scadenza
+      - Nota contratto 12 mesi + garanzia risultati
+    - proxy.ts aggiornato: /api/stripe/ come path pubblico
+    - scripts/setup-stripe.ts: crea prezzi ricorrenti per Essential e Professional
+    - Env vars: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ESSENTIAL, STRIPE_PRICE_PROFESSIONAL
+
+---
+
+FASI SUCCESSIVE — DA FARE
+
+Fase D — Polish e Deploy
+- Acquisto dominio + DNS Cloudflare
+- Configurare webhook Stripe (richiede dominio pubblico)
+- Aggiungere subscription gating (blocco funzionalità se abbonamento scaduto)
+- Test flussi end-to-end (prenotazione → conferma → completamento → review)
+- PWA con Serwist (service worker, manifest, installabilità)
+- Performance optimization
+- Deploy produzione su Vercel + Cloudflare DNS
+
+---
+
+BOOKING PUBBLICO — FUNZIONANTE
+
+Pagina /book/[slug] completamente funzionante:
+- Wizard multi-step: Servizio → Barbiere → Data/Ora → Conferma
+- Calcolo slot disponibili basato su orari staff e durata servizio
+- Creazione automatica client se non esiste (lookup per telefono)
+- Creazione appuntamento con status "booked" e source "online"
+- Messaggio WhatsApp di conferma (mock o reale in base a configurazione Twilio)
+- Creazione record messaggio nel DB
+- UI mobile-first con progress indicator a 4 step
+
+---
+
+NOTE TECNICHE
+
+- Next.js 16 usa proxy.ts invece di middleware.ts per la protezione route e il refresh sessione.
+- Le policy RLS per booking anonimo (INSERT su clients e appointments) sono state ristrette a richiedere un business_id valido (non più WITH CHECK true).
+- Il trigger on_auth_user_created genera uno slug unico per la business appendendo i primi 8 caratteri dell'UUID utente.
+- WhatsApp dual-mode: se variabili TWILIO_* configurate → invio reale via Twilio API. Altrimenti → mock con console.log dettagliato. Trasparente per il resto del codice.
+- Webhook WhatsApp usa Supabase admin client (service role key) per bypassare RLS nelle operazioni server-to-server.
+- Template messaggi: default italiani hardcoded in lib/templates.ts, personalizzabili dal barbiere via UI e salvati su DB (message_templates).
