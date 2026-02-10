@@ -68,10 +68,10 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-[2px]"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md animate-in slide-in-from-bottom-4 rounded-t-2xl bg-zinc-900 border border-zinc-800 shadow-2xl shadow-black/50 sm:mx-4 sm:rounded-2xl">
+      <div className="relative z-10 w-full max-w-md animate-in slide-in-from-bottom-4 rounded-t-2xl bg-card border border-border shadow-xl sm:mx-4 sm:rounded-2xl">
         {/* Accent bar */}
         <div className={cn("h-1.5 w-full rounded-t-2xl", style.accent)} />
 
@@ -84,14 +84,14 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                   {clientName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-zinc-100">{clientName}</h2>
+                  <h2 className="text-base font-bold text-foreground">{clientName}</h2>
                   <div className="mt-0.5 flex items-center gap-2">
                     <span
                       className={cn(
                         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
                         appointment.status === "booked" && "bg-blue-500/20 text-blue-300",
                         appointment.status === "confirmed" && "bg-emerald-500/20 text-emerald-300",
-                        appointment.status === "completed" && "bg-zinc-800 text-zinc-400",
+                        appointment.status === "completed" && "bg-secondary text-muted-foreground",
                         appointment.status === "cancelled" && "bg-red-500/20 text-red-400",
                         appointment.status === "no_show" && "bg-amber-500/20 text-amber-300",
                       )}
@@ -99,7 +99,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                       <span className={cn("h-1.5 w-1.5 rounded-full", style.accent)} />
                       {STATUS_LABELS[appointment.status] || appointment.status}
                     </span>
-                    <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
+                    <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                       {SOURCE_LABELS[appointment.source] || appointment.source}
                     </span>
                   </div>
@@ -108,31 +108,31 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Details */}
-          <div className="space-y-1 rounded-xl border border-zinc-800 bg-zinc-800/30 p-3">
+          <div className="space-y-1 rounded-xl border border-border bg-muted p-3">
             <div className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm">
-              <Clock className="h-4 w-4 shrink-0 text-zinc-500" />
+              <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
               <div>
-                <span className="font-semibold text-zinc-100">
+                <span className="font-semibold text-foreground">
                   {appointment.start_time.slice(0, 5)} — {appointment.end_time.slice(0, 5)}
                 </span>
-                <span className="ml-2 text-xs text-zinc-500">{appointment.date}</span>
+                <span className="ml-2 text-xs text-muted-foreground">{appointment.date}</span>
               </div>
             </div>
 
             {appointment.service && (
               <div className="flex items-center justify-between rounded-lg px-2 py-2 text-sm">
                 <div className="flex items-center gap-3">
-                  <Scissors className="h-4 w-4 shrink-0 text-zinc-500" />
-                  <span className="text-zinc-300">{appointment.service.name}</span>
+                  <Scissors className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="text-foreground">{appointment.service.name}</span>
                 </div>
-                <span className="rounded-md bg-zinc-800 px-2 py-0.5 text-xs font-bold text-zinc-200">
+                <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-bold text-foreground">
                   {formatPrice(appointment.service.price_cents)}
                 </span>
               </div>
@@ -140,17 +140,17 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
 
             {appointment.staff && (
               <div className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm">
-                <User className="h-4 w-4 shrink-0 text-zinc-500" />
-                <span className="text-zinc-300">{appointment.staff.name}</span>
+                <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="text-foreground">{appointment.staff.name}</span>
               </div>
             )}
 
             {appointment.client?.phone && (
               <div className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm">
-                <Phone className="h-4 w-4 shrink-0 text-zinc-500" />
+                <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <a
                   href={`tel:${appointment.client.phone}`}
-                  className="font-medium text-zinc-300 hover:text-white hover:underline"
+                  className="font-medium text-foreground hover:text-foreground hover:underline"
                 >
                   {appointment.client.phone}
                 </a>
@@ -160,7 +160,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
 
           {/* Confirmation status */}
           {appointment.confirmationStatus && appointment.confirmationStatus !== "none" && (
-            <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-zinc-800 px-3 py-2.5 text-sm">
+            <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-border px-3 py-2.5 text-sm">
               <MessageCircle className={cn(
                 "h-4 w-4 shrink-0",
                 appointment.confirmationStatus === "pending" && "text-amber-400",
@@ -178,7 +178,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                   <span className="text-red-400">Non confermato — cancellato automaticamente</span>
                 )}
                 {appointment.confirmRequestSentAt && appointment.confirmationStatus === "pending" && (
-                  <span className="ml-1.5 text-xs text-zinc-500">
+                  <span className="ml-1.5 text-xs text-muted-foreground">
                     · inviato {new Date(appointment.confirmRequestSentAt).toLocaleString("it-IT", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
                   </span>
                 )}
@@ -187,7 +187,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
           )}
 
           {error && (
-            <p className="mt-3 rounded-lg bg-red-950/50 p-2.5 text-sm text-red-400">{error}</p>
+            <p className="mt-3 rounded-lg bg-destructive/10 p-2.5 text-sm text-destructive">{error}</p>
           )}
 
           {/* Actions */}
@@ -208,7 +208,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                 <button
                   onClick={() => handleAction("completed")}
                   disabled={isPending}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-zinc-200 disabled:opacity-50"
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
                 >
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   Completato

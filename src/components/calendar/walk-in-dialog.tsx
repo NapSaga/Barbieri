@@ -86,11 +86,11 @@ export function WalkInDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/70" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md rounded-xl bg-zinc-900 border border-zinc-800 p-6 shadow-2xl shadow-black/50 mx-4">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md rounded-xl bg-card border border-border p-6 shadow-xl mx-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-zinc-100">Aggiungi Walk-in</h2>
-          <button onClick={onClose} className="rounded p-1 hover:bg-zinc-800">
+          <h2 className="text-lg font-bold text-foreground">Aggiungi Walk-in</h2>
+          <button onClick={onClose} className="rounded p-1 hover:bg-accent">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -99,21 +99,21 @@ export function WalkInDialog({
           {/* Client info */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-zinc-300">Nome cliente</label>
+              <label className="block text-sm font-medium text-foreground">Nome cliente</label>
               <input
                 name="client_name"
                 required
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                 placeholder="Mario"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300">Telefono</label>
+              <label className="block text-sm font-medium text-foreground">Telefono</label>
               <input
                 name="client_phone"
                 type="tel"
                 required
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                 placeholder="+39 333..."
               />
             </div>
@@ -121,13 +121,13 @@ export function WalkInDialog({
 
           {/* Service */}
           <div>
-            <label className="block text-sm font-medium text-zinc-300">Servizio</label>
+            <label className="block text-sm font-medium text-foreground">Servizio</label>
             <select
               name="service_id"
               required
               value={selectedServiceId}
               onChange={(e) => setSelectedServiceId(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="">Seleziona servizio...</option>
               {services.map((s) => (
@@ -140,11 +140,11 @@ export function WalkInDialog({
 
           {/* Staff */}
           <div>
-            <label className="block text-sm font-medium text-zinc-300">Barbiere</label>
+            <label className="block text-sm font-medium text-foreground">Barbiere</label>
             <select
               name="staff_id"
               required
-              className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="">Seleziona barbiere...</option>
               {staffMembers.map((s) => (
@@ -158,32 +158,32 @@ export function WalkInDialog({
           {/* Time */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-zinc-300">Ora inizio</label>
+              <label className="block text-sm font-medium text-foreground">Ora inizio</label>
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 step={900}
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300">Ora fine</label>
+              <label className="block text-sm font-medium text-foreground">Ora fine</label>
               <input
                 type="time"
                 value={endTime}
                 readOnly
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-500"
+                className="mt-1 block w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm text-muted-foreground"
               />
             </div>
           </div>
 
-          {error && <p className="rounded-lg bg-red-950/50 p-2 text-sm text-red-400">{error}</p>}
+          {error && <p className="rounded-lg bg-destructive/10 p-2 text-sm text-destructive">{error}</p>}
 
           <button
             type="submit"
             disabled={isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {isPending ? (
               <>

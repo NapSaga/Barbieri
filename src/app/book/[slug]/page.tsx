@@ -40,13 +40,13 @@ export default async function BookingPage({ params }: BookingPageProps) {
   ]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-lg px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{business.name}</h1>
           {business.address && (
-            <p className="mt-1 text-sm text-gray-500">{business.address}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{business.address}</p>
           )}
         </div>
 

@@ -13,28 +13,57 @@ import {
   LogOut,
   Menu,
   X,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { useTheme } from "next-themes";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { User } from "@supabase/supabase-js";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
 
-const navigation = [
-  { name: "Calendario", href: "/dashboard", icon: Calendar },
-  { name: "Clienti", href: "/dashboard/clients", icon: Users },
-  { name: "Servizi", href: "/dashboard/services", icon: Scissors },
-  { name: "Staff", href: "/dashboard/staff", icon: UserCog },
-  { name: "Lista d'attesa", href: "/dashboard/waitlist", icon: Clock },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { name: "Impostazioni", href: "/dashboard/settings", icon: Settings },
+const navSections = [
+  {
+    label: "Principale",
+    items: [
+      { name: "Calendario", href: "/dashboard", icon: Calendar },
+    ],
+  },
+  {
+    label: "Gestione",
+    items: [
+      { name: "Clienti", href: "/dashboard/clients", icon: Users },
+      { name: "Servizi", href: "/dashboard/services", icon: Scissors },
+      { name: "Staff", href: "/dashboard/staff", icon: UserCog },
+      { name: "Lista d'attesa", href: "/dashboard/waitlist", icon: Clock },
+    ],
+  },
+  {
+    label: "Analisi",
+    items: [
+      { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+      { name: "Impostazioni", href: "/dashboard/settings", icon: Settings },
+    ],
+  },
 ];
 
-export function DashboardSidebar({ user }: { user: User }) {
+export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -42,82 +71,283 @@ export function DashboardSidebar({ user }: { user: User }) {
     router.refresh();
   }
 
-  const sidebarContent = (
-    <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-2 border-b border-zinc-800 px-6">
-        <Scissors className="h-6 w-6 text-zinc-300" />
-        <span className="text-lg font-bold text-white">Barberos</span>
-      </div>
+  function toggleTheme() {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {navigation.map((item) => {
-          const isActive =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
+  function NavLink({
+    item,
+    isCollapsed,
+    onClick,
+  }: {
+    item: { name: string; href: string; icon: React.ComponentType<{ className?: string }> };
+    isCollapsed: boolean;
+    onClick?: () => void;
+  }) {
+    const isActive =
+      item.href === "/dashboard"
+        ? pathname === "/dashboard"
+        : pathname.startsWith(item.href);
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "border-l-2 border-zinc-400 bg-zinc-800 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200",
-              )}
+    const linkContent = (
+      <Link
+        href={item.href}
+        onClick={onClick}
+        className={cn(
+          "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          isCollapsed && "justify-center px-0",
+          isActive
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+        )}
+      >
+        <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-sidebar-primary")} />
+        <AnimatePresence mode="wait">
+          {!isCollapsed && (
+            <motion.span
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: "auto" }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.15 }}
+              className="overflow-hidden whitespace-nowrap"
             >
-              <item.icon className="h-5 w-5 shrink-0" />
               {item.name}
-            </Link>
-          );
-        })}
-      </nav>
+            </motion.span>
+          )}
+        </AnimatePresence>
+        {isActive && (
+          <motion.div
+            layoutId="sidebar-active"
+            className="absolute inset-0 rounded-lg bg-sidebar-accent"
+            style={{ zIndex: -1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+          />
+        )}
+      </Link>
+    );
 
-      <div className="border-t border-zinc-800 p-4">
-        <div className="mb-3 truncate text-xs text-zinc-600">{user.email}</div>
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+    if (isCollapsed) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            {item.name}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return linkContent;
+  }
+
+  function SidebarContent({ isCollapsed }: { isCollapsed: boolean }) {
+    return (
+      <div className="flex h-full flex-col">
+        {/* Header: Logo + Collapse toggle */}
+        <div
+          className={cn(
+            "flex h-14 items-center border-b border-sidebar-border",
+            isCollapsed ? "justify-center px-2" : "justify-between px-4",
+          )}
         >
-          <LogOut className="h-4 w-4" />
-          Esci
-        </button>
+          <AnimatePresence mode="wait">
+            {isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setCollapsed(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-sidebar-accent/50"
+                  >
+                    <PanelLeftOpen className="h-4 w-4 text-sidebar-foreground/50" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  Espandi
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="text-lg font-extrabold tracking-tight text-sidebar-foreground"
+                >
+                  Barber<span className="text-sidebar-primary">OS</span>
+                </motion.span>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setCollapsed(true)}
+                  className="text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
+          {navSections.map((section, idx) => (
+            <div key={section.label}>
+              {idx > 0 && <Separator className="my-3 bg-sidebar-border" />}
+              <AnimatePresence mode="wait">
+                {!isCollapsed && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.1 }}
+                    className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40"
+                  >
+                    {section.label}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    item={item}
+                    isCollapsed={isCollapsed}
+                    onClick={() => setMobileOpen(false)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Footer: Theme toggle + Logout */}
+        <div className="border-t border-sidebar-border px-3 py-2">
+          <div className={cn("flex gap-1", isCollapsed ? "flex-col items-center" : "items-center")}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size={isCollapsed ? "icon" : "sm"}
+                  onClick={toggleTheme}
+                  className={cn(
+                    "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
+                    !isCollapsed && "flex-1 justify-start gap-2",
+                  )}
+                >
+                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+                  <AnimatePresence mode="wait">
+                    {!isCollapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="overflow-hidden whitespace-nowrap text-xs"
+                      >
+                        Tema
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </TooltipTrigger>
+              {isCollapsed && (
+                <TooltipContent side="right" sideOffset={8}>
+                  Cambia tema
+                </TooltipContent>
+              )}
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size={isCollapsed ? "icon" : "sm"}
+                  onClick={handleLogout}
+                  className={cn(
+                    "text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/10",
+                    !isCollapsed && "flex-1 justify-start gap-2",
+                  )}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <AnimatePresence mode="wait">
+                    {!isCollapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="overflow-hidden whitespace-nowrap text-xs"
+                      >
+                        Esci
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </TooltipTrigger>
+              {isCollapsed && (
+                <TooltipContent side="right" sideOffset={8}>
+                  Esci
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <>
       {/* Mobile menu button */}
       <button
+        type="button"
         onClick={() => setMobileOpen(true)}
-        className="fixed left-4 top-4 z-40 rounded-lg bg-zinc-900 p-2 shadow-lg shadow-black/30 lg:hidden"
+        className="fixed left-4 top-4 z-40 rounded-lg border border-border bg-background p-2 shadow-sm lg:hidden"
       >
-        <Menu className="h-5 w-5 text-zinc-300" />
+        <Menu className="h-5 w-5 text-foreground" />
       </button>
 
       {/* Mobile overlay */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <div className="fixed inset-y-0 left-0 w-64 bg-zinc-950 shadow-lg shadow-black/40">
-            <button
+      <AnimatePresence>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-40 lg:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm"
               onClick={() => setMobileOpen(false)}
-              className="absolute right-3 top-4 rounded p-1 text-zinc-400 hover:bg-zinc-800"
+            />
+            <motion.div
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: "spring", stiffness: 400, damping: 35 }}
+              className="fixed inset-y-0 left-0 w-[280px] border-r border-sidebar-border bg-sidebar shadow-xl"
             >
-              <X className="h-5 w-5" />
-            </button>
-            {sidebarContent}
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                className="absolute right-3 top-3.5 rounded-md p-1.5 text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <SidebarContent isCollapsed={false} />
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-zinc-800 bg-zinc-950 lg:block">
-        {sidebarContent}
-      </aside>
+      <motion.aside
+        animate={{ width: collapsed ? 64 : 256 }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className="hidden shrink-0 border-r border-sidebar-border bg-sidebar lg:block"
+      >
+        <SidebarContent isCollapsed={collapsed} />
+      </motion.aside>
     </>
   );
 }

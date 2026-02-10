@@ -4,6 +4,17 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Scissors } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -41,84 +52,92 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Barberos</h1>
-          <p className="mt-2 text-sm text-zinc-400">Crea il tuo account barberia</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
+            <Scissors className="h-6 w-6 text-primary-foreground" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Barberos
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Crea il tuo account barberia
+            </p>
+          </div>
         </div>
 
-        <form
-          onSubmit={handleRegister}
-          className="mt-8 space-y-6 rounded-xl bg-zinc-900 border border-zinc-800 p-8 shadow-xl shadow-black/30"
-        >
-          {error && (
-            <div className="rounded-lg bg-red-950/50 p-3 text-sm text-red-400">{error}</div>
-          )}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Registrati</CardTitle>
+            <CardDescription>
+              Inizia a gestire la tua barberia in pochi minuti
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleRegister} className="space-y-4">
+              {error && (
+                <div className="rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
 
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="businessName" className="block text-sm font-medium text-zinc-300">
-                Nome Barberia
-              </label>
-              <input
-                id="businessName"
-                type="text"
-                required
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-white shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                placeholder="La Barberia di Mario"
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="businessName">Nome Barberia</Label>
+                <Input
+                  id="businessName"
+                  type="text"
+                  required
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="La Barberia di Mario"
+                />
+              </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-zinc-300">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-white shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                placeholder="tu@esempio.it"
-              />
-            </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@esempio.it"
+                />
+              </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-zinc-300">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-white shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                placeholder="Minimo 6 caratteri"
-              />
-            </div>
-          </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Minimo 6 caratteri"
+                />
+              </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:opacity-50"
-          >
-            {loading ? "Registrazione in corso..." : "Crea Account"}
-          </button>
+              <div className="pt-2">
+                <Button type="submit" disabled={loading} className="w-full">
+                  {loading ? "Registrazione in corso..." : "Crea Account"}
+                </Button>
+              </div>
 
-          <p className="text-center text-sm text-zinc-400">
-            Hai già un account?{" "}
-            <Link href="/login" className="font-semibold text-zinc-300 hover:text-white">
-              Accedi
-            </Link>
-          </p>
-        </form>
+              <p className="text-center text-sm text-muted-foreground">
+                Hai già un account?{" "}
+                <Link
+                  href="/login"
+                  className="font-semibold text-primary hover:text-primary/80"
+                >
+                  Accedi
+                </Link>
+              </p>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

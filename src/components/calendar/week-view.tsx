@@ -68,25 +68,25 @@ export function WeekView({
             <div
               key={toISODate(day)}
               className={cn(
-                "border-b border-r border-zinc-800/50 px-2 py-3 text-center last:border-r-0",
-                isToday(day) && "bg-zinc-800/40",
+                "border-b border-r border-border px-2 py-3 text-center last:border-r-0",
+                isToday(day) && "bg-accent/50",
               )}
             >
-              <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-600">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 {DAY_NAMES[i]}
               </span>
               <div
                 className={cn(
                   "mx-auto mt-1 flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-colors",
                   isToday(day)
-                    ? "bg-white text-zinc-900 shadow-sm shadow-white/20"
-                    : "text-zinc-100",
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-foreground",
                 )}
               >
                 {day.getDate()}
               </div>
               {count > 0 && (
-                <span className="mt-1 inline-block text-[10px] font-medium text-zinc-600">
+                <span className="mt-1 inline-block text-[10px] font-medium text-muted-foreground">
                   {count} app.
                 </span>
               )}
@@ -102,8 +102,8 @@ export function WeekView({
             <div
               key={toISODate(day)}
               className={cn(
-                "min-h-[240px] border-r border-zinc-800/50 p-1.5 last:border-r-0",
-                isToday(day) && "bg-zinc-800/20",
+                "min-h-[240px] border-r border-border p-1.5 last:border-r-0",
+                isToday(day) && "bg-accent/30",
               )}
             >
               <div className="space-y-1">
@@ -118,7 +118,7 @@ export function WeekView({
                 ))}
                 {dayAppts.length === 0 && (
                   <div className="flex h-20 items-center justify-center">
-                    <span className="text-xs text-zinc-700">—</span>
+                    <span className="text-xs text-muted-foreground">—</span>
                   </div>
                 )}
               </div>

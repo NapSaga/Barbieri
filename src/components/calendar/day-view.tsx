@@ -59,9 +59,9 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
     <div className="relative overflow-x-auto">
       <div className="min-w-[640px]">
         {/* Staff header */}
-        <div className="sticky top-0 z-20 flex border-b border-zinc-800 bg-zinc-900/95 backdrop-blur-sm">
+        <div className="sticky top-0 z-20 flex border-b border-border bg-card/95 backdrop-blur-sm">
           <div
-            className="shrink-0 border-r border-zinc-800/50"
+            className="shrink-0 border-r border-border"
             style={{ width: GUTTER_WIDTH }}
           />
           {columns.map((col) => {
@@ -71,17 +71,17 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
             return (
               <div
                 key={col.id}
-                className="flex flex-1 items-center justify-center gap-2 border-r border-zinc-800/50 px-2 py-3 last:border-r-0"
+                className="flex flex-1 items-center justify-center gap-2 border-r border-border px-2 py-3 last:border-r-0"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-zinc-400 to-zinc-500 text-xs font-bold text-white shadow-sm">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-muted-foreground to-muted-foreground/80 text-xs font-bold text-foreground shadow-sm">
                   {col.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-zinc-100">
+                  <span className="block truncate text-sm font-semibold text-foreground">
                     {col.name}
                   </span>
                   {colCount > 0 && (
-                    <span className="text-[11px] text-zinc-500">
+                    <span className="text-[11px] text-muted-foreground">
                       {colCount} app.
                     </span>
                   )}
@@ -94,12 +94,12 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
         {/* Timeline grid */}
         <div className="relative flex" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
           {/* Hour gutter */}
-          <div className="shrink-0 border-r border-zinc-800/50" style={{ width: GUTTER_WIDTH }}>
+          <div className="shrink-0 border-r border-border" style={{ width: GUTTER_WIDTH }}>
             {Array.from({ length: TOTAL_HOURS }, (_, i) => {
               const hour = START_HOUR + i;
               return (
                 <div key={hour} className="relative" style={{ height: HOUR_HEIGHT }}>
-                  <span className="absolute -top-[9px] right-3 select-none text-[11px] font-medium tabular-nums text-zinc-600">
+                  <span className="absolute -top-[9px] right-3 select-none text-[11px] font-medium tabular-nums text-muted-foreground">
                     {String(hour).padStart(2, "0")}:00
                   </span>
                 </div>
@@ -116,13 +116,13 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
             return (
               <div
                 key={col.id}
-                className="relative flex-1 border-r border-zinc-800/50 last:border-r-0"
+                className="relative flex-1 border-r border-border last:border-r-0"
               >
                 {/* Hour + half-hour lines */}
                 {Array.from({ length: TOTAL_HOURS }, (_, i) => (
                   <div key={i} className="relative" style={{ height: HOUR_HEIGHT }}>
-                    <div className="absolute inset-x-0 top-0 border-t border-zinc-800/50" />
-                    <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-zinc-800/30" />
+                    <div className="absolute inset-x-0 top-0 border-t border-border" />
+                    <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-border/60" />
                   </div>
                 ))}
 
@@ -163,8 +163,8 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
         {/* Empty state */}
         {appointments.length === 0 && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-            <div className="rounded-xl bg-zinc-900/90 px-6 py-4 text-center shadow-md shadow-black/20 backdrop-blur-sm">
-              <p className="text-sm font-medium text-zinc-500">
+            <div className="rounded-xl bg-card/90 px-6 py-4 text-center shadow-md backdrop-blur-sm">
+              <p className="text-sm font-medium text-muted-foreground">
                 Nessun appuntamento per oggi
               </p>
             </div>

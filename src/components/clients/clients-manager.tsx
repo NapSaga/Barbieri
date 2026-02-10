@@ -118,26 +118,26 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
       {/* Header */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Users className="h-7 w-7 text-zinc-300" />
-          <h1 className="text-2xl font-bold text-zinc-100">Clienti</h1>
-          <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
+          <Users className="h-7 w-7 text-foreground" />
+          <h1 className="text-2xl font-bold text-foreground">Clienti</h1>
+          <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
             {clients.length}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cerca per nome o telefono..."
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 py-2 pl-9 pr-3 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              className="w-full rounded-lg border border-input bg-muted py-2 pl-9 pr-3 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" />
             Nuovo
@@ -145,69 +145,69 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
         </div>
       </div>
 
-      {error && <div className="mb-4 rounded-lg bg-red-950/50 p-3 text-sm text-red-400">{error}</div>}
+      {error && <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 
       {/* Create form */}
       {showForm && (
-        <div className="mb-4 rounded-xl bg-zinc-900 border border-zinc-800 p-4 shadow-md shadow-black/20">
+        <div className="mb-4 rounded-xl bg-card border border-border p-4 shadow-xl">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-semibold text-zinc-100">Nuovo cliente</h3>
-            <button onClick={() => setShowForm(false)} className="rounded p-1 hover:bg-zinc-800">
+            <h3 className="font-semibold text-foreground">Nuovo cliente</h3>
+            <button onClick={() => setShowForm(false)} className="rounded p-1 hover:bg-accent">
               <X className="h-4 w-4" />
             </button>
           </div>
           <form action={handleCreate} className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-300">Nome *</label>
+                <label className="block text-sm font-medium text-foreground">Nome *</label>
                 <input
                   name="first_name"
                   required
-                  className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Mario"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300">Cognome</label>
+                <label className="block text-sm font-medium text-foreground">Cognome</label>
                 <input
                   name="last_name"
-                  className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Rossi"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300">Telefono *</label>
+                <label className="block text-sm font-medium text-foreground">Telefono *</label>
                 <input
                   name="phone"
                   type="tel"
                   required
-                  className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="+39 333 1234567"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300">Email</label>
+                <label className="block text-sm font-medium text-foreground">Email</label>
                 <input
                   name="email"
                   type="email"
-                  className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="mario@email.it"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300">Note</label>
+              <label className="block text-sm font-medium text-foreground">Note</label>
               <textarea
                 name="notes"
                 rows={2}
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                 placeholder="Preferenze, allergie, note varie..."
               />
             </div>
             <button
               type="submit"
               disabled={isPending}
-              className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               Crea cliente
@@ -218,15 +218,15 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
 
       {/* Clients list */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-500">
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
           {searchQuery ? (
             <>
-              <Search className="mx-auto mb-3 h-10 w-10 text-zinc-700" />
+              <Search className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Nessun risultato per &quot;{searchQuery}&quot;</p>
             </>
           ) : (
             <>
-              <Users className="mx-auto mb-3 h-10 w-10 text-zinc-700" />
+              <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Nessun cliente</p>
               <p className="mt-1 text-sm">I clienti verranno creati automaticamente alle prenotazioni.</p>
             </>
@@ -239,24 +239,24 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
             const isExpanded = expandedId === client.id;
 
             return (
-              <div key={client.id} className="rounded-xl bg-zinc-900 border border-zinc-800">
+              <div key={client.id} className="rounded-xl bg-card border border-border">
                 {/* Main row */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : client.id)}
                   className="flex w-full items-center justify-between p-4 text-left"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-sm font-bold text-zinc-300">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-foreground">
                       {client.first_name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="truncate font-semibold text-zinc-100">{fullName}</h3>
+                        <h3 className="truncate font-semibold text-foreground">{fullName}</h3>
                         {client.no_show_count >= 2 && (
                           <AlertTriangle className="h-4 w-4 shrink-0 text-orange-400" />
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-zinc-500">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Phone className="h-3 w-3" />
                           {client.phone}
@@ -270,9 +270,9 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="hidden text-right text-xs text-zinc-500 sm:block">
+                    <div className="hidden text-right text-xs text-muted-foreground sm:block">
                       <div>Ultima visita</div>
-                      <div className="font-medium text-zinc-300">
+                      <div className="font-medium text-foreground">
                         {formatDate(client.last_visit_at)}
                       </div>
                     </div>
@@ -283,7 +283,7 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
                           key={tag}
                           className={cn(
                             "rounded-full px-2 py-0.5 text-xs font-medium",
-                            TAG_COLORS[tag] || "bg-zinc-800 text-zinc-300",
+                            TAG_COLORS[tag] || "bg-secondary text-foreground",
                           )}
                         >
                           {tag}
@@ -291,9 +291,9 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
                       ))}
                     </div>
                     {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-zinc-600" />
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 text-zinc-600" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
                 </button>
@@ -336,32 +336,32 @@ function ClientDetail({ client, onToggleTag, onSaveNotes }: ClientDetailProps) {
   }
 
   return (
-    <div className="border-t border-zinc-800 px-4 pb-4 pt-3 space-y-4">
+    <div className="border-t border-border px-4 pb-4 pt-3 space-y-4">
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-lg bg-zinc-800/50 p-3 text-center">
-          <div className="text-lg font-bold text-zinc-100">{client.total_visits}</div>
-          <div className="text-xs text-zinc-500">Visite totali</div>
+        <div className="rounded-lg bg-muted p-3 text-center">
+          <div className="text-lg font-bold text-foreground">{client.total_visits}</div>
+          <div className="text-xs text-muted-foreground">Visite totali</div>
         </div>
-        <div className="rounded-lg bg-zinc-800/50 p-3 text-center">
-          <div className={cn("text-lg font-bold", client.no_show_count > 0 ? "text-orange-400" : "text-zinc-100")}>
+        <div className="rounded-lg bg-muted p-3 text-center">
+          <div className={cn("text-lg font-bold", client.no_show_count > 0 ? "text-orange-400" : "text-foreground")}>
             {client.no_show_count}
           </div>
-          <div className="text-xs text-zinc-500">No-show</div>
+          <div className="text-xs text-muted-foreground">No-show</div>
         </div>
-        <div className="rounded-lg bg-zinc-800/50 p-3 text-center">
-          <div className="text-sm font-bold text-zinc-100">{formatDate(client.last_visit_at)}</div>
-          <div className="text-xs text-zinc-500">Ultima visita</div>
+        <div className="rounded-lg bg-muted p-3 text-center">
+          <div className="text-sm font-bold text-foreground">{formatDate(client.last_visit_at)}</div>
+          <div className="text-xs text-muted-foreground">Ultima visita</div>
         </div>
-        <div className="rounded-lg bg-zinc-800/50 p-3 text-center">
-          <div className="text-sm font-bold text-zinc-100">{client.email || "—"}</div>
-          <div className="text-xs text-zinc-500">Email</div>
+        <div className="rounded-lg bg-muted p-3 text-center">
+          <div className="text-sm font-bold text-foreground">{client.email || "—"}</div>
+          <div className="text-xs text-muted-foreground">Email</div>
         </div>
       </div>
 
       {/* Tags */}
       <div>
-        <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-zinc-300">
+        <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-foreground">
           <Tag className="h-4 w-4" />
           Tag
         </div>
@@ -375,8 +375,8 @@ function ClientDetail({ client, onToggleTag, onSaveNotes }: ClientDetailProps) {
                 className={cn(
                   "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                   isActive
-                    ? TAG_COLORS[tag] || "bg-zinc-700 text-zinc-200"
-                    : "border border-zinc-700 bg-zinc-800 text-zinc-500 hover:border-zinc-600",
+                    ? TAG_COLORS[tag] || "bg-muted text-foreground"
+                    : "border border-input bg-secondary text-muted-foreground hover:border-input",
                 )}
               >
                 {tag}
@@ -388,7 +388,7 @@ function ClientDetail({ client, onToggleTag, onSaveNotes }: ClientDetailProps) {
 
       {/* Notes */}
       <div>
-        <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-zinc-300">
+        <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-foreground">
           <StickyNote className="h-4 w-4" />
           Note
           {notesSaved && <span className="text-xs text-emerald-400">Salvato!</span>}
@@ -399,7 +399,7 @@ function ClientDetail({ client, onToggleTag, onSaveNotes }: ClientDetailProps) {
           onBlur={handleBlurNotes}
           rows={3}
           placeholder="Preferenze, allergie, note varie..."
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+          className="w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>
     </div>

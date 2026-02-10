@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   if (!business) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+      <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
         <p className="text-lg font-medium">Nessuna barberia configurata</p>
         <p className="mt-2 text-sm">Vai alle impostazioni per configurare la tua barberia.</p>
       </div>

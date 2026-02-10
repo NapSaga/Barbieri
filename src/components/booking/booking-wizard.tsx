@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Check, ChevronLeft, Clock, Scissors, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { bookAppointment } from "@/actions/appointments";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Service {
   id: string;
@@ -60,10 +63,6 @@ function addMinutesToTime(time: string, minutes: number): string {
   return `${newH}:${newM}`;
 }
 
-function getDayName(date: Date): string {
-  return date.toLocaleDateString("it-IT", { weekday: "long" });
-}
-
 function getDayKey(date: Date): string {
   const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   return days[date.getDay()];
@@ -95,7 +94,6 @@ function generateTimeSlots(
     const slotEnd = addMinutesToTime(current, durationMinutes);
     if (slotEnd > end) break;
 
-    // Skip slots that overlap with break
     if (breakStart && breakEnd) {
       if (current < breakEnd && slotEnd > breakStart) {
         current = addMinutesToTime(current, SLOT_INCREMENT);
@@ -122,14 +120,12 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Generate next N days
   const dates = Array.from({ length: DAYS_TO_SHOW }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() + i + 1); // Start from tomorrow
+    d.setDate(d.getDate() + i + 1);
     return d;
   });
 
-  // Get available time slots for selected date + staff
   const availableSlots =
     selectedDate && selectedStaff && selectedService
       ? getSlots(selectedDate, selectedStaff, selectedService.duration_minutes)
@@ -218,18 +214,18 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
 
   if (success) {
     return (
-      <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-8 text-center">
+      <div className="rounded-xl border border-border bg-card p-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
           <Check className="h-8 w-8 text-emerald-400" />
         </div>
-        <h2 className="text-xl font-bold text-zinc-100">Prenotazione confermata!</h2>
-        <p className="mt-2 text-zinc-400">
+        <h2 className="text-xl font-bold text-foreground">Prenotazione confermata!</h2>
+        <p className="mt-2 text-muted-foreground">
           {selectedService?.name} con {selectedStaff?.name}
         </p>
-        <p className="text-zinc-400">
+        <p className="text-muted-foreground">
           {selectedDate && formatDate(selectedDate)} alle {selectedTime}
         </p>
-        <p className="mt-4 text-sm text-zinc-500">
+        <p className="mt-4 text-sm text-muted-foreground">
           Riceverai un messaggio WhatsApp con i dettagli.
         </p>
       </div>
@@ -245,7 +241,7 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
             key={s}
             className={cn(
               "h-2 w-8 rounded-full transition-colors",
-              step === s ? "bg-white" : i < ["service", "staff", "datetime", "confirm"].indexOf(step) ? "bg-zinc-500" : "bg-zinc-800",
+              step === s ? "bg-primary" : i < ["service", "staff", "datetime", "confirm"].indexOf(step) ? "bg-muted-foreground" : "bg-secondary",
             )}
           />
         ))}
@@ -255,7 +251,7 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
       {step !== "service" && (
         <button
           onClick={handleBack}
-          className="flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-200"
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
           Indietro
@@ -265,27 +261,27 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
       {/* Step: Select Service */}
       {step === "service" && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-zinc-100">Scegli il servizio</h2>
+          <h2 className="text-lg font-semibold text-foreground">Scegli il servizio</h2>
           {services.length === 0 ? (
-            <p className="text-zinc-500 text-sm">Nessun servizio disponibile al momento.</p>
+            <p className="text-muted-foreground text-sm">Nessun servizio disponibile al momento.</p>
           ) : (
             services.map((service) => (
               <button
                 key={service.id}
                 onClick={() => handleSelectService(service)}
-                className="flex w-full items-center justify-between rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 p-4 shadow-md shadow-black/20 transition-colors"
+                className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-input hover:bg-accent"
               >
                 <div className="flex items-center gap-3">
-                  <Scissors className="h-5 w-5 text-zinc-400" />
+                  <Scissors className="h-5 w-5 text-muted-foreground" />
                   <div className="text-left">
-                    <p className="font-medium text-zinc-100">{service.name}</p>
-                    <p className="text-sm text-zinc-500">
+                    <p className="font-medium text-foreground">{service.name}</p>
+                    <p className="text-sm text-muted-foreground">
                       <Clock className="mr-1 inline h-3 w-3" />
                       {service.duration_minutes} min
                     </p>
                   </div>
                 </div>
-                <span className="font-semibold text-zinc-200">
+                <span className="font-semibold text-foreground">
                   {formatPrice(service.price_cents)}
                 </span>
               </button>
@@ -297,17 +293,17 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
       {/* Step: Select Staff */}
       {step === "staff" && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-zinc-100">Scegli il barbiere</h2>
+          <h2 className="text-lg font-semibold text-foreground">Scegli il barbiere</h2>
           {staffMembers.map((member) => (
             <button
               key={member.id}
               onClick={() => handleSelectStaff(member)}
-              className="flex w-full items-center gap-3 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 p-4 shadow-md shadow-black/20 transition-colors"
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-input hover:bg-accent"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
-                <User className="h-5 w-5 text-zinc-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+                <User className="h-5 w-5 text-muted-foreground" />
               </div>
-              <span className="font-medium text-zinc-100">{member.name}</span>
+              <span className="font-medium text-foreground">{member.name}</span>
             </button>
           ))}
         </div>
@@ -316,7 +312,7 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
       {/* Step: Select Date & Time */}
       {step === "datetime" && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-zinc-100">Scegli data e ora</h2>
+          <h2 className="text-lg font-semibold text-foreground">Scegli data e ora</h2>
 
           {/* Date selector */}
           <div className="flex gap-2 overflow-x-auto pb-2">
@@ -337,10 +333,10 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
                   className={cn(
                     "flex shrink-0 flex-col items-center rounded-xl px-4 py-3 text-sm transition-colors",
                     isOff
-                      ? "bg-zinc-900 text-zinc-700 cursor-not-allowed"
+                      ? "bg-muted text-muted-foreground/40 cursor-not-allowed"
                       : selectedDate && toISODate(selectedDate) === toISODate(date)
-                        ? "bg-white text-zinc-900"
-                        : "bg-zinc-900 text-zinc-200 border border-zinc-800 hover:border-zinc-700",
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-card text-foreground hover:border-input hover:bg-accent",
                   )}
                 >
                   <span className="text-xs uppercase">
@@ -358,9 +354,9 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
           {/* Time slots */}
           {selectedDate && (
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-zinc-300">Orari disponibili</h3>
+              <h3 className="text-sm font-medium text-foreground">Orari disponibili</h3>
               {availableSlots.length === 0 ? (
-                <p className="text-sm text-zinc-500">Nessun orario disponibile per questa data.</p>
+                <p className="text-sm text-muted-foreground">Nessun orario disponibile per questa data.</p>
               ) : (
                 <div className="grid grid-cols-4 gap-2">
                   {availableSlots.map((time) => (
@@ -370,8 +366,8 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
                       className={cn(
                         "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                         selectedTime === time
-                          ? "bg-white text-zinc-900"
-                          : "bg-zinc-900 text-zinc-200 border border-zinc-800 hover:border-zinc-700",
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-border bg-card text-foreground hover:border-input hover:bg-accent",
                       )}
                     >
                       {time}
@@ -387,31 +383,31 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
       {/* Step: Confirm */}
       {step === "confirm" && selectedService && selectedStaff && selectedDate && selectedTime && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-zinc-100">Conferma prenotazione</h2>
+          <h2 className="text-lg font-semibold text-foreground">Conferma prenotazione</h2>
 
           {/* Summary */}
-          <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-4 space-y-2">
+          <div className="rounded-xl border border-border bg-card p-4 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-500">Servizio</span>
+              <span className="text-muted-foreground">Servizio</span>
               <span className="font-medium">{selectedService.name}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-500">Barbiere</span>
+              <span className="text-muted-foreground">Barbiere</span>
               <span className="font-medium">{selectedStaff.name}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-500">Data</span>
+              <span className="text-muted-foreground">Data</span>
               <span className="font-medium">{formatDate(selectedDate)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-500">Ora</span>
+              <span className="text-muted-foreground">Ora</span>
               <span className="font-medium">
                 {selectedTime} - {addMinutesToTime(selectedTime, selectedService.duration_minutes)}
               </span>
             </div>
-            <div className="flex justify-between text-sm border-t pt-2 mt-2">
-              <span className="text-zinc-500">Prezzo</span>
-              <span className="font-bold text-zinc-200">
+            <div className="flex justify-between text-sm border-t border-border pt-2 mt-2">
+              <span className="text-muted-foreground">Prezzo</span>
+              <span className="font-bold text-foreground">
                 {formatPrice(selectedService.price_cents)}
               </span>
             </div>
@@ -419,42 +415,37 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
 
           {/* Client info */}
           <div className="space-y-3">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-zinc-300">
-                Nome
-              </label>
-              <input
+            <div className="grid gap-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input
                 id="name"
                 type="text"
                 required
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
                 placeholder="Il tuo nome"
               />
             </div>
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-zinc-300">
-                Numero di telefono
-              </label>
-              <input
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Numero di telefono</Label>
+              <Input
                 id="phone"
                 type="tel"
                 required
                 value={clientPhone}
                 onChange={(e) => setClientPhone(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
                 placeholder="+39 333 1234567"
               />
             </div>
           </div>
 
-          {error && <div className="rounded-lg bg-red-950/50 p-3 text-sm text-red-400">{error}</div>}
+          {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 
-          <button
+          <Button
             onClick={handleConfirm}
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
+            className="w-full"
+            size="lg"
           >
             {loading ? (
               <>
@@ -464,7 +455,7 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
             ) : (
               "Conferma Prenotazione"
             )}
-          </button>
+          </Button>
         </div>
       )}
     </div>
