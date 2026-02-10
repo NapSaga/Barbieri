@@ -934,7 +934,7 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
 
       {/* Future closures */}
       {futureClosures.length > 0 ? (
@@ -1040,21 +1040,21 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
       <div
         className={cn(
           "flex items-center gap-3 rounded-lg p-4",
-          statusMeta.color === "emerald" && "bg-emerald-50",
-          statusMeta.color === "blue" && "bg-blue-50",
-          statusMeta.color === "amber" && "bg-amber-50",
-          statusMeta.color === "red" && "bg-red-50",
-          statusMeta.color === "gray" && "bg-gray-50",
+          statusMeta.color === "emerald" && "bg-emerald-950/30",
+          statusMeta.color === "blue" && "bg-blue-950/30",
+          statusMeta.color === "amber" && "bg-amber-950/30",
+          statusMeta.color === "red" && "bg-red-950/30",
+          statusMeta.color === "gray" && "bg-zinc-800",
         )}
       >
         <div
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-            statusMeta.color === "emerald" && "bg-emerald-100 text-emerald-600",
-            statusMeta.color === "blue" && "bg-blue-100 text-blue-600",
-            statusMeta.color === "amber" && "bg-amber-100 text-amber-600",
-            statusMeta.color === "red" && "bg-red-100 text-red-600",
-            statusMeta.color === "gray" && "bg-gray-100 text-gray-600",
+            statusMeta.color === "emerald" && "bg-emerald-500/20 text-emerald-400",
+            statusMeta.color === "blue" && "bg-blue-500/20 text-blue-400",
+            statusMeta.color === "amber" && "bg-amber-500/20 text-amber-400",
+            statusMeta.color === "red" && "bg-red-500/20 text-red-400",
+            statusMeta.color === "gray" && "bg-zinc-700 text-zinc-400",
           )}
         >
           {isActive ? <Crown className="h-5 w-5" /> : isCancelled ? <AlertTriangle className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
@@ -1063,11 +1063,11 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
           <h4
             className={cn(
               "font-semibold",
-              statusMeta.color === "emerald" && "text-emerald-800",
-              statusMeta.color === "blue" && "text-blue-800",
-              statusMeta.color === "amber" && "text-amber-800",
-              statusMeta.color === "red" && "text-red-800",
-              statusMeta.color === "gray" && "text-gray-800",
+              statusMeta.color === "emerald" && "text-emerald-200",
+              statusMeta.color === "blue" && "text-blue-200",
+              statusMeta.color === "amber" && "text-amber-200",
+              statusMeta.color === "red" && "text-red-200",
+              statusMeta.color === "gray" && "text-zinc-200",
             )}
           >
             {statusMeta.label}
@@ -1076,11 +1076,11 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
           <p
             className={cn(
               "text-sm",
-              statusMeta.color === "emerald" && "text-emerald-600",
-              statusMeta.color === "blue" && "text-blue-600",
-              statusMeta.color === "amber" && "text-amber-600",
-              statusMeta.color === "red" && "text-red-600",
-              statusMeta.color === "gray" && "text-gray-600",
+              statusMeta.color === "emerald" && "text-emerald-400",
+              statusMeta.color === "blue" && "text-blue-400",
+              statusMeta.color === "amber" && "text-amber-400",
+              statusMeta.color === "red" && "text-red-400",
+              statusMeta.color === "gray" && "text-zinc-400",
             )}
           >
             {isTrialing && info?.trialEnd && `La prova gratuita scade il ${formatBillingDate(info.trialEnd)}`}
@@ -1099,7 +1099,7 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
           type="button"
           onClick={handlePortal}
           disabled={isPending}
-          className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-5 py-2.5 text-sm font-semibold text-zinc-200 shadow-sm hover:bg-zinc-700 disabled:opacity-50"
         >
           {isPending && !pendingPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
           Gestisci abbonamento
@@ -1120,33 +1120,33 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
                 key={planId}
                 className={cn(
                   "relative flex flex-col rounded-xl border-2 p-5 transition-shadow",
-                  isHighlighted ? "border-blue-500 shadow-lg shadow-blue-100" : "border-gray-200",
+                  isHighlighted ? "border-zinc-400 shadow-lg shadow-zinc-400/10" : "border-zinc-800",
                   isCurrentPlan && "ring-2 ring-emerald-500",
                 )}
               >
                 {isHighlighted && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-0.5 text-xs font-semibold text-zinc-900">
                     Consigliato
                   </span>
                 )}
 
-                <h4 className="text-lg font-bold text-gray-900">{plan.name}</h4>
-                <p className="text-sm text-gray-500">{plan.description}</p>
+                <h4 className="text-lg font-bold text-zinc-100">{plan.name}</h4>
+                <p className="text-sm text-zinc-500">{plan.description}</p>
 
                 <div className="mt-3 mb-4">
                   {isEnterprise ? (
-                    <span className="text-2xl font-bold text-gray-900">Custom</span>
+                    <span className="text-2xl font-bold text-zinc-100">Custom</span>
                   ) : (
                     <>
-                      <span className="text-3xl font-bold text-gray-900">{plan.priceLabel}</span>
-                      <span className="text-sm text-gray-500">/mese</span>
+                      <span className="text-3xl font-bold text-zinc-100">{plan.priceLabel}</span>
+                      <span className="text-sm text-zinc-500">/mese</span>
                     </>
                   )}
                 </div>
 
                 <ul className="mb-5 flex-1 space-y-2">
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
+                    <li key={f} className="flex items-start gap-2 text-sm text-zinc-400">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                       {f}
                     </li>
@@ -1156,12 +1156,12 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
                 {isEnterprise ? (
                   <a
                     href={`mailto:${STRIPE_CONFIG.contactEmail}?subject=BarberOS Enterprise`}
-                    className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    className="flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm font-semibold text-zinc-200 hover:bg-zinc-700"
                   >
                     Contattaci
                   </a>
                 ) : isCurrentPlan ? (
-                  <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700">
+                  <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2.5 text-sm font-semibold text-emerald-300">
                     <CheckCircle className="h-4 w-4" />
                     Piano attuale
                   </div>
@@ -1173,8 +1173,8 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
                     className={cn(
                       "flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm disabled:opacity-50",
                       isHighlighted
-                        ? "bg-blue-600 text-white hover:bg-blue-500"
-                        : "bg-gray-900 text-white hover:bg-gray-800",
+                        ? "bg-white text-zinc-900 hover:bg-zinc-200"
+                        : "bg-zinc-200 text-zinc-900 hover:bg-zinc-300",
                     )}
                   >
                     {isPending && pendingPlan === planId ? (
@@ -1193,7 +1193,7 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
 
       {/* Trial info */}
       {isTrialing && (
-        <div className="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
+        <div className="rounded-lg bg-zinc-800 px-3 py-2 text-xs text-zinc-300">
           <Info className="mr-1 inline h-3.5 w-3.5" />
           Durante la prova gratuita di {STRIPE_CONFIG.trialDays} giorni puoi usare tutte le funzionalità.
           Al termine, scegli un piano per continuare.
@@ -1201,7 +1201,7 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
       )}
 
       {/* Contratto info */}
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-zinc-600">
         Contratto 12 mesi. Garanzia risultati: se dopo 3 mesi non vedi un ritorno almeno 2x, esci senza penali.
       </p>
     </div>

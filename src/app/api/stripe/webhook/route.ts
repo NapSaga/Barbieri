@@ -4,12 +4,21 @@ import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
 // Use Supabase admin client to bypass RLS (same pattern as WhatsApp webhook)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+// Lazy-initialized to avoid build-time crash when env vars aren't set
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null;
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+  }
+  return _supabaseAdmin;
+}
 
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
+function getWebhookSecret() {
+  return process.env.STRIPE_WEBHOOK_SECRET!;
+}
 
 // Map Stripe subscription status → our DB enum
 function mapStatus(stripeStatus: string): string {
@@ -28,8 +37,8 @@ function mapStatus(stripeStatus: string): string {
 }
 
 async function updateSubscriptionStatus(customerId: string, status: string) {
-  const { error } = await supabaseAdmin
-    .from("businesses")
+  const { error } = await (getSupabaseAdmin()
+    .from("businesses") as any)
     .update({
       subscription_status: mapStatus(status),
       updated_at: new Date().toISOString(),
@@ -52,7 +61,7 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(body, signature, getWebhookSecret());
   } catch (err) {
     console.error("[Stripe Webhook] Signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });

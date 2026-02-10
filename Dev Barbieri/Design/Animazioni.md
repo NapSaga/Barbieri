@@ -6,7 +6,7 @@
 
 ### Installazione
 
-```bash
+```bash d
 pnpm add motion
 ```
 

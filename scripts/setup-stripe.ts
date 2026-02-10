@@ -2,7 +2,7 @@
  * Setup script to create recurring monthly prices on Stripe for all plans.
  * Run once: npx tsx scripts/setup-stripe.ts
  *
- * Requires STRIPE_SECRET_KEY in .env.local
+ * Requires STRIPE_SECRET_KEY in .env.local 
  */
 
 import Stripe from "stripe";

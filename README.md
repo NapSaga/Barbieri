@@ -1,280 +1,237 @@
-# BarberOS MVP
+# BarberOS — Gestione Appuntamenti per Barbieri
 
-Piattaforma SaaS per la gestione di barberie: prenotazioni online, calendario interattivo, CRM clienti, notifiche WhatsApp automatiche con conferma intelligente, analytics, lista d'attesa e billing Stripe.
+Piattaforma SaaS completa per barberie: prenotazioni online, calendario multi-barbiere, CRM clienti, automazioni WhatsApp e billing integrato.
 
 ## Stack Tecnologico
 
-| Layer | Tecnologia | Versione |
-|-------|-----------|----------|
-| **Runtime** | Node.js | 22 LTS |
-| **Framework** | Next.js (App Router) | 16.1.6 |
-| **UI** | React + React Compiler | 19.2.3 |
-| **Styling** | Tailwind CSS | v4 |
-| **Icone** | Lucide React | v0.563+ |
-| **Linguaggio** | TypeScript (strict mode) | 5.x |
-| **Linting** | Biome | 2.3.14 |
-| **Database** | Supabase (PostgreSQL) | 17.6 |
-| **ORM** | Drizzle ORM | 0.45.x |
-| **Auth** | Supabase Auth | SSR |
-| **WhatsApp** | Twilio (dual-mode: live/mock) | ^5.12.1 |
-| **Pagamenti** | Stripe Billing | 20.3.1 |
-| **Cron** | pg_cron + pg_net (nativi Supabase) | 1.6.4 / 0.19.5 |
-| **Serverless** | Supabase Edge Functions (Deno) | — |
-| **Package Manager** | pnpm | 10.29.2 |
-| **Bundler** | Turbopack (dev) | — |
+| Layer | Tecnologia |
+|---|---|
+| **Framework** | Next.js 16.1.6 (App Router, Turbopack) |
+| **UI** | React 19.2.3 + React Compiler, Tailwind CSS v4, Lucide React |
+| **Linguaggio** | TypeScript 5.x (strict mode) |
+| **Database** | Supabase (PostgreSQL 17.6, RLS, Edge Functions, pg_cron) |
+| **ORM** | Drizzle ORM 0.45.x (schema-as-code, migrazioni) |
+| **Auth** | Supabase Auth (email + password, magic link, JWT refresh) |
+| **Pagamenti** | Stripe Billing (Checkout, Customer Portal, Webhooks) |
+| **Notifiche** | Twilio WhatsApp Business API (dual-mode: live / mock) |
+| **Linting** | Biome 2.3.14 |
+| **Package Manager** | pnpm |
+| **Deploy** | Vercel (previsto) + Cloudflare DNS |
 
-## Setup
+## Funzionalità
+
+### Calendario Interattivo
+- Vista giornaliera (timeline oraria 07–21, colonne per barbiere) e settimanale
+- Walk-in dialog per aggiunta rapida appuntamenti
+- 5 stati con colori distinti: Prenotato, Confermato, Completato, Cancellato, No-show
+- Indicatore ora corrente, badge conferma WhatsApp (pallino pulsante)
+
+### Booking Pubblico (`/book/[slug]`)
+- Wizard multi-step: Servizio → Barbiere → Data/Ora → Conferma
+- Calcolo slot disponibili (orari staff + durata servizio + chiusure)
+- Creazione automatica cliente (lookup per telefono)
+- Conferma WhatsApp automatica
+
+### CRM Clienti
+- Ricerca per nome o telefono
+- Scheda espandibile con stats, tag, note
+- Tag manuali (VIP, Nuovo, Problematico) e **automatici** (Affidabile, Non conferma)
+- Badge alert per clienti con 2+ no-show
+
+### Automazioni WhatsApp (pg_cron + Edge Functions)
+6 cron job attivi con timing intelligente:
+
+| Job | Frequenza | Descrizione |
+|---|---|---|
+| `confirmation-request` | ogni 30 min | Richiesta conferma (timing smart basato su orario appuntamento) |
+| `confirmation-reminder` | ogni 30 min | Secondo reminder se non risponde |
+| `auto-cancel` | ogni 30 min | Cancellazione automatica + notifica waitlist |
+| `pre-appointment` | ogni 30 min | "Ci vediamo!" ~2h prima (solo confermati) |
+| `review-request` | ogni ora | Richiesta recensione Google post-completamento |
+| `reactivation` | 1x/giorno | Riattivazione clienti dormienti |
+
+Comandi WhatsApp gestiti: `CONFERMA`, `CANCELLA`, `CAMBIA ORARIO`, `SI`
+
+### Billing Stripe
+- 3 piani: **Essential** (€300/mese), **Professional** (€500/mese), **Enterprise** (custom)
+- Trial 30 giorni gratuiti
+- Checkout, Customer Portal, sync stato via webhook
+- Subscription gating nel middleware (redirect a `/dashboard/expired`)
+
+### Analytics
+- 4 KPI cards con delta % vs periodo precedente
+- Grafici fatturato e appuntamenti giornalieri
+- Servizi più richiesti, breakdown clienti nuovi vs ricorrenti
+- Calcolo notturno via cron SQL (`calculate_analytics_daily`)
+
+### Altre Funzionalità
+- **CRUD Servizi** — nome, durata, prezzo, combo, toggle attivo
+- **CRUD Staff** — nome, orari lavoro per giorno, toggle attivo
+- **Waitlist** — filtri per stato, ricerca, badge, bulk-expire
+- **Chiusure straordinarie** — date picker, motivo, integrato in booking e calendario
+- **Impostazioni** — dati barberia, orari apertura, template WhatsApp, regole automatiche, abbonamento
+
+## Struttura Progetto
+
+```
+src/
+├── app/
+│   ├── (auth)/              # Login, Registrazione
+│   ├── (dashboard)/         # Layout + pagine dashboard
+│   │   └── dashboard/
+│   │       ├── analytics/
+│   │       ├── clients/
+│   │       ├── expired/
+│   │       ├── services/
+│   │       ├── settings/
+│   │       ├── staff/
+│   │       ├── waitlist/
+│   │       └── page.tsx     # Calendario (home dashboard)
+│   ├── api/
+│   │   ├── stripe/webhook/  # Webhook Stripe
+│   │   └── whatsapp/webhook/# Webhook Twilio WhatsApp
+│   ├── auth/callback/       # OAuth / magic link callback
+│   ├── book/[slug]/         # Booking pubblico
+│   └── layout.tsx
+├── actions/                 # Server Actions (9 moduli)
+│   ├── analytics.ts
+│   ├── appointments.ts
+│   ├── billing.ts
+│   ├── business.ts
+│   ├── clients.ts
+│   ├── closures.ts
+│   ├── services.ts
+│   ├── staff.ts
+│   └── waitlist.ts
+├── components/              # Componenti React (10 domini)
+├── db/
+│   ├── schema.ts            # Schema Drizzle (10 tabelle, 6 enums)
+│   └── index.ts             # Connessione DB
+├── lib/
+│   ├── supabase/            # Client Supabase (client, server, middleware)
+│   ├── slots.ts             # Algoritmo calcolo slot disponibili
+│   ├── stripe.ts            # Client Stripe
+│   ├── stripe-plans.ts      # Definizione piani e prezzi
+│   ├── templates.ts         # Template messaggi WhatsApp (default italiani)
+│   ├── whatsapp.ts          # Servizio WhatsApp (Twilio / mock)
+│   └── utils.ts
+├── types/index.ts           # Tipi inferiti da Drizzle
+└── proxy.ts                 # Middleware Next.js 16 (auth + subscription gating)
+```
+
+## Database (10 tabelle)
+
+`businesses` · `staff` · `services` · `staff_services` · `clients` · `appointments` · `waitlist` · `messages` · `message_templates` · `analytics_daily` · `business_closures`
+
+- RLS abilitato su ogni tabella con isolamento per `business_id`
+- Trigger `on_auth_user_created` per auto-creazione business alla registrazione
+- 6 SQL helper functions per il sistema di conferma intelligente
+- Funzione `calculate_analytics_daily` per aggregazione notturna
+
+## Setup Locale
+
+### Prerequisiti
+- Node.js 22 LTS
+- pnpm (`npm install -g pnpm`)
+- Account [Supabase](https://supabase.com)
+- Account [Stripe](https://stripe.com) (opzionale per billing)
+- Account [Twilio](https://twilio.com) (opzionale — senza, i messaggi restano in mock)
+
+### Installazione
 
 ```bash
+# Clona il repository
+git clone <repo-url>
+cd barberos-mvp
+
+# Installa dipendenze
 pnpm install
+
+# Configura variabili d'ambiente
 cp .env.example .env.local
-# Configura le variabili in .env.local (vedi sezione Variabili d'Ambiente)
+# Compila .env.local con le tue credenziali (vedi sezione sotto)
+
+# Push schema al database
+pnpm db:push
+
+# Avvia il dev server (Turbopack)
 pnpm dev
 ```
 
 ### Variabili d'Ambiente
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://[project-id].supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=[anon key]
-DATABASE_URL=postgresql://postgres.[project-id]:[password]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
-DIRECT_URL=postgresql://postgres.[project-id]:[password]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
-SUPABASE_SERVICE_ROLE_KEY=[service role key — server-only, per webhook]
+# Supabase (obbligatorio)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+DATABASE_URL=postgresql://...     # Connection pooler (porta 6543)
+DIRECT_URL=postgresql://...       # Connessione diretta (porta 5432)
+SUPABASE_SERVICE_ROLE_KEY=...     # Per webhook e operazioni admin
 
-# App URL (per validazione webhook Twilio)
+# App
 NEXT_PUBLIC_APP_URL=https://localhost:3000
 
-# Twilio WhatsApp (opzionale — senza queste variabili → mock mode)
-TWILIO_ACCOUNT_SID=[dal dashboard Twilio]
-TWILIO_AUTH_TOKEN=[dal dashboard Twilio]
+# Twilio WhatsApp (opzionale — senza, i messaggi restano in mock)
+TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
 TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 
-# Stripe Billing
-STRIPE_SECRET_KEY=[sk_live_... — server-only]
-STRIPE_WEBHOOK_SECRET=[whsec_... — richiede dominio pubblico]
-STRIPE_PRICE_ESSENTIAL=[creato da scripts/setup-stripe.ts]
-STRIPE_PRICE_PROFESSIONAL=[creato da scripts/setup-stripe.ts]
+# Stripe Billing (opzionale per sviluppo locale)
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ESSENTIAL=price_...
+STRIPE_PRICE_PROFESSIONAL=price_...
 ```
 
-> **Nota:** Se le variabili `TWILIO_*` non sono configurate, i messaggi WhatsApp vengono loggati in console (mock mode). Per creare i prezzi Stripe ricorrenti: `npx tsx scripts/setup-stripe.ts`.
-
-## Scripts
+### Script Disponibili
 
 | Comando | Descrizione |
 |---|---|
-| `pnpm dev` | Dev server con Turbopack (porta 3000) |
-| `pnpm build` | Build di produzione |
-| `pnpm start` | Server di produzione |
-| `pnpm lint` | Lint con Biome |
-| `pnpm lint:fix` | Auto-fix lint |
-| `pnpm format` | Formattazione con Biome |
-| `pnpm typecheck` | Type check TypeScript (`tsc --noEmit`) |
+| `pnpm dev` | Dev server con Turbopack |
+| `pnpm build` | Build produzione |
+| `pnpm start` | Avvia server produzione |
+| `pnpm lint` | Check con Biome |
+| `pnpm lint:fix` | Fix automatici Biome |
+| `pnpm format` | Formattazione Biome |
+| `pnpm typecheck` | Type check TypeScript |
 | `pnpm db:generate` | Genera migrazioni Drizzle |
-| `pnpm db:push` | Push schema a Supabase |
-| `pnpm db:studio` | UI studio Drizzle |
+| `pnpm db:push` | Push schema al database |
+| `pnpm db:studio` | Apri Drizzle Studio |
 
-## Struttura Progetto
+### Setup Stripe (una tantum)
 
-```
-barberos-mvp/
-├── scripts/
-│   └── setup-stripe.ts           # Setup Stripe (crea prezzi ricorrenti + aggiorna .env)
-│
-└── src/
-    ├── proxy.ts                  # Proxy Next.js 16 (protezione route + refresh sessione)
-    │
-    ├── app/
-    │   ├── layout.tsx            # Root layout (font Inter, metadata, lang="it")
-    │   ├── page.tsx              # Homepage: redirect a /dashboard o /login
-    │   ├── globals.css           # Stili globali Tailwind
-    │   │
-    │   ├── (auth)/
-    │   │   ├── login/page.tsx    # Login (email+password, magic link)
-    │   │   └── register/page.tsx # Registrazione (nome barberia, email, password)
-    │   │
-    │   ├── api/
-    │   │   ├── stripe/webhook/route.ts    # Webhook Stripe (subscription + invoice events)
-    │   │   └── whatsapp/webhook/route.ts  # Webhook Twilio WhatsApp (comandi cliente)
-    │   │
-    │   ├── auth/callback/route.ts         # OAuth / magic link callback
-    │   │
-    │   ├── (dashboard)/dashboard/
-    │   │   ├── page.tsx          # Calendario giornaliero/settimanale
-    │   │   ├── clients/page.tsx  # CRM clienti
-    │   │   ├── services/page.tsx # CRUD servizi
-    │   │   ├── staff/page.tsx    # CRUD staff + orari di lavoro
-    │   │   ├── waitlist/page.tsx # Lista d'attesa
-    │   │   ├── analytics/page.tsx# Dashboard analytics
-    │   │   └── settings/page.tsx # Impostazioni (8 sezioni)
-    │   │
-    │   └── book/[slug]/page.tsx  # Booking pubblico (wizard multi-step)
-    │
-    ├── actions/                  # Server Actions (9 moduli)
-    │   ├── analytics.ts          # getAnalyticsSummary, getAnalyticsDaily, getTopServices
-    │   ├── appointments.ts       # CRUD appuntamenti, walk-in, cambio stato
-    │   ├── billing.ts            # createCheckoutSession, createPortalSession, getSubscriptionInfo
-    │   ├── business.ts           # CRUD business, orari, soglie, template
-    │   ├── clients.ts            # CRUD clienti, tag, note
-    │   ├── closures.ts           # CRUD chiusure straordinarie
-    │   ├── services.ts           # CRUD servizi
-    │   ├── staff.ts              # CRUD staff, orari di lavoro
-    │   └── waitlist.ts           # Gestione lista d'attesa
-    │
-    ├── components/               # Componenti React (14)
-    │   ├── booking/booking-wizard.tsx
-    │   ├── calendar/             # calendar-view, day-view, week-view,
-    │   │                         # appointment-card, appointment-sheet, walk-in-dialog
-    │   ├── clients/clients-manager.tsx
-    │   ├── services/services-manager.tsx
-    │   ├── settings/settings-manager.tsx
-    │   ├── staff/staff-manager.tsx
-    │   └── shared/sidebar.tsx
-    │
-    ├── db/
-    │   ├── schema.ts             # Schema Drizzle (10 tabelle, 6 enums, relazioni)
-    │   └── index.ts              # Connessione database (postgres.js + drizzle)
-    │
-    ├── lib/
-    │   ├── utils.ts              # cn() per class names
-    │   ├── slots.ts              # Algoritmo calcolo slot disponibili
-    │   ├── stripe.ts             # Stripe client + PLANS config (3 piani)
-    │   ├── whatsapp.ts           # WhatsApp dual-mode (Twilio live / mock)
-    │   ├── templates.ts          # Template messaggi WhatsApp (8 tipi)
-    │   └── supabase/             # client.ts, server.ts, middleware.ts
-    │
-    └── types/index.ts            # TypeScript types (Select + Insert per tabella)
+```bash
+npx tsx scripts/setup-stripe.ts
 ```
 
-## Database
+Crea i prezzi ricorrenti mensili su Stripe e aggiorna `.env.local` con i price ID.
 
-**11 tabelle** con RLS su ognuna, isolamento dati per `business_id`:
+## Stato del Progetto
 
-| Tabella | Descrizione |
-|---------|-------------|
-| `businesses` | Dati barberia, orari, Stripe customer, subscription status |
-| `staff` | Barbieri con orari di lavoro (jsonb) |
-| `services` | Servizi con durata, prezzo, combo |
-| `staff_services` | Relazione many-to-many staff ↔ servizi |
-| `clients` | CRM con tag, note, contatori visite/no-show |
-| `appointments` | Appuntamenti con 5 stati e 4 sorgenti |
-| `waitlist` | Lista d'attesa con 4 stati |
-| `messages` | Log messaggi WhatsApp inviati |
-| `message_templates` | Template personalizzabili per business |
-| `analytics_daily` | Metriche giornaliere (calcolate da cron notturno) |
-| `business_closures` | Chiusure straordinarie con data e motivo |
+| Fase | Stato | Contenuto |
+|---|---|---|
+| **A — Infrastruttura** | ✅ Completata | Supabase, Next.js, DB, Auth, Layout |
+| **B — Funzionalità Core** | ✅ Completata | Calendario, CRUD, CRM Clienti |
+| **C — Automazioni e Business** | ✅ Completata | WhatsApp, Billing, Analytics, Waitlist |
+| **D — Polish e Deploy** | ⬜ Da fare | Dominio, PWA, Performance, Deploy |
 
-**6 Enums:** `appointment_status`, `appointment_source`, `waitlist_status`, `message_type`, `message_status`, `subscription_status`
+### Prossimi Passi (Fase D)
+- Acquisto dominio + DNS Cloudflare
+- Configurazione webhook Stripe (richiede URL pubblica)
+- PWA con Serwist (service worker, manifest, installabilità)
+- Test flussi end-to-end
+- Performance optimization
+- Deploy produzione su Vercel
+- Audit sicurezza (rate limiting, CSP headers, CORS)
 
-**Funzioni DB:**
-- `get_user_business_id()` — helper RLS, SECURITY DEFINER
-- `handle_new_user()` — trigger auto-creazione business alla registrazione
-- `calculate_analytics_daily()` — UPSERT metriche giornaliere
-- 6 SQL helper functions per conferma intelligente
+## Note Tecniche
 
-**13 migrazioni** applicate.
+- **Next.js 16** usa `proxy.ts` invece di `middleware.ts` per protezione route e refresh sessione
+- **Supabase JS** usato per query runtime (beneficia di RLS automatico); Drizzle usato per schema e migrazioni
+- **WhatsApp dual-mode**: se le variabili `TWILIO_*` sono configurate → invio reale via Twilio. Altrimenti → mock con `console.log`
+- **Template messaggi**: default italiani in `lib/templates.ts`, personalizzabili dal barbiere via UI → salvati su DB
+- **Server Actions** per tutte le mutazioni autenticate. Unica API route: webhook WhatsApp e Stripe
 
-## Funzionalità
+## Licenza
 
-### Booking Pubblico (`/book/[slug]`)
-Wizard multi-step: Servizio → Barbiere → Data/Ora → Conferma. Calcolo slot disponibili basato su orari staff e durata servizio. Creazione automatica client, conferma WhatsApp, UI mobile-first.
-
-### Calendario (`/dashboard`)
-- **Vista giornaliera**: timeline oraria (07:00-21:00) con colonne per barbiere
-- **Vista settimanale**: griglia 7 giorni con card compatte
-- **Walk-in dialog**: aggiunta manuale appuntamenti
-- **5 stati colorati**: Prenotato (blu), Confermato (verde), Completato (grigio), Cancellato (rosso), No-show (arancione)
-- **Badge conferma**: pallino pulsante amber su card in attesa di conferma WhatsApp
-- **Banner chiusure**: avviso arancione su giorni con chiusura straordinaria
-
-### CRM Clienti (`/dashboard/clients`)
-Lista con ricerca, schede espandibili con stats, tag manuali (VIP, Nuovo, Problematico) e automatici (Affidabile, Non conferma), note con salvataggio automatico, badge no-show.
-
-### Servizi e Staff (`/dashboard/services`, `/dashboard/staff`)
-CRUD completo per servizi (nome, durata, prezzo, combo, toggle) e staff (nome, orari di lavoro per 7 giorni, toggle).
-
-### Lista d'Attesa (`/dashboard/waitlist`)
-Filtri per stato, ricerca, badge colorati, rimozione entry, bulk-expire scaduti. Notifica WhatsApp automatica al primo in lista quando si libera uno slot.
-
-### Analytics (`/dashboard/analytics`)
-4 KPI cards con delta %, grafico fatturato giornaliero, grafico appuntamenti stacked, classifica servizi, breakdown clienti nuovi vs ricorrenti. Selector periodo: 7gg / 30gg / 90gg.
-
-### Impostazioni (`/dashboard/settings`)
-8 sezioni accordion: dati barberia, orari apertura, WhatsApp, template messaggi, recensioni Google, regole automatiche, chiusure straordinarie, abbonamento Stripe.
-
-## Automazioni WhatsApp
-
-Sistema di **conferma intelligente** con timing smart basato sull'orario dell'appuntamento:
-
-| Orario appuntamento | 1ª richiesta | 2° reminder | Deadline auto-cancel |
-|---------------------|--------------|-------------|----------------------|
-| Pomeriggio (≥14:00) | Sera prima 20:00 | Mattina 08:00 | Ore 12:00 |
-| Tarda mattina (10-14) | Sera prima 20:00 | Mattina 07:30 | Ore 09:00 |
-| Mattina presto (<10) | Giorno prima 12:00 | Sera prima 20:00 | Sera prima 22:00 |
-
-**Comandi WhatsApp del cliente:**
-
-| Comando | Azione |
-|---------|--------|
-| `CONFERMA` | booked → confirmed |
-| `CANCELLA` / `ANNULLA` | Cancella appuntamento + notifica waitlist |
-| `CAMBIA ORARIO` | Invia link prenotazione |
-| `SI` | Conferma dalla waitlist |
-
-**6 Edge Functions** su Supabase (Deno) + **7 pg_cron schedules**:
-- `confirmation-request` — ogni 30min, richiesta conferma (timing smart)
-- `confirmation-reminder` — ogni 30min, secondo avviso
-- `auto-cancel` — ogni 30min, cancella non confermati alla deadline + notifica waitlist
-- `pre-appointment` — ogni 30min, "ci vediamo!" ~2h prima
-- `review-request` — ogni ora (:15), richiesta recensione Google
-- `reactivation` — 1x/giorno (11:00 Roma), clienti dormienti
-- `analytics-daily-calc` — ogni notte 03:05 Roma, calcolo metriche giornaliere
-
-## Stripe Billing
-
-3 piani di abbonamento:
-
-| Piano | Prezzo | Target |
-|-------|--------|--------|
-| **Essential** | €300/mese | 1-2 poltrone |
-| **Professional** | €500/mese | 3-5 poltrone (consigliato) |
-| **Enterprise** | Custom | Multi-sede |
-
-- **Trial**: 30 giorni gratuiti
-- **Setup**: €1.000 una tantum (fatturato separatamente)
-- **Checkout**: Stripe Checkout con selezione piano
-- **Self-service**: Stripe Customer Portal (cambio carta, cancellazione, fatture)
-- **Webhook**: sync automatico `subscription_status` su DB
-
-## Pattern Architetturali
-
-1. **Server Components + Server Actions** — pagine server-side, mutazioni via Server Actions, `revalidatePath()` per invalidazione cache
-2. **Supabase SSR** — 3 client distinti (browser, server, middleware), sessione JWT con refresh automatico
-3. **RLS come layer di sicurezza** — ogni query filtrata per `business_id`, nessun passaggio manuale
-4. **Optimistic Updates** — toggle servizi e tag clienti con aggiornamento UI immediato
-5. **Dual-mode WhatsApp** — Twilio live se configurato, mock console.log altrimenti
-6. **proxy.ts** — Next.js 16 usa proxy convention (non middleware) per protezione route
-
-## Roadmap
-
-- **Fase A** ✅ — Infrastruttura, DB, Auth, Layout, Booking
-- **Fase B** ✅ — Calendario, Servizi CRUD, Staff CRUD, CRM clienti
-- **Fase C** ✅ — Automazioni WhatsApp, conferma intelligente, waitlist, analytics, Stripe, impostazioni, chiusure
-- **Fase D** ⬜ — Dominio + DNS, webhook Stripe, subscription gating, test E2E, PWA (Serwist), performance, deploy Vercel + Cloudflare
-
-## Debito Tecnico Noto
-
-- Middleware da migrare a proxy convention (Next.js 16)
-- Nessun test automatico
-- Nessuna validazione Zod sugli input delle Server Actions (Zod installato ma non usato)
-- `window.location.reload()` in alcuni componenti (da sostituire con `router.refresh()`)
-- Booking wizard non verifica conflitti con appuntamenti esistenti (solo slot basati su orari staff)
-- `settings-manager.tsx` è ~800 righe — da spezzare in sotto-componenti
-
-## Hosting (previsto)
-
-- **Frontend**: Vercel (Server Actions + API routes)
-- **Backend**: Supabase Cloud (database, auth, edge functions, pg_cron — già attivo)
-- **DNS/CDN**: Cloudflare
-- **Monitoring**: Sentry + Vercel Analytics
-- **CI/CD**: GitHub Actions + Vercel Preview Deployments
+Proprietario. Tutti i diritti riservati.
