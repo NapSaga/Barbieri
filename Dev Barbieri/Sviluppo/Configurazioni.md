@@ -112,6 +112,8 @@ pnpm typecheck     → Type check TypeScript (tsc --noEmit)
 pnpm db:generate   → Genera migrazioni Drizzle
 pnpm db:push       → Push schema a Supabase
 pnpm db:studio     → UI studio Drizzle
+pnpm test          → Esegui unit test Vitest (139 test, 7 file)
+pnpm test:watch    → Unit test in watch mode
 
 ---
 
@@ -122,10 +124,11 @@ Trigger: push su main + pull request su main
 Concurrency: cancel-in-progress (evita build duplicate)
 Timeout: 10 minuti
 
-Pipeline (3 step sequenziali):
+Pipeline (4 step sequenziali):
 1. pnpm typecheck  → tsc --noEmit
 2. pnpm lint       → biome check .
-3. pnpm build      → next build (con env placeholder)
+3. pnpm test       → vitest run (139 unit test)
+4. pnpm build      → next build (con env placeholder)
 
 Stack CI:
 - Runner: ubuntu-latest
@@ -160,7 +163,7 @@ Enums (6):
 Tabelle (11):
 
 1. businesses
-   - id (uuid PK), owner_id (uuid, auth.uid), name, slug (unique), address, phone, logo_url, google_review_link, opening_hours (jsonb), brand_colors (jsonb), timezone (default Europe/Rome), stripe_customer_id, subscription_status (default trialing), dormant_threshold_days (default 28), no_show_threshold (default 2), created_at, updated_at
+   - id (uuid PK), owner_id (uuid, auth.uid), name, slug (unique), address, phone, logo_url, google_review_link, opening_hours (jsonb), welcome_text (text), cover_image_url (text), font_preset (text), brand_colors (jsonb), timezone (default Europe/Rome), stripe_customer_id, subscription_status (default trialing), dormant_threshold_days (default 28), no_show_threshold (default 2), auto_complete_delay_minutes (int, default 20), created_at, updated_at
 
 2. staff
    - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), name, photo_url, working_hours (jsonb), active (default true), sort_order (default 0), created_at, updated_at
@@ -248,6 +251,8 @@ MIGRAZIONI APPLICATE
 15. security_perf_fixes — auth.uid() → (select auth.uid()) su businesses/business_closures, 7 indici FK, policy duplicate consolidate su services/staff/staff_services
 16. consolidate_permissive_policies — Consolidamento policy INSERT/SELECT duplicate su appointments/businesses/clients
 17. auto_complete_appointments — Colonna auto_complete_delay_minutes (default 20) su businesses + funzione auto_complete_appointments() con ritardo per-business + pg_cron schedule */20 (auto-completa confermati dopo end_time + delay, aggiorna stats cliente)
+18. add_welcome_text — Colonne welcome_text, cover_image_url, font_preset su businesses per personalizzazione booking page
+19. auto_complete_appointments (locale) — Migrazione locale per auto-complete (già applicata via Supabase Dashboard)
 
 ---
 

@@ -51,6 +51,7 @@ barberos-mvp/
     │   │       ├── staff/page.tsx    # STAFF — CRUD con orari di lavoro
     │   │       ├── waitlist/page.tsx # LISTA D'ATTESA — gestione waitlist con filtri
     │   │       ├── analytics/page.tsx# ANALYTICS — dashboard KPI, grafici, top servizi
+    │   │       ├── customize/page.tsx# PERSONALIZZA — branding booking page con preview live
     │   │       ├── expired/page.tsx  # ABBONAMENTO SCADUTO — redirect qui se subscription non valida
     │   │       └── settings/page.tsx # IMPOSTAZIONI — 8 sezioni: info, orari, WhatsApp, template, review, soglie, chiusure, billing
     │   │
@@ -97,6 +98,10 @@ barberos-mvp/
     │   ├── billing/
     │   │   └── expired-view.tsx   # Vista abbonamento scaduto: info stato, link a settings per riattivazione
     │   │
+    │   ├── customize/
+    │   │   └── form-customizer.tsx # Personalizzazione booking page: color picker, logo, welcome text,
+    │   │                          # cover image, font preset, preview live BookingWizard
+    │   │
     │   ├── clients/
     │   │   └── clients-manager.tsx # CRM clienti: lista, ricerca, form creazione, scheda espandibile con tag/note
     │   │
@@ -124,6 +129,8 @@ barberos-mvp/
     ├── lib/
     │   ├── utils.ts              # Utility cn() per class names (clsx + tailwind-merge)
     │   ├── slots.ts              # Algoritmo calcolo slot disponibili (orari staff - appuntamenti - pausa)
+    │   ├── brand-settings.ts     # Brand settings: BrandColors, hexToOklch(), generateBrandCSSVariables(),
+    │   │                         # FONT_PRESETS (4 preset), getFontPreset(), Zod schemas
     │   ├── time-utils.ts         # Utility tempo condivise: addMinutesToTime, timeToMinutes,
     │   │                         # minutesToTop, minutesToHeight, formatPrice (deduplicate da 4 file)
     │   ├── rate-limit.ts         # Rate limiter in-memory sliding window per API routes
@@ -137,13 +144,15 @@ barberos-mvp/
     │   │                         # sendWhatsAppMessage(), renderTemplate(), isWhatsAppEnabled()
     │   ├── templates.ts          # Template messaggi WhatsApp: 8 tipi, DEFAULT_TEMPLATES,
     │   │                         # TEMPLATE_LABELS, TEMPLATE_DESCRIPTIONS, types condivisi
-    │   ├── __tests__/            # Unit test Vitest (95 test su funzioni pure)
+    │   ├── __tests__/            # Unit test Vitest (139 test su funzioni pure)
     │   │   ├── time-utils.test.ts    # 24 test: addMinutesToTime, timeToMinutes, formatPrice
     │   │   ├── whatsapp.test.ts      # 8 test: renderTemplate
     │   │   ├── rate-limit.test.ts    # 11 test: checkRateLimit, getClientIp
     │   │   ├── slots.test.ts         # 11 test: getAvailableSlots
     │   │   ├── stripe-utils.test.ts  # 11 test: mapStatus
-    │   │   └── validation.test.ts    # 30 test: Zod schemas
+    │   │   ├── validation.test.ts    # 30 test: Zod schemas
+    │   │   └── brand-settings.test.ts # 44 test: updateBrandSettingsSchema, hexToOklch,
+    │   │                              # generateBrandCSSVariables, getFontPreset, generateFontCSSVariables
     │   └── supabase/
     │       ├── client.ts         # Supabase browser client (createBrowserClient)
     │       ├── server.ts         # Supabase server client (createServerClient con cookies)
@@ -354,23 +363,23 @@ CONTEGGIO FILE
 
 Codebase Next.js (locale):
 - 9 Server Actions (analytics, appointments, billing, business, clients, closures, services, staff, waitlist)
-- 18 route/pagine (incluso layout, callback, booking, expired, 2 webhook)
+- 19 route/pagine (incluso layout, callback, booking, customize, expired, 2 webhook)
 - 17 componenti UI shadcn/ui (avatar, badge, button, card, dialog, dropdown-menu, input, label, popover, select, separator, sheet, skeleton, sonner, table, tabs, tooltip)
-- 11 componenti feature (6 calendar, 1 analytics, 1 billing, 1 booking, 1 clients, 1 services, 1 settings, 1 staff, 1 waitlist)
+- 12 componenti feature (6 calendar, 1 analytics, 1 billing, 1 booking, 1 clients, 1 customize, 1 services, 1 settings, 1 staff, 1 waitlist)
 - 2 componenti shared (sidebar, barberos-logo)
-- 10 file lib/utility (utils, slots, rate-limit, stripe, stripe-plans, whatsapp, templates, 3 supabase clients)
+- 11 file lib/utility (utils, slots, brand-settings, rate-limit, stripe, stripe-plans, stripe-utils, whatsapp, templates, time-utils, 3 supabase clients)
 - 2 file database (schema, index)
 - 1 file types
 - 1 file proxy (proxy.ts — auth + subscription gating)
 - 1 config shadcn (components.json)
 - 1 script setup (scripts/setup-stripe.ts)
-- Totale: ~72 file TypeScript/TSX
+- Totale: ~76 file TypeScript/TSX
 
 Supabase Cloud:
 - 6 Edge Functions attive (confirmation-request/reminder, auto-cancel, pre-appointment, review-request, reactivation)
 - 8 SQL helper/functions (6 conferma + calculate_analytics_daily + auto_complete_appointments)
 - 8 pg_cron schedules (6 conferma + analytics-daily-calc + auto-complete-appointments)
-- 17 migrazioni applicate
+- 19 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments)
 - 11 tabelle (10 originali + business_closures)
 
 Deploy:

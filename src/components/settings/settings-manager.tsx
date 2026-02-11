@@ -726,7 +726,9 @@ function GoogleReviewInfo({ business }: { business: BusinessData }) {
 function ThresholdsForm({ business }: { business: BusinessData }) {
   const [dormantDays, setDormantDays] = useState(business.dormant_threshold_days ?? 28);
   const [noShowThreshold, setNoShowThreshold] = useState(business.no_show_threshold ?? 2);
-  const [autoCompleteDelay, setAutoCompleteDelay] = useState(business.auto_complete_delay_minutes ?? 20);
+  const [autoCompleteDelay, setAutoCompleteDelay] = useState(
+    business.auto_complete_delay_minutes ?? 20,
+  );
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -807,7 +809,8 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
           Ritardo completamento automatico (minuti)
         </label>
         <p className="text-xs text-muted-foreground mb-1">
-          Minuti di attesa dopo la fine dell&apos;appuntamento prima di segnarlo come completato (per clienti in ritardo)
+          Minuti di attesa dopo la fine dell&apos;appuntamento prima di segnarlo come completato
+          (per clienti in ritardo)
         </p>
         <input
           id="settings-auto-complete-delay"

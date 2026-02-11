@@ -169,7 +169,7 @@ AI (fase 2 post-MVP): Claude API via Anthropic SDK per suggerimenti automatici, 
 
 Hosting: Vercel per frontend, Server Actions e API routes (collegato). Supabase Cloud per database, auth, edge functions, cron (già attivo). Dominio custom con Cloudflare per DNS e CDN (da configurare).
 
-CI/CD (previsto): GitHub Actions per test e deploy automatico. Vercel Preview Deployments. Lint con Biome.
+CI/CD (attivo): GitHub Actions (.github/workflows/ci.yml) per typecheck, lint, test e build automatico su ogni push/PR a main. pnpm 10 + Node.js 22 + caching dipendenze. Vercel Preview Deployments. Lint con Biome 2.3.14 (0 errori, 0 warning). 139 unit test Vitest.
 
 ---
 
@@ -199,7 +199,7 @@ Margine lordo: 96%+.
 
 DATABASE: TABELLE PRINCIPALI
 
-businesses: id (uuid), name, slug, address, phone, logo_url, google_review_link, opening_hours (jsonb), brand_colors (jsonb), timezone, stripe_customer_id, subscription_status, created_at, updated_at.
+businesses: id (uuid), name, slug, address, phone, logo_url, google_review_link, opening_hours (jsonb), welcome_text (text), cover_image_url (text), font_preset (text), brand_colors (jsonb), timezone, stripe_customer_id, subscription_status, dormant_threshold_days (int default 28), no_show_threshold (int default 2), auto_complete_delay_minutes (int default 20), created_at, updated_at.
 
 staff: id (uuid), business_id (fk), name, photo_url, working_hours (jsonb), active, sort_order, created_at, updated_at.
 

@@ -22,7 +22,7 @@ AI (fase 2 post-MVP): Anthropic Claude API per suggerimenti automatici, previsio
 
 Hosting: Vercel per frontend, Server Actions e API routes (collegato, deploy attivo). Supabase Cloud per database, auth, edge functions, pg_cron (già attivo). Dominio custom con Cloudflare per DNS e CDN (da configurare).
 
-CI/CD (previsto): GitHub Actions per test e deploy. Vercel Preview Deployments. Lint con Biome. Type check con tsc --noEmit.
+CI/CD (attivo): GitHub Actions (.github/workflows/ci.yml) per typecheck → lint → test → build su ogni push/PR a main. pnpm 10 + Node.js 22 + caching dipendenze + concurrency cancel-in-progress. Vercel Preview Deployments. Lint con Biome 2.3.14 (0 errori, 0 warning). 139 unit test Vitest in 7 file (pnpm test). Type check con tsc --noEmit.
 
 Subscription gating: proxy.ts verifica subscription_status su ogni richiesta dashboard. Se non active/trialing/past_due → redirect a /dashboard/expired. Settings e expired page esenti (per permettere riattivazione). ExpiredView component per UI abbonamento scaduto.
 

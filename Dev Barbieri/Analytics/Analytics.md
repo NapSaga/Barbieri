@@ -12,8 +12,23 @@ STATO ATTUALE
   Componenti: <Analytics /> + <SpeedInsights /> in src/app/layout.tsx
   Piano Vercel: Hobby (50K eventi/mese inclusi, NO custom events)
 
-  Page views e metriche base vengono raccolte automaticamente.
-  Dopo il deploy, i dati appariranno nella Vercel Dashboard entro 30 secondi.
+  FASE 1 (page views + speed insights): COMPLETATA ✅ — ATTIVA IN PRODUZIONE
+    - <Analytics /> e <SpeedInsights /> integrati in layout.tsx dal 10 feb 2026
+    - Page views automatiche su TUTTE le pagine (11 dashboard + booking + auth)
+    - Inclusa /dashboard/customize (aggiunta con Personalizza Form)
+    - Visitors, bounce rate, referrers, devices, countries, Core Web Vitals
+    - Nessun codice aggiuntivo necessario — funziona automaticamente
+
+  FASE 2 (43 custom events): SOLO DOCUMENTATA — NON ANCORA IMPLEMENTATA NEL CODICE
+    - I 43 eventi mappati in questo file sono PIANIFICATI, non ancora scritti nel codice
+    - I file src/lib/analytics.ts e src/lib/analytics-server.ts NON esistono ancora
+    - Nessuna chiamata track() e' presente nel codice sorgente
+    - Per implementare serve:
+      1. Upgrade a Vercel Pro ($20/mese per team)
+      2. Creare src/lib/analytics.ts (client-side) e src/lib/analytics-server.ts (server-side)
+      3. Aggiungere track() nei file indicati nella mappa eventi sotto
+    - Il codice track() puo' essere scritto anche prima dell'upgrade:
+      su piano Hobby le chiamate vengono semplicemente ignorate
 
   NOTA: I custom events (track()) richiedono piano Pro.
   Su Hobby si ottengono page views automatiche, visitors, referrer,
@@ -84,7 +99,7 @@ CHECKLIST FASE 1:
   [x] pnpm add @vercel/analytics @vercel/speed-insights — FATTO 10 feb 2026
   [x] Aggiungere <Analytics /> e <SpeedInsights /> al layout.tsx — FATTO 10 feb 2026
   [x] Deploy su Vercel (git push) — Vercel collegato e attivo
-  [ ] Verificare dati nella Vercel Dashboard dopo primo visitatore
+  [x] Verificare dati nella Vercel Dashboard dopo primo visitatore
   [ ] Abilitare Speed Insights: Project → Speed Insights tab → Enable
 
 
@@ -182,6 +197,11 @@ Vercel le mostra sotto "Top Pages" nella dashboard.
   /dashboard/settings     Impostazioni
                           → Frequenza di personalizzazione
 
+  /dashboard/customize    Personalizza booking page
+                          → Quanti barbieri personalizzano il brand?
+                          → Feature usata = barbiere investe nel proprio brand
+                          → Se bassa = semplificare UX o aggiungere onboarding
+
   /dashboard/expired      Abbonamento scaduto
                           → Quanti finiscono qui = churn rate
 
@@ -196,6 +216,10 @@ COSA LEGGERE DAI PAGE VIEWS:
      → Troppi utenti in churn (rivedere pricing/valore)
   5. /login alto bounce rate?
      → Problemi di accesso (errore form, UX, etc.)
+  6. /dashboard/customize mai visitato?
+     → I barbieri non personalizzano (aggiungere prompt post-registrazione)
+  7. /dashboard/customize visitato ma nessun Brand Updated?
+     → UX del form troppo complessa (semplificare)
 
 ---
 
@@ -444,6 +468,36 @@ Priorita':
     { period: "7d" | "30d" | "90d" }
     File: src/app/(dashboard)/dashboard/analytics/page.tsx
 
+
+12. PERSONALIZZAZIONE BRAND [P1/P2]
+───────────────────────────────────
+
+  Brand Settings Updated                                       SERVER
+    { field: "colors" | "logo" | "welcome_text" | "cover_image" | "font_preset" }
+    File: src/actions/business.ts → updateBrandSettings()
+    Perche': Quanti barbieri personalizzano la booking page.
+             Se basso = feature non scoperta o troppo complessa. P1.
+
+  Brand Preview Loaded                                         CLIENT
+    { }
+    File: src/components/customize/form-customizer.tsx
+    Perche': Quanti aprono la pagina Personalizza e vedono la preview.
+             Confrontare con Brand Settings Updated per tasso di completamento. P2.
+
+  Font Preset Changed                                          CLIENT
+    { preset: "moderno" | "classico" | "bold" | "minimal" }
+    File: src/components/customize/form-customizer.tsx
+    Perche': Quale preset tipografico e' piu' popolare. P2.
+
+  Color Picker Used                                            CLIENT
+    { type: "primary" | "secondary" }
+    File: src/components/customize/form-customizer.tsx
+    Perche': Quanti cambiano i colori vs lasciano il default. P2.
+
+  FUNNEL PERSONALIZZAZIONE:
+    /dashboard/customize view → Brand Preview Loaded →
+    Color Picker Used / Font Preset Changed → Brand Settings Updated
+
 ---
 
 DASHBOARD VERCEL — COME LEGGERE I DATI
@@ -472,6 +526,7 @@ Dopo la Fase 1 (Hobby), nella dashboard Vercel vedrai:
     2. /book/[slug] deve crescere (adozione prenotazione online)
     3. /dashboard/expired deve essere BASSO (pochi in churn)
     4. /register deve avere trend crescente (nuovi utenti)
+    5. /dashboard/customize = adozione branding (feature engagement)
 
   Tab "Referrers"
   ───────────────
@@ -534,7 +589,12 @@ FUNNEL DI CONVERSIONE (Fase 2)
 
   FUNNEL ONBOARDING BARBIERE:
   /register view → User Registered → User Logged In →
-  Service Created → Staff Created → First Booking Created
+  Service Created → Staff Created → Brand Settings Updated →
+  First Booking Created
+
+  FUNNEL PERSONALIZZAZIONE:
+  /dashboard/customize view → Brand Preview Loaded →
+  Color Picker Used / Font Preset Changed → Brand Settings Updated
 
   FUNNEL PAGAMENTO:
   /dashboard/settings view → Checkout Started →
@@ -579,7 +639,7 @@ RIEPILOGO EVENTI PER FILE (Fase 2)
   src/actions/clients.ts                       | 1 (client created)
   src/actions/services.ts                      | 4 (create, update, toggle, delete)
   src/actions/staff.ts                         | 3 (create, hours, delete)
-  src/actions/business.ts                      | 3 (info, hours, templates)
+  src/actions/business.ts                      | 4 (info, hours, templates, brand settings)
   src/actions/billing.ts                       | 2 (checkout, portal)
   src/actions/closures.ts                      | 1 (closure added)
   src/actions/waitlist.ts                      | 1 (expired)
@@ -590,11 +650,12 @@ RIEPILOGO EVENTI PER FILE (Fase 2)
   src/components/calendar/calendar-view.tsx     | 1 (view changed)
   src/components/calendar/appointment-sheet.tsx | 1 (sheet opened)
   src/components/clients/clients-manager.tsx    | 2 (tag, search)
+  src/components/customize/form-customizer.tsx  | 3 (preview loaded, font preset, color picker)
   src/app/(auth)/login/page.tsx                | 2 (logged in, failed)
   src/app/(auth)/register/page.tsx             | 1 (registered)
   src/app/(dashboard)/dashboard/analytics/     | 1 (period changed)
   ─────────────────────────────────────────────+──────────
-  TOTALE                                       | 39 custom events
+  TOTALE                                       | 43 custom events
 
 ---
 
@@ -616,8 +677,13 @@ NOTE TECNICHE
 
 PROSSIMO PASSO
 
-  → Eseguire FASE 1 adesso (15 minuti, gratis):
-    1. pnpm add @vercel/analytics @vercel/speed-insights
-    2. Aggiornare layout.tsx
-    3. Deploy
-    4. Vedere i primi dati nella Vercel Dashboard
+  Fase 1 (page views + speed insights): GIA' COMPLETATA ✅
+  <Analytics /> e <SpeedInsights /> sono in layout.tsx dal 10 feb 2026.
+  Page views automatiche attive su tutte le 10 pagine dashboard + booking + auth.
+
+  → Prossimo: FASE 2 (custom events) quando si passa a Vercel Pro:
+    1. Upgrade a Vercel Pro
+    2. Creare src/lib/analytics.ts (client) e src/lib/analytics-server.ts (server)
+    3. Integrare i 43 custom events mappati sopra (partire da P0)
+    4. Verificare nella tab "Events" della Vercel Dashboard
+    5. Costruire i funnel (prenotazione, onboarding, personalizzazione, pagamento)

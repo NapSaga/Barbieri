@@ -301,7 +301,7 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
 
 FASE D — IN CORSO 🔧
 
-Polish, deploy, sicurezza.
+Polish, deploy, sicurezza, personalizzazione.
 
 1. Deploy Vercel ✅
    - Progetto collegato a Vercel (cartella .vercel presente)
@@ -395,17 +395,18 @@ Polish, deploy, sicurezza.
 10. Test Automatici Vitest ✅
    - Framework: Vitest 4.0.18 con path alias @/* (vitest.config.ts)
    - Script: pnpm test (run), pnpm test:watch (watch mode)
-   - 95 unit test in 6 file sotto src/lib/__tests__/:
+   - 139 unit test in 7 file sotto src/lib/__tests__/:
      - time-utils.test.ts (24): addMinutesToTime, timeToMinutes, minutesToTop, minutesToHeight, formatPrice
      - whatsapp.test.ts (8): renderTemplate (sostituzione, injection prevention)
      - rate-limit.test.ts (11): checkRateLimit, getClientIp
      - slots.test.ts (11): getAvailableSlots (pause, conflitti, boundary)
      - stripe-utils.test.ts (11): mapStatus (tutti gli stati Stripe → DB enum)
      - validation.test.ts (30): Zod schemas da appointments, services, clients
+     - brand-settings.test.ts (44): updateBrandSettingsSchema, hexToOklch, generateBrandCSSVariables, getFontPreset, generateFontCSSVariables
    - Utility deduplicate: addMinutesToTime, formatPrice, timeToMinutes, minutesToTop, minutesToHeight estratte in src/lib/time-utils.ts (prima duplicate in 4 file)
    - mapStatus estratto da webhook route in src/lib/stripe-utils.ts
    - Copertura: SOLO funzioni pure senza dipendenze esterne. NON copre server actions, auth, proxy, webhook E2E, rendering React
-   - Risultato: 95/95 pass in ~750ms
+   - Risultato: 139/139 pass
 
 11. CI/CD GitHub Actions ✅
    - Workflow: .github/workflows/ci.yml
@@ -435,7 +436,7 @@ Polish, deploy, sicurezza.
    - 1 fix useSemanticElements: <div role="button"> → <button> in appointment-sheet
    - ~12 file riformattati per rispettare line width 100 char (ternari, function signatures, label multiline, import ordering)
    - Configurazione biome.json NON modificata (regole restano warn, ma ora 0 warning nel codice)
-   - Risultato: pnpm lint ✅ (0 errori, 0 warning), pnpm typecheck ✅, pnpm build ✅, pnpm test ✅ (95/95)
+   - Risultato: pnpm lint ✅ (0 errori, 0 warning), pnpm typecheck ✅, pnpm build ✅, pnpm test ✅ (139/139)
 
 13. Configurazione Servizi Esterni ✅
    Tutte le credenziali e webhook configurati per produzione (dettagli in Guida-credenziali.md):
@@ -462,7 +463,23 @@ Polish, deploy, sicurezza.
    - 3 secrets Twilio aggiunti (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM)
    - 7 Edge Functions attive con secrets configurati
 
-14. Da fare:
+14. Personalizza Form (Booking Page Branding) ✅
+   - Nuova pagina /dashboard/customize con preview live del BookingWizard
+   - Sidebar: voce "Personalizza" con icona Palette nella sezione Gestione
+   - Color picker primario/secondario con conversione hex→oklch per CSS variables
+   - Logo URL con preview immagine
+   - Messaggio di benvenuto (welcome_text, max 200 char, contatore live)
+   - Immagine di copertina / banner (cover_image_url, hero image 16:9)
+   - 4 preset tipografici: Moderno, Classico, Bold, Minimal (font_preset, CSS variables --font-heading/--font-body)
+   - Server action updateBrandSettings (Zod validation + Supabase update)
+   - Booking page pubblica (/book/[slug]) applica brand_colors, logo_url, welcome_text, cover_image_url, font_preset
+   - BookingWizard: prop previewMode per disabilitare azioni nella preview
+   - 44 test Vitest (schema, hexToOklch, generateBrandCSSVariables, getFontPreset, generateFontCSSVariables)
+   - 20 test E2E nella checklist (sezione 17)
+   - Migrazione DB: welcome_text, cover_image_url, font_preset su businesses
+   - File: brand-settings.ts, form-customizer.tsx, customize/page.tsx, business.ts, sidebar.tsx, booking-wizard.tsx, book/[slug]/page.tsx, schema.ts
+
+15. Da fare:
    - Acquisto dominio custom + DNS Cloudflare
    - Passaggio WhatsApp da sandbox a produzione (registrazione WhatsApp Business Sender)
    - PWA con Serwist (service worker, manifest, installabilita')
@@ -484,6 +501,9 @@ Pagina /book/[slug] completamente funzionante:
 - Messaggio WhatsApp di conferma (mock o reale in base a configurazione Twilio)
 - Creazione record messaggio nel DB
 - UI mobile-first con progress indicator a 4 step
+- Branding personalizzabile: colori primario/secondario (hex→oklch), logo, welcome text, cover image, font preset
+- Pagina applica brand_colors, logo_url, welcome_text, cover_image_url, font_preset dalla business
+- Preview live nella pagina /dashboard/customize
 
 ---
 
@@ -504,5 +524,6 @@ NOTE TECNICHE
 - Rate limiting: in-memory sliding window in src/lib/rate-limit.ts, usato per protezione webhook.
 - Logo custom: PNG ufficiale in public/logo.png, componenti LogoIcon/LogoFull in src/components/shared/barberos-logo.tsx (next/image).
 - Test E2E: checklist manuale strutturata con 126 test cases in Dev Barbieri/Testing/test-checklist.md.
-- Test automatici: 95 unit test Vitest su funzioni pure (pnpm test). CI esegue automaticamente su ogni push/PR.
+- Test automatici: 139 unit test Vitest in 7 file su funzioni pure (pnpm test). CI esegue automaticamente su ogni push/PR.
 - I test automatici NON sostituiscono i test manuali E2E: coprono solo utility pure, non flussi integrati con DB/auth.
+- Brand settings: src/lib/brand-settings.ts con hexToOklch(), generateBrandCSSVariables(), getFontPreset(), 4 preset tipografici. Personalizzazione booking page via /dashboard/customize.

@@ -16,6 +16,7 @@ export function LogoIcon({ className, size = 36 }: LogoIconProps) {
       viewBox="0 0 32 32"
       className={cn("shrink-0", className)}
     >
+      <title>BarberOS</title>
       <defs>
         <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#1a1a1a" />

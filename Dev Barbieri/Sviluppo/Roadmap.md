@@ -9,7 +9,7 @@ PANORAMICA FASI
 Fase A — Infrastruttura         ✅ COMPLETATA
 Fase B — Funzionalità core      ✅ COMPLETATA
 Fase C — Automazioni e business  ✅ COMPLETATA
-Fase D — Polish e deploy         🔧 IN CORSO (14/15 completati)
+Fase D — Polish e deploy         🔧 IN CORSO (15/19 completati)
 
 ---
 
@@ -212,6 +212,7 @@ FASE D — POLISH E DEPLOY 🔧
     - 114 ✅ Pass, 0 ❌ Fail, 12 ⏭️ Skip (100% pass rate escludendo skip)
     - 8 bug fixati in 2 giri + fix successivi
     - 5 feature gap implementati (vedi sotto)
+    - 20 test E2E aggiuntivi per Personalizza Form (sezione 17)
 
 [x] Configurazione Servizi Esterni
     - 11 variabili d'ambiente su Vercel (Supabase, Stripe, Twilio, APP_URL)
@@ -263,6 +264,11 @@ FASE D — POLISH E DEPLOY 🔧
     - Risolti tutti i 43 warning Biome: 26 noLabelWithoutControl (htmlFor+id), 3 noStaticElementInteractions (backdrop → button), 3 noUnusedImports, 3 noUnusedFunctionParameters, 6 noExplicitAny (biome-ignore), 1 noArrayIndexKey, 1 useSemanticElements
     - ~12 file riformattati per line width 100 char
     - biome.json invariato (regole restano warn, warning risolti nel codice)
+
+[x] Test Automatici Vitest
+    - 139 unit test in 7 file (95 originali + 44 brand-settings)
+    - brand-settings.test.ts: updateBrandSettingsSchema, hexToOklch, generateBrandCSSVariables, getFontPreset, generateFontCSSVariables
+    - Risultato: 139/139 pass
 
 ---
 

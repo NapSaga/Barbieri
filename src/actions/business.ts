@@ -26,7 +26,11 @@ const openingHoursSchema = z.record(z.string(), dayHoursSchema);
 const updateThresholdsSchema = z.object({
   dormant_threshold_days: z.number().int().min(1, "Soglia giorni dormiente deve essere almeno 1"),
   no_show_threshold: z.number().int().min(1, "Soglia no-show deve essere almeno 1"),
-  auto_complete_delay_minutes: z.number().int().min(0, "Ritardo completamento deve essere almeno 0").max(60, "Ritardo completamento massimo 60 minuti"),
+  auto_complete_delay_minutes: z
+    .number()
+    .int()
+    .min(0, "Ritardo completamento deve essere almeno 0")
+    .max(60, "Ritardo completamento massimo 60 minuti"),
 });
 
 const messageTemplateTypeSchema = z.enum([
