@@ -76,7 +76,7 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
     return clients.filter(
       (c) =>
         c.first_name.toLowerCase().includes(q) ||
-        (c.last_name && c.last_name.toLowerCase().includes(q)) ||
+        c.last_name?.toLowerCase().includes(q) ||
         c.phone.includes(q),
     );
   }, [clients, searchQuery]);
@@ -139,6 +139,7 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
             />
           </div>
           <button
+            type="button"
             onClick={() => setShowForm(true)}
             className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
@@ -159,7 +160,11 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
         <div className="mb-4 rounded-xl bg-card border border-border p-4 shadow-xl">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-semibold text-foreground">Nuovo cliente</h3>
-            <button onClick={() => setShowForm(false)} className="rounded p-1 hover:bg-accent">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="rounded p-1 hover:bg-accent"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -251,6 +256,7 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
               <div key={client.id} className="rounded-xl bg-card border border-border">
                 {/* Main row */}
                 <button
+                  type="button"
                   onClick={() => setExpandedId(isExpanded ? null : client.id)}
                   className="flex w-full items-center justify-between p-4 text-left"
                 >
@@ -386,6 +392,7 @@ function ClientDetail({ client, onToggleTag, onSaveNotes }: ClientDetailProps) {
             const isActive = (client.tags || []).includes(tag);
             return (
               <button
+                type="button"
                 key={tag}
                 onClick={() => onToggleTag(tag)}
                 className={cn(

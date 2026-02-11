@@ -70,7 +70,7 @@ function formatTime(timeStr: string): string {
 function formatRelativeDate(dateStr: string): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr + "T00:00:00");
+  const target = new Date(`${dateStr}T00:00:00`);
   const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return "Oggi";
@@ -103,7 +103,7 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
       result = result.filter(
         (e) =>
           e.client?.first_name.toLowerCase().includes(q) ||
-          (e.client?.last_name && e.client.last_name.toLowerCase().includes(q)) ||
+          e.client?.last_name?.toLowerCase().includes(q) ||
           e.client?.phone.includes(q) ||
           e.service?.name.toLowerCase().includes(q),
       );
@@ -177,6 +177,7 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
           </div>
           {hasExpirable && (
             <button
+              type="button"
               onClick={handleExpireOld}
               disabled={isPending}
               className="flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
@@ -196,6 +197,7 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
           const isActive = statusFilter === status;
           return (
             <button
+              type="button"
               key={status}
               onClick={() => setStatusFilter(statusFilter === status ? "all" : status)}
               className={cn(
@@ -232,6 +234,7 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
             <span className="font-medium text-foreground">{FILTER_LABELS[statusFilter]}</span>
           </span>
           <button
+            type="button"
             onClick={() => setStatusFilter("all")}
             className="rounded-md px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
@@ -356,6 +359,7 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
                 {/* Remove button */}
                 {canRemove && (
                   <button
+                    type="button"
                     onClick={() => handleRemove(entry.id)}
                     disabled={isDeleting}
                     className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50"

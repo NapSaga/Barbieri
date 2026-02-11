@@ -59,6 +59,7 @@ export function AppointmentCard({ appointment, compact = false, onClick }: Appoi
   if (compact) {
     return (
       <button
+        type="button"
         onClick={onClick}
         className={cn(
           "flex h-full w-full items-center gap-1.5 overflow-hidden rounded-md pl-0 text-left transition-all",
@@ -83,6 +84,7 @@ export function AppointmentCard({ appointment, compact = false, onClick }: Appoi
 
   return (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
         "flex h-full w-full overflow-hidden rounded-lg pl-0 text-left transition-all",

@@ -116,7 +116,7 @@ export function WalkInDialog({
       <div className="relative z-10 w-full max-w-md rounded-xl bg-card border border-border p-6 shadow-xl mx-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-foreground">Aggiungi Walk-in</h2>
-          <button onClick={onClose} className="rounded p-1 hover:bg-accent">
+          <button type="button" onClick={onClose} className="rounded p-1 hover:bg-accent">
             <X className="h-5 w-5" />
           </button>
         </div>

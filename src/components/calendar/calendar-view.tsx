@@ -90,7 +90,7 @@ export function CalendarView({
   services,
   closureDates = [],
 }: CalendarViewProps) {
-  const [currentDate, setCurrentDate] = useState(new Date(initialDate + "T00:00:00"));
+  const [currentDate, setCurrentDate] = useState(new Date(`${initialDate}T00:00:00`));
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [appointments, setAppointments] = useState<CalendarAppointment[]>(initialAppointments);
   const [isPending, startTransition] = useTransition();
@@ -148,6 +148,7 @@ export function CalendarView({
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => setWalkInOpen(true)}
             className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
@@ -161,18 +162,21 @@ export function CalendarView({
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-1.5">
           <button
+            type="button"
             onClick={() => navigate(-1)}
             className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
+            type="button"
             onClick={() => navigate(1)}
             className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
           <button
+            type="button"
             onClick={goToToday}
             className={cn(
               "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
@@ -193,6 +197,7 @@ export function CalendarView({
 
         <div className="flex rounded-lg bg-muted p-0.5">
           <button
+            type="button"
             onClick={() => switchView("day")}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
@@ -205,6 +210,7 @@ export function CalendarView({
             Giorno
           </button>
           <button
+            type="button"
             onClick={() => switchView("week")}
             className={cn(
               "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",

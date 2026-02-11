@@ -922,7 +922,7 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
   }
 
   function formatDate(dateStr: string): string {
-    const d = new Date(dateStr + "T00:00:00");
+    const d = new Date(`${dateStr}T00:00:00`);
     return d.toLocaleDateString("it-IT", {
       weekday: "short",
       day: "numeric",
@@ -958,6 +958,7 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
           />
         </div>
         <button
+          type="button"
           onClick={handleAdd}
           disabled={!newDate || isPending}
           className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
@@ -987,6 +988,7 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
                 )}
               </div>
               <button
+                type="button"
                 onClick={() => handleRemove(c.id)}
                 disabled={deletingId === c.id}
                 className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"

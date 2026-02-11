@@ -9,7 +9,7 @@ PANORAMICA FASI
 Fase A — Infrastruttura         ✅ COMPLETATA
 Fase B — Funzionalità core      ✅ COMPLETATA
 Fase C — Automazioni e business  ✅ COMPLETATA
-Fase D — Polish e deploy         🔧 IN CORSO (10/13 completati)
+Fase D — Polish e deploy         🔧 IN CORSO (11/13 completati)
 
 ---
 
@@ -226,6 +226,15 @@ FASE D — POLISH E DEPLOY 🔧
     - Audit RLS: auth.uid() → (select auth.uid()), 7 indici FK, policy duplicate consolidate
     - WhatsApp renderTemplate() sanitizzazione verificata (plain string replace, sicuro)
     - Nota: abilitare Leaked Password Protection dalla Supabase Dashboard
+
+[x] CI/CD GitHub Actions
+    - Workflow .github/workflows/ci.yml: typecheck → lint → build su ogni push/PR a main
+    - pnpm 10 + Node.js 22, caching dipendenze, concurrency con cancel-in-progress
+    - Fix 41 errori useButtonType (type="button" aggiunto su ~15 componenti)
+    - Fix 7 errori useTemplate (string concat → template literal)
+    - Fix 2 errori useOptionalChain
+    - Configurazione Biome aggiornata: regole a11y non-critiche downgrade a warn, CSS escluso (Tailwind v4)
+    - pnpm typecheck ✅, pnpm lint ✅ (0 errori, 43 warning non bloccanti), pnpm build ✅
 
 ---
 

@@ -115,7 +115,7 @@ async function main() {
       if (regex.test(envContent)) {
         envContent = envContent.replace(regex, `${key}=${value}`);
       } else {
-        envContent = envContent.trimEnd() + `\n${key}=${value}\n`;
+        envContent = `${envContent.trimEnd()}\n${key}=${value}\n`;
       }
     }
 

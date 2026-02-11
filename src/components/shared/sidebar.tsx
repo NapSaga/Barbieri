@@ -146,6 +146,7 @@ export function DashboardSidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  type="button"
                   onClick={() => setCollapsed(false)}
                   className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                 >
@@ -162,6 +163,7 @@ export function DashboardSidebar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    type="button"
                     onClick={() => setCollapsed(true)}
                     className="rounded-md p-1.5 text-sidebar-foreground/30 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   >

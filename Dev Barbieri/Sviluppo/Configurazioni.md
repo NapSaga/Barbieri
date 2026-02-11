@@ -115,6 +115,38 @@ pnpm db:studio     → UI studio Drizzle
 
 ---
 
+CI/CD — GITHUB ACTIONS
+
+Workflow: .github/workflows/ci.yml
+Trigger: push su main + pull request su main
+Concurrency: cancel-in-progress (evita build duplicate)
+Timeout: 10 minuti
+
+Pipeline (3 step sequenziali):
+1. pnpm typecheck  → tsc --noEmit
+2. pnpm lint       → biome check .
+3. pnpm build      → next build (con env placeholder)
+
+Stack CI:
+- Runner: ubuntu-latest
+- pnpm: v10 (pnpm/action-setup@v4)
+- Node.js: v22 (actions/setup-node@v4 con cache pnpm)
+- Install: pnpm install --frozen-lockfile
+
+Env placeholder per build step (non servono valori reali per compilare):
+- NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+- NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
+- NEXT_PUBLIC_APP_URL=https://placeholder.app
+
+Biome config (biome.json):
+- Schema: 2.3.14
+- Regole errore (bloccano CI): useButtonType, useTemplate, useOptionalChain, etc.
+- Regole warn (non bloccano CI): noLabelWithoutControl, noSvgWithoutTitle, noStaticElementInteractions, useKeyWithClickEvents, noArrayIndexKey, noExplicitAny, noUnusedFunctionParameters, noUnusedImports, noUnusedVariables
+- CSS escluso: files.includes ["**", "!**/*.css"] (Tailwind v4 usa @theme/@custom-variant non supportati dal parser CSS di Biome)
+- Formatter: space indent, 2 width, 100 line width, double quotes, semicolons always
+
+---
+
 DATABASE — SCHEMA COMPLETO
 
 Enums (6):

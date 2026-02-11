@@ -286,6 +286,7 @@ export function BookingWizard({
       {/* Back button */}
       {step !== "service" && (
         <button
+          type="button"
           onClick={handleBack}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
@@ -303,6 +304,7 @@ export function BookingWizard({
           ) : (
             services.map((service) => (
               <button
+                type="button"
                 key={service.id}
                 onClick={() => handleSelectService(service)}
                 className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-input hover:bg-accent"
@@ -332,6 +334,7 @@ export function BookingWizard({
           <h2 className="text-lg font-semibold text-foreground">Scegli il barbiere</h2>
           {staffMembers.map((member) => (
             <button
+              type="button"
               key={member.id}
               onClick={() => handleSelectStaff(member)}
               className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-input hover:bg-accent"
@@ -360,6 +363,7 @@ export function BookingWizard({
 
               return (
                 <button
+                  type="button"
                   key={toISODate(date)}
                   disabled={isOff}
                   onClick={() => {
@@ -403,6 +407,7 @@ export function BookingWizard({
                 <div className="grid grid-cols-4 gap-2">
                   {availableSlots.map((time) => (
                     <button
+                      type="button"
                       key={time}
                       onClick={() => handleSelectTime(time)}
                       className={cn(

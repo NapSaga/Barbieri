@@ -131,6 +131,7 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
           </span>
         </div>
         <button
+          type="button"
           onClick={() => {
             setShowForm(true);
             setEditingId(null);
@@ -153,7 +154,11 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
         <div className="mb-4 rounded-xl bg-card border border-border p-4 shadow-xl">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-semibold text-foreground">Nuovo barbiere</h3>
-            <button onClick={() => setShowForm(false)} className="rounded p-1 hover:bg-accent">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="rounded p-1 hover:bg-accent"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -243,6 +248,7 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
 
                 <div className="flex items-center gap-1">
                   <button
+                    type="button"
                     onClick={() => setExpandedHours(expandedHours === member.id ? null : member.id)}
                     className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
                   >
@@ -255,6 +261,7 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
                     )}
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleToggle(member.id, member.active)}
                     disabled={isPending}
                     className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -267,12 +274,14 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
                     )}
                   </button>
                   <button
+                    type="button"
                     onClick={() => setEditingId(member.id)}
                     className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDelete(member.id)}
                     disabled={isPending}
                     className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
@@ -378,6 +387,7 @@ function WorkingHoursEditor({ staffId, workingHours, onSave }: WorkingHoursEdito
       </div>
       <div className="mt-3 flex items-center gap-2">
         <button
+          type="button"
           onClick={handleSave}
           disabled={isPending}
           className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"

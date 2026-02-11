@@ -40,7 +40,7 @@ function formatDelta(delta: number | null): { text: string; positive: boolean } 
 }
 
 function subtractDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr + "T00:00:00");
+  const d = new Date(`${dateStr}T00:00:00`);
   d.setDate(d.getDate() - days);
   return d.toISOString().split("T")[0];
 }
@@ -102,6 +102,7 @@ export function AnalyticsDashboard({
         <div className="flex rounded-lg bg-muted p-0.5">
           {(["7d", "30d", "90d"] as Period[]).map((p) => (
             <button
+              type="button"
               key={p}
               onClick={() => setPeriod(p)}
               className={cn(
@@ -166,7 +167,7 @@ export function AnalyticsDashboard({
             <div className="flex items-end gap-[2px]" style={{ height: 200 }}>
               {daily.map((d, idx) => {
                 const h = Math.max((d.total_revenue_cents / maxRevenue) * 176, 2);
-                const date = new Date(d.date + "T00:00:00");
+                const date = new Date(`${d.date}T00:00:00`);
                 const label = date.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
                 const showLabel = daily.length <= 14 || idx % Math.ceil(daily.length / 12) === 0;
                 return (

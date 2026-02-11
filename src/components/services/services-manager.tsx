@@ -100,6 +100,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
           </span>
         </div>
         <button
+          type="button"
           onClick={() => {
             setShowForm(true);
             setEditingId(null);
@@ -122,7 +123,11 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
         <div className="mb-4 rounded-xl bg-card border border-border p-4 shadow-xl">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-semibold text-foreground">Nuovo servizio</h3>
-            <button onClick={() => setShowForm(false)} className="rounded p-1 hover:bg-accent">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="rounded p-1 hover:bg-accent"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -152,6 +157,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="font-semibold text-foreground">Modifica servizio</h3>
                     <button
+                      type="button"
                       onClick={() => setEditingId(null)}
                       className="rounded p-1 hover:bg-accent"
                     >
@@ -198,6 +204,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
 
                   <div className="flex items-center gap-1">
                     <button
+                      type="button"
                       onClick={() => handleToggle(service.id, service.active)}
                       disabled={isPending}
                       className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -210,6 +217,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
                       )}
                     </button>
                     <button
+                      type="button"
                       onClick={() => setEditingId(service.id)}
                       className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
                       title="Modifica"
@@ -217,6 +225,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleDelete(service.id)}
                       disabled={isPending}
                       className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"

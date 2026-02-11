@@ -109,6 +109,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             >
