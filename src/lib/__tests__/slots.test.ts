@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getAvailableSlots } from "@/lib/slots";
 import type { ExistingAppointment, StaffSchedule } from "@/lib/slots";
+import { getAvailableSlots } from "@/lib/slots";
 
 const BASE_SCHEDULE: StaffSchedule = {
   staffId: "staff-1",
@@ -40,9 +40,7 @@ describe("getAvailableSlots", () => {
       breakEnd: "12:00",
     };
     const slots = getAvailableSlots(schedule, [], 30);
-    const duringBreak = slots.filter(
-      (s) => s.start >= "11:00" && s.start < "12:00",
-    );
+    const duringBreak = slots.filter((s) => s.start >= "11:00" && s.start < "12:00");
     // No slot should start during the break (since 30min slots starting in 11:xx would overlap break)
     expect(duringBreak).toHaveLength(0);
   });
@@ -110,7 +108,7 @@ describe("getAvailableSlots", () => {
       const curStart = parseInt(slots[i].start.split(":")[1], 10);
       const prevHour = parseInt(slots[i - 1].start.split(":")[0], 10);
       const curHour = parseInt(slots[i].start.split(":")[0], 10);
-      const diffMinutes = (curHour * 60 + curStart) - (prevHour * 60 + prevStart);
+      const diffMinutes = curHour * 60 + curStart - (prevHour * 60 + prevStart);
       expect(diffMinutes).toBe(15);
     }
   });

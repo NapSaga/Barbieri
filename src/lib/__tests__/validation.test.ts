@@ -169,9 +169,9 @@ describe("bookAppointmentSchema", () => {
   });
 
   it("rejects missing clientFirstName", () => {
-    expect(
-      bookAppointmentSchema.safeParse({ ...validBooking, clientFirstName: "" }).success,
-    ).toBe(false);
+    expect(bookAppointmentSchema.safeParse({ ...validBooking, clientFirstName: "" }).success).toBe(
+      false,
+    );
   });
 
   it("rejects invalid businessId", () => {
@@ -219,8 +219,7 @@ describe("serviceFormSchema", () => {
 
   it("rejects invalid price format", () => {
     expect(
-      serviceFormSchema.safeParse({ name: "Taglio", duration_minutes: "30", price: "abc" })
-        .success,
+      serviceFormSchema.safeParse({ name: "Taglio", duration_minutes: "30", price: "abc" }).success,
     ).toBe(false);
   });
 });
@@ -249,8 +248,8 @@ describe("createClientSchema", () => {
   });
 
   it("accepts empty email and notes", () => {
-    expect(
-      createClientSchema.safeParse({ ...validClient, email: "", notes: "" }).success,
-    ).toBe(true);
+    expect(createClientSchema.safeParse({ ...validClient, email: "", notes: "" }).success).toBe(
+      true,
+    );
   });
 });

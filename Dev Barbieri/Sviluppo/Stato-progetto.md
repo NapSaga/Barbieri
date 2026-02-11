@@ -131,7 +131,7 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
    - Validazione firma Twilio in produzione (x-twilio-signature)
    - Supabase admin client (bypassa RLS con service role key)
    - Comando "ANNULLA": trova cliente per telefono → cancella prossimo appuntamento → notifica waitlist
-   - Comando "SI"/"SÌ": conferma prenotazione dalla waitlist → crea appuntamento → aggiorna waitlist
+   - Comando "SI"/"SÌ": conferma prenotazione dalla waitlist → conflict check su tutti gli staff → crea appuntamento → conferma WhatsApp → aggiorna waitlist (o notifica slot non disponibile)
    - Notifica waitlist automatica: su cancellazione, notifica primo in coda con messaggio WhatsApp
    - Risposta TwiML vuota per evitare loop
 
@@ -330,8 +330,9 @@ Polish, deploy, sicurezza.
    - Walk-in dialog: riceve appointments dal calendario → warning arancione se orario selezionato confligge
    - Server-side conflict check in bookAppointment(): query overlap prima di INSERT, rifiuta con errore "Questo orario non è più disponibile"
    - Server-side conflict check in addWalkIn(): stessa logica, rifiuta con errore "Conflitto: il barbiere ha già un appuntamento in questo orario"
-   - Difesa a 3 livelli: (1) slot nascosti nel wizard, (2) warning visivo nel walk-in, (3) reject server-side per race condition
+   - Difesa a 4 livelli: (1) slot nascosti nel wizard, (2) warning visivo nel walk-in, (3) reject server-side per race condition, (4) conflict check nel flusso waitlist (comando SI via WhatsApp)
    - hasConflict() usa query SQL con .lt("start_time", endTime).gt("end_time", startTime) per overlap detection
+   - hasConflictAdmin() replica la stessa logica con AdminClient per il webhook WhatsApp (waitlist → appuntamento)
 
 5. UI Polish: shadcn/ui + Dark Mode ✅
    - shadcn/ui integrato con 17 componenti Radix-based (button, card, dialog, dropdown-menu, input, label, popover, select, separator, sheet, skeleton, sonner, table, tabs, tooltip, avatar, badge)
@@ -361,12 +362,16 @@ Polish, deploy, sicurezza.
 9. Esecuzione Test E2E ✅
    - Risultati: 108 ✅ Pass, 6 ❌ Fail, 12 ⏭️ Skip
    - Pass rate: 85.7% totale, 94.7% escludendo test che richiedono Supabase/Twilio live
-   - 9 bug identificati (1 critico, 3 medi, 5 bassi)
-   - 4 bug fixati immediatamente:
+   - 13 bug identificati in 2 giri (1 critico, 3 medi, 5 bassi + 4 secondo giro)
+   - 8 bug fixati (4 primo giro + 3 secondo giro + 1 fix successivo):
      a) CRITICO: webhook WhatsApp bloccato dal proxy (mancava /api/whatsapp nei path pubblici)
      b) MEDIO: cancellazione da calendario non notificava la waitlist
      c) BASSO: campo cognome mancante nel booking wizard
      d) BASSO: bottoni azione appointment sheet senza type="button"
+     e) MEDIO: slot no-show non liberati per rebooking (hasConflict escludeva solo cancelled)
+     f) MEDIO: booking wizard ignorava orari di apertura della business
+     g) BASSO: import dinamici ridondanti in notifyWaitlistOnCancel
+     h) MEDIO: comando SI waitlist senza conflict check — ora itera tutti gli staff, verifica disponibilita', invia conferma/rifiuto WhatsApp
    - 5 bug documentati per roadmap (feature gap, non regressioni):
      - UI servizi combo non implementata (schema pronto)
      - UI associazione staff-servizi mancante
@@ -465,7 +470,7 @@ NOTE TECNICHE
 - shadcn/ui: 17 componenti Radix-based integrati in src/components/ui/. CLI configurato con components.json.
 - Dark mode: next-themes con ThemeProvider, defaultTheme="dark", attribute="class".
 - Rate limiting: in-memory sliding window in src/lib/rate-limit.ts, usato per protezione webhook.
-- Logo custom: SVG component in src/components/shared/barberos-logo.tsx.
+- Logo custom: PNG ufficiale in public/logo.png, componenti LogoIcon/LogoFull in src/components/shared/barberos-logo.tsx (next/image).
 - Test E2E: checklist manuale strutturata con 126 test cases in Dev Barbieri/Testing/test-checklist.md.
 - Test automatici: 95 unit test Vitest su funzioni pure (pnpm test). CI esegue automaticamente su ogni push/PR.
 - I test automatici NON sostituiscono i test manuali E2E: coprono solo utility pure, non flussi integrati con DB/auth.

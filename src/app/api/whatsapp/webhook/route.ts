@@ -355,13 +355,32 @@ async function handleCancel(supabase: AdminClient, phone: string, phoneWithPlus:
 
 // ─── SI: conferma prenotazione dalla waitlist ───────────────────────
 
-async function handleWaitlistConfirm(supabase: AdminClient, phone: string, phoneWithPlus: string) {
-  const { data: clients } = await supabase
-    .from("clients")
-    .select("id, business_id, first_name")
-    .or(`phone.eq.${phone},phone.eq.${phoneWithPlus},phone.eq.+${phone}`);
+async function hasConflictAdmin(
+  supabase: AdminClient,
+  businessId: string,
+  staffId: string,
+  date: string,
+  startTime: string,
+  endTime: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("appointments")
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("staff_id", staffId)
+    .eq("date", date)
+    .not("status", "in", '("cancelled","no_show")')
+    .lt("start_time", endTime)
+    .gt("end_time", startTime)
+    .limit(1);
 
-  if (!clients || clients.length === 0) {
+  return (data?.length ?? 0) > 0;
+}
+
+async function handleWaitlistConfirm(supabase: AdminClient, phone: string, phoneWithPlus: string) {
+  const clients = await findClientByPhone(supabase, phone, phoneWithPlus);
+
+  if (clients.length === 0) {
     console.log(`⚠️ SI: nessun cliente trovato per ${phone}`);
     return;
   }
@@ -379,20 +398,64 @@ async function handleWaitlistConfirm(supabase: AdminClient, phone: string, phone
 
     const entry = waitlistEntries[0];
 
+    // Find an available staff member (check conflicts for each)
     const { data: staffMembers } = await supabase
       .from("staff")
-      .select("id")
+      .select("id, name")
       .eq("business_id", entry.business_id)
-      .eq("active", true)
-      .limit(1);
+      .eq("active", true);
 
-    const staffId = staffMembers?.[0]?.id;
-    if (!staffId) continue;
+    if (!staffMembers || staffMembers.length === 0) continue;
+
+    let availableStaffId: string | null = null;
+    for (const staff of staffMembers) {
+      const conflict = await hasConflictAdmin(
+        supabase,
+        entry.business_id,
+        staff.id,
+        entry.desired_date,
+        entry.desired_start_time,
+        entry.desired_end_time,
+      );
+      if (!conflict) {
+        availableStaffId = staff.id;
+        break;
+      }
+    }
+
+    // No available staff — slot is taken
+    if (!availableStaffId) {
+      await supabase.from("waitlist").update({ status: "expired" }).eq("id", entry.id);
+
+      const { data: service } = await supabase
+        .from("services")
+        .select("name")
+        .eq("id", entry.service_id)
+        .single();
+
+      const { data: business } = await supabase
+        .from("businesses")
+        .select("slug")
+        .eq("id", entry.business_id)
+        .single();
+
+      const bookingLink = business ? `https://barberos.app/book/${business.slug}` : "";
+
+      await sendReply(
+        phoneWithPlus,
+        `😔 Ci dispiace ${client.first_name}, lo slot per ${service?.name || "il servizio"} il ${entry.desired_date} alle ${entry.desired_start_time?.substring(0, 5)} non è più disponibile.\n\nPrenota un nuovo orario → ${bookingLink}`,
+      );
+
+      console.log(
+        `⚠️ SI: slot non disponibile per waitlist ${entry.id}, entry expired per ${client.first_name} (${phone})`,
+      );
+      continue;
+    }
 
     const { error: appointmentError } = await supabase.from("appointments").insert({
       business_id: entry.business_id,
       client_id: client.id,
-      staff_id: staffId,
+      staff_id: availableStaffId,
       service_id: entry.service_id,
       date: entry.desired_date,
       start_time: entry.desired_start_time,
@@ -407,6 +470,29 @@ async function handleWaitlistConfirm(supabase: AdminClient, phone: string, phone
     }
 
     await supabase.from("waitlist").update({ status: "converted" }).eq("id", entry.id);
+
+    // Send confirmation to client
+    const { data: service } = await supabase
+      .from("services")
+      .select("name")
+      .eq("id", entry.service_id)
+      .single();
+
+    const time = entry.desired_start_time?.substring(0, 5) || "";
+
+    await sendReply(
+      phoneWithPlus,
+      `✅ Perfetto ${client.first_name}! Appuntamento confermato per ${service?.name || "il servizio"} il ${entry.desired_date} alle ${time}.\n\nCi vediamo!`,
+    );
+
+    await supabase.from("messages").insert({
+      business_id: entry.business_id,
+      client_id: client.id,
+      type: "confirmation",
+      status: "sent",
+      scheduled_for: new Date().toISOString(),
+      sent_at: new Date().toISOString(),
+    });
 
     console.log(`✅ SI: waitlist ${entry.id} convertita per ${client.first_name} (${phone})`);
   }

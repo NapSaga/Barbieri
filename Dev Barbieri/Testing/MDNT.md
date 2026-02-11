@@ -139,21 +139,29 @@ Un secondo passaggio approfondito ha individuato **4 nuovi bug** non emersi nel 
 
 ---
 
-### Bug documentato ma non fixato (secondo giro)
+#### 8. Waitlist comando SI senza conflict check (MEDIO)
 
-| # | Descrizione | Complessita' |
-|---|-------------|------------|
-| 8 | Conversione waitlist (comando SI) non fa conflict check e sceglie il primo staff attivo arbitrariamente invece dello staff originale dell'appuntamento cancellato | Alta — richiede redesign del flusso waitlist |
+**Problema:** Quando un cliente rispondeva "SI" via WhatsApp per accettare uno slot dalla waitlist, `handleWaitlistConfirm()` creava l'appuntamento **senza verificare conflitti**. Lo slot poteva essere stato preso nel frattempo da un altro booking o walk-in. Inoltre sceglieva il primo staff attivo arbitrariamente (`.limit(1)`) senza controllare disponibilita', e non inviava nessun messaggio WhatsApp di conferma al cliente.
 
-### Riepilogo complessivo dopo 2 giri
+**File modificato:** `src/app/api/whatsapp/webhook/route.ts`
+**Fix:**
+- Aggiunta funzione `hasConflictAdmin()` (stessa logica di `hasConflict()` in appointments.ts ma con AdminClient)
+- Itera su tutti gli staff attivi cercandone uno senza conflitti nello slot richiesto
+- Se nessuno staff e' disponibile: waitlist entry → `expired`, messaggio WhatsApp al cliente "slot non piu' disponibile" + link booking
+- Se staff disponibile: crea appuntamento + messaggio WhatsApp di conferma + record messages
+- Refactored per usare `findClientByPhone()` condiviso invece di query duplicata
 
-| Metrica | Primo giro | Secondo giro | Totale |
-|---------|-----------|-------------|--------|
-| Bug trovati | 9 | 4 | 13 |
-| Bug fixati | 4 | 3 | 7 |
-| Feature gap | 5 | 1 | 6 |
-| typecheck | Pass | Pass | Pass |
-| build | Pass | Pass | Pass |
+---
+
+### Riepilogo complessivo dopo 2 giri + fix successivi
+
+| Metrica | Primo giro | Secondo giro | Fix successivi | Totale |
+|---------|-----------|-------------|----------------|--------|
+| Bug trovati | 9 | 4 | 0 | 13 |
+| Bug fixati | 4 | 3 | 1 (#8) | 8 |
+| Feature gap | 5 | 0 | 0 | 5 |
+| typecheck | Pass | Pass | Pass | Pass |
+| build | Pass | Pass | Pass | Pass |
 
 ---
 
