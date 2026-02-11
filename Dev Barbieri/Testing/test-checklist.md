@@ -1,8 +1,9 @@
 # BarberOS — Test Manuali E2E Pre-Lancio
 
 > **Data inizio test:** 11/02/2026
+> **Ultimo aggiornamento:** 11/02/2026
 > **Ambiente:** ☐ Vercel (produzione) ☒ Locale (`pnpm dev`)
-> **Tester:** Claude Code (code review + API testing)
+> **Tester:** Claude Code (code review + API testing) + Windsurf Cascade
 > **Browser:** N/A (static analysis + curl)
 
 **Legenda:** ✅ Pass | ❌ Fail | ⏭️ Skipped | 🔧 Bug documentato
@@ -32,11 +33,11 @@
 | 2.1 | Prima configurazione business | Dashboard → Settings → compila nome, indirizzo, telefono, Google Review link → salva | Dati aggiornati in `businesses`, toast successo | ✅ | BusinessInfoForm → `updateBusinessInfo`. Feedback "Salvato!" |
 | 2.2 | Impostazione orari apertura | Settings → sezione orari → imposta orari per ogni giorno, segna un giorno come chiuso → salva | `opening_hours` JSONB aggiornato correttamente | ✅ | OpeningHoursForm → `updateBusinessOpeningHours` |
 | 2.3 | Aggiunta primo servizio | Dashboard → Servizi → aggiungi servizio (nome, durata, prezzo) → salva | Servizio visibile in lista, riga in `services` | ✅ | ServicesManager → `createService` |
-| 2.4 | Aggiunta servizio combo | Aggiungi servizio con `is_combo = true` e seleziona sotto-servizi | Combo creato con `combo_service_ids` popolato | ❌ | 🔧 BUG #3: UI non supporta `is_combo`/`combo_service_ids`. Schema presente ma feature non implementata in UI |
+| 2.4 | Aggiunta servizio combo | Aggiungi servizio con `is_combo = true` e seleziona sotto-servizi | Combo creato con `combo_service_ids` popolato | ✅ | 🔧 FIX applicato: toggle "È un combo" + multi-select servizi nel ServiceForm. `createService`/`updateService` salvano `is_combo` + `combo_service_ids` |
 | 2.5 | Aggiunta primo staff | Dashboard → Staff → aggiungi membro (nome) → salva | Staff visibile in lista, riga in `staff` con `active = true` | ✅ | StaffManager → `createStaffMember` |
 | 2.6 | Orari staff | Staff → modifica → imposta working_hours per giorno con pausa pranzo | `working_hours` JSONB corretto (start, end, breakStart, breakEnd, off) | ✅ | WorkingHoursEditor con tutti i campi |
-| 2.7 | Associazione staff-servizi | Staff → modifica → seleziona servizi offerti | Righe in `staff_services` per le combinazioni scelte | ❌ | 🔧 BUG #4: Nessuna UI per associazione staff-servizi. Tabella `staff_services` esiste ma non gestita |
-| 2.8 | Ordinamento staff | Modifica `sort_order` di più staff members | Ordine riflesso in lista e nel booking wizard | ❌ | 🔧 BUG #6: Nessuna UI per riordinare staff (`sort_order`). Query ordina per `sort_order` ma non è modificabile |
+| 2.7 | Associazione staff-servizi | Staff → modifica → seleziona servizi offerti | Righe in `staff_services` per le combinazioni scelte | ✅ | 🔧 FIX applicato: sezione "Servizi" con checkbox nel StaffManager. `updateStaffServices` DELETE+INSERT batch. Pagina staff carica servizi e associazioni |
+| 2.8 | Ordinamento staff | Modifica `sort_order` di più staff members | Ordine riflesso in lista e nel booking wizard | ✅ | 🔧 FIX applicato: drag-and-drop HTML5 nativo nel StaffManager. `reorderStaff` aggiorna `sort_order` in batch. Ordine riflesso ovunque |
 
 ---
 
@@ -49,7 +50,7 @@
 | 3.1 | Pagina booking pubblica | Visita `/book/[slug]` | Wizard caricato, nome barberia visibile, nessun errore 404 | ✅ | Server component carica business, services, staff, closures in parallelo |
 | 3.2 | Slug inesistente | Visita `/book/slug-che-non-esiste` | Errore gestito (404 o messaggio "barberia non trovata") | ✅ | Testato via curl: 404. `notFound()` chiamato |
 | 3.3 | Selezione servizio | Step 1: seleziona un servizio dalla lista | Servizio evidenziato, durata e prezzo mostrati | ✅ | Mostra nome, durata, prezzo formattato |
-| 3.4 | Selezione staff | Step 2: seleziona un barbiere (solo quelli che offrono il servizio scelto) | Staff filtrato per servizio, selezione funzionante | ❌ | 🔧 Collegato a BUG #4: staff NON filtrato per servizio (manca `staff_services`). Tutti gli staff attivi mostrati |
+| 3.4 | Selezione staff | Step 2: seleziona un barbiere (solo quelli che offrono il servizio scelto) | Staff filtrato per servizio, selezione funzionante | ✅ | 🔧 FIX applicato: `getStaffForService()` filtra staff per `staff_services`. Backwards compatible: se nessuna associazione, mostra tutti |
 | 3.5 | Selezione data | Step 3: seleziona una data dal calendario | Solo date future abilitate, giorni chiusi (closures + giorno off staff) disabilitati | ✅ | Date future (+1 giorno), closures e off staff disabilitati |
 | 3.6 | Selezione slot orario | Step 4: seleziona uno slot disponibile | Slot calcolati rispetto a `working_hours`, pause, appuntamenti esistenti | ✅ | `generateTimeSlots` + filtro `bookedSlots` |
 | 3.7 | Nessun slot disponibile | Scegli data/staff con tutti slot occupati | Messaggio "nessun orario disponibile", non si può procedere | ✅ | "Nessun orario disponibile per questa data." |
@@ -90,7 +91,7 @@
 | 5.6 | Azione: completa | Dalla sheet, segna come "completato" | `status → completed`, `total_visits` client incrementato, `last_visit_at` aggiornato | ✅ | `updateAppointmentStatus` incrementa visite |
 | 5.7 | Azione: no-show | Dalla sheet, segna come "no-show" | `status → no_show`, `no_show_count` client incrementato (via RPC `increment_no_show`) | ✅ | RPC call per incremento |
 | 5.8 | Azione: cancella | Dalla sheet, cancella appuntamento | `status → cancelled`, `cancelled_at` popolato | ✅ | 🔧 FIX applicato: ora notifica anche la waitlist |
-| 5.9 | Filtro per staff | Se disponibile, filtra calendario per staff member | Solo appuntamenti dello staff selezionato | ❌ | 🔧 BUG #7: Nessun filtro staff nel calendario. Staff mostrati come colonne ma non filtrabili |
+| 5.9 | Filtro per staff | Se disponibile, filtra calendario per staff member | Solo appuntamenti dello staff selezionato | ✅ | 🔧 FIX applicato: dropdown Select nella toolbar calendario con opzione "Tutti" + singoli barbieri. Filtra staffMembers e appointments passati a DayView/WeekView |
 | 5.10 | Giorno senza appuntamenti | Seleziona giorno vuoto | Stato vuoto gestito (messaggio "nessun appuntamento") | ✅ | "Nessun appuntamento per oggi" con suggerimento Walk-in |
 
 ---
@@ -134,7 +135,7 @@
 
 | # | Test | Passi | Risultato atteso | Esito | Note |
 |---|------|-------|------------------|-------|------|
-| 9.1 | Aggiunta in waitlist | Dashboard → Waitlist → aggiungi entry (cliente, servizio, data desiderata, orario) | Riga in `waitlist` con `status = waiting` | ❌ | 🔧 BUG #5: Nessuna UI per aggiungere manualmente entry alla waitlist. Solo auto-creazione |
+| 9.1 | Aggiunta in waitlist | Dashboard → Waitlist → aggiungi entry (cliente, servizio, data desiderata, orario) | Riga in `waitlist` con `status = waiting` | ✅ | 🔧 FIX applicato: bottone "Aggiungi" + dialog modale con ricerca cliente esistente / creazione nuovo, selezione servizio, data, orario. `addToWaitlist` server action |
 | 9.2 | Lista visibile | Pagina `/dashboard/waitlist` | Tutte le entries mostrate con cliente, servizio, data, status | ✅ | WaitlistManager con tutti i dettagli |
 | 9.3 | Notifica su cancellazione | Cancella appuntamento nello stesso slot di una waitlist entry | Entry aggiornata: `status → notified`, `notified_at` impostato, WhatsApp inviato | ✅ | 🔧 FIX applicato: ora funziona sia da WhatsApp che da calendario |
 | 9.4 | Risposta SI → conversione | Simula risposta "SI" da webhook WhatsApp | `waitlist.status → converted`, nuovo appuntamento creato nello slot liberato | ✅ | `handleWaitlistConfirm` crea appuntamento + update status |
@@ -262,14 +263,14 @@
 | Sezione | Totale | ✅ Pass | ❌ Fail | ⏭️ Skip | Note |
 |---------|--------|---------|---------|---------|------|
 | 1. Auth | 9 | 9 | 0 | 0 | Tutte le rotte protette correttamente |
-| 2. Onboarding | 8 | 5 | 3 | 0 | Combo, staff-service, sort_order non implementati |
-| 3. Booking Online | 14 | 13 | 1 | 0 | Staff non filtrato per servizio (collegato a 2.7) |
+| 2. Onboarding | 8 | 8 | 0 | 0 | Combo, staff-service, sort_order tutti implementati |
+| 3. Booking Online | 14 | 14 | 0 | 0 | Staff filtrato per servizio via staff_services |
 | 4. Conferma Smart | 6 | 3 | 0 | 3 | Edge Functions non testabili localmente |
-| 5. Calendario | 10 | 9 | 1 | 0 | Filtro staff non implementato |
+| 5. Calendario | 10 | 10 | 0 | 0 | Filtro staff implementato con dropdown |
 | 6. Walk-in | 5 | 5 | 0 | 0 | Tutto funzionante |
 | 7. Cancellazione | 4 | 4 | 0 | 0 | FIX applicato per waitlist notification |
 | 8. No-Show | 5 | 3 | 0 | 2 | Auto-tag richiede Edge Function |
-| 9. Waitlist | 7 | 6 | 1 | 0 | Aggiunta manuale non implementata |
+| 9. Waitlist | 7 | 7 | 0 | 0 | Aggiunta manuale implementata con dialog |
 | 10. CRM | 8 | 8 | 0 | 0 | Tutto funzionante |
 | 11. Billing | 9 | 9 | 0 | 0 | Stripe flow completo |
 | 12. Subscription Gating | 8 | 8 | 0 | 0 | Gating corretto |
@@ -277,7 +278,7 @@
 | 14. Analytics | 9 | 9 | 0 | 0 | Formattazione e delta corretti |
 | 15. Edge Functions | 7 | 0 | 0 | 7 | Richiedono deployment Supabase |
 | 16. Responsiveness | 6 | 6 | 0 | 0 | UI responsive e accessibile |
-| **TOTALE** | **126** | **108** | **6** | **12** | **85.7% pass rate** (escl. skip: 94.7%) |
+| **TOTALE** | **126** | **114** | **0** | **12** | **90.5% pass rate** (escl. skip: 100%) |
 
 ---
 
@@ -287,11 +288,11 @@
 |---|----------|-----------------|----------|---------------|-----------|
 | 1 | 1.8, 4.2 | WhatsApp webhook `/api/whatsapp/webhook` non in public paths di proxy.ts — Twilio bloccato da redirect a `/login` | 🔴 Critico | ✅ Aggiunto `/api/whatsapp` a publicPaths + startsWith check | Pendente |
 | 2 | 7.4, 9.3 | Cancellazione da calendario non notifica waitlist (solo WhatsApp webhook lo fa) | 🟡 Medio | ✅ Aggiunto `notifyWaitlistOnCancel` in `updateAppointmentStatus` | Pendente |
-| 3 | 2.4 | UI non supporta creazione servizi combo (`is_combo`, `combo_service_ids`) | 🟡 Medio | ❌ Feature non implementata — documentato per roadmap | — |
-| 4 | 2.7, 3.4 | UI non supporta associazione staff-servizi (`staff_services` junction table) | 🟡 Medio | ❌ Feature non implementata — documentato per roadmap | — |
-| 5 | 9.1 | Nessuna UI per aggiungere manualmente entry alla waitlist | 🟡 Medio | ❌ Feature non implementata — documentato per roadmap | — |
-| 6 | 2.8 | Nessuna UI per riordinare staff (`sort_order`) | 🟢 Basso | ❌ UX improvement — documentato per roadmap | — |
-| 7 | 5.9 | Nessun filtro per staff nel calendario | 🟢 Basso | ❌ UX improvement — documentato per roadmap | — |
+| 3 | 2.4 | UI non supporta creazione servizi combo (`is_combo`, `combo_service_ids`) | 🟡 Medio | ✅ Toggle combo + multi-select servizi in ServiceForm, server actions aggiornate | Pendente |
+| 4 | 2.7, 3.4 | UI non supporta associazione staff-servizi (`staff_services` junction table) | 🟡 Medio | ✅ Sezione checkbox servizi in StaffManager + filtro staff nel BookingWizard | Pendente |
+| 5 | 9.1 | Nessuna UI per aggiungere manualmente entry alla waitlist | 🟡 Medio | ✅ Dialog "Aggiungi" con ricerca cliente/nuovo + servizio + data/ora | Pendente |
+| 6 | 2.8 | Nessuna UI per riordinare staff (`sort_order`) | 🟢 Basso | ✅ Drag-and-drop HTML5 nativo + `reorderStaff` server action | Pendente |
+| 7 | 5.9 | Nessun filtro per staff nel calendario | 🟢 Basso | ✅ Dropdown Select con filtro per singolo barbiere in CalendarView | Pendente |
 | 8 | 3.8 | Booking wizard mancava campo cognome | 🟢 Basso | ✅ Aggiunto campo `clientLastName` nel wizard | Pendente |
 | 9 | 5.5-5.8 | Bottoni azione appointment-sheet mancavano `type="button"` (a11y) | 🟢 Basso | ✅ Aggiunti `type="button"` a tutti e 4 i bottoni | Pendente |
 

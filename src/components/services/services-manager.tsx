@@ -2,6 +2,7 @@
 
 import {
   Clock,
+  Layers,
   Loader2,
   Pencil,
   Plus,
@@ -21,6 +22,7 @@ interface Service {
   duration_minutes: number;
   price_cents: number;
   is_combo: boolean;
+  combo_service_ids: string[] | null;
   active: boolean;
   display_order: number;
 }
@@ -131,7 +133,12 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
               <X className="h-4 w-4" />
             </button>
           </div>
-          <ServiceForm onSubmit={handleCreate} isPending={isPending} submitLabel="Crea servizio" />
+          <ServiceForm
+            onSubmit={handleCreate}
+            isPending={isPending}
+            submitLabel="Crea servizio"
+            allServices={services}
+          />
         </div>
       )}
 
@@ -172,7 +179,10 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
                       name: service.name,
                       duration_minutes: service.duration_minutes,
                       price: service.price_cents / 100,
+                      is_combo: service.is_combo,
+                      combo_service_ids: service.combo_service_ids,
                     }}
+                    allServices={services.filter((s) => s.id !== service.id)}
                   />
                 </div>
               ) : (
@@ -254,12 +264,43 @@ interface ServiceFormProps {
     name: string;
     duration_minutes: number;
     price: number;
+    is_combo?: boolean;
+    combo_service_ids?: string[] | null;
   };
+  allServices?: Service[];
 }
 
-function ServiceForm({ onSubmit, isPending, submitLabel, defaultValues }: ServiceFormProps) {
+function ServiceForm({
+  onSubmit,
+  isPending,
+  submitLabel,
+  defaultValues,
+  allServices = [],
+}: ServiceFormProps) {
+  const [isCombo, setIsCombo] = useState(defaultValues?.is_combo ?? false);
+  const [selectedComboIds, setSelectedComboIds] = useState<Set<string>>(
+    new Set(defaultValues?.combo_service_ids ?? []),
+  );
+
+  function toggleComboService(id: string) {
+    setSelectedComboIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleSubmit(formData: FormData) {
+    formData.set("is_combo", String(isCombo));
+    formData.set("combo_service_ids", Array.from(selectedComboIds).join(","));
+    onSubmit(formData);
+  }
+
+  const comboEligible = allServices.filter((s) => !s.is_combo && s.active);
+
   return (
-    <form action={onSubmit} className="space-y-3">
+    <form action={handleSubmit} className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className="block text-sm font-medium text-foreground">Nome</label>
@@ -298,6 +339,48 @@ function ServiceForm({ onSubmit, isPending, submitLabel, defaultValues }: Servic
           />
         </div>
       </div>
+
+      {/* Combo toggle */}
+      {comboEligible.length > 0 && (
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <input
+              type="checkbox"
+              checked={isCombo}
+              onChange={(e) => {
+                setIsCombo(e.target.checked);
+                if (!e.target.checked) setSelectedComboIds(new Set());
+              }}
+              className="h-4 w-4 rounded border-input text-foreground focus:ring-ring"
+            />
+            <Layers className="h-3.5 w-3.5 text-purple-400" />
+            <span className="font-medium text-foreground">È un combo</span>
+          </label>
+
+          {isCombo && (
+            <div className="ml-6 space-y-1.5 rounded-lg border border-border bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground mb-1.5">
+                Seleziona i servizi inclusi. Durata e prezzo del combo sono quelli impostati sopra.
+              </p>
+              {comboEligible.map((s) => (
+                <label key={s.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={selectedComboIds.has(s.id)}
+                    onChange={() => toggleComboService(s.id)}
+                    className="h-4 w-4 rounded border-input text-foreground focus:ring-ring"
+                  />
+                  <span className="text-foreground">{s.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({s.duration_minutes} min — {formatPrice(s.price_cents)})
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={isPending}

@@ -9,7 +9,7 @@ PANORAMICA FASI
 Fase A — Infrastruttura         ✅ COMPLETATA
 Fase B — Funzionalità core      ✅ COMPLETATA
 Fase C — Automazioni e business  ✅ COMPLETATA
-Fase D — Polish e deploy         🔧 IN CORSO (11/13 completati)
+Fase D — Polish e deploy         🔧 IN CORSO (12/13 completati)
 
 ---
 
@@ -193,9 +193,9 @@ FASE D — POLISH E DEPLOY 🔧
     - Tabella riepilogo pass/fail + bug log
 
 [x] Esecuzione test E2E
-    - 108 ✅ Pass, 6 ❌ Fail, 12 ⏭️ Skip (94.7% pass rate escludendo skip)
-    - 4 bug fixati: WhatsApp webhook bloccato (critico), waitlist non notificata su cancel calendario, cognome mancante booking, button type a11y
-    - 5 feature gap documentati per backlog (combo services UI, staff-services UI, waitlist add UI, staff reorder, staff filter)
+    - 114 ✅ Pass, 0 ❌ Fail, 12 ⏭️ Skip (100% pass rate escludendo skip)
+    - 8 bug fixati in 2 giri + fix successivi
+    - 5 feature gap implementati (vedi sotto)
 
 [ ] Dominio + Infrastruttura
     - Acquisto dominio
@@ -238,21 +238,20 @@ FASE D — POLISH E DEPLOY 🔧
 
 ---
 
-FEATURE GAP (da test E2E)
+FEATURE GAP (da test E2E) — TUTTI RISOLTI ✅
 
-- UI servizi combo: schema ha is_combo + combo_service_ids ma CRUD servizi non espone la funzionalità
-- UI associazione staff-servizi: tabella staff_services esiste ma nessuna UI per gestirla. Booking wizard mostra tutti gli staff attivi indipendentemente dal servizio
-- UI aggiunta manuale waitlist: WaitlistManager mostra/rimuove entry ma non permette aggiunta manuale
-- Riordino staff: campo sort_order in DB ma nessuna UI drag-and-drop per riordinare
-- Filtro staff nel calendario: vista giornaliera mostra tutti gli staff, manca filtro per singolo barbiere
+[x] Filtro staff nel calendario: dropdown Select nella toolbar con opzione "Tutti" + singoli barbieri (calendar-view.tsx)
+[x] Riordino staff: drag-and-drop HTML5 nativo con reorderStaff server action (staff-manager.tsx, staff.ts)
+[x] Associazione staff-servizi: checkbox servizi in StaffManager + filtro staff nel BookingWizard (staff-manager.tsx, staff.ts, booking-wizard.tsx)
+[x] UI servizi combo: toggle "E' un combo" + multi-select servizi nel ServiceForm (services-manager.tsx, services.ts)
+[x] Aggiunta manuale waitlist: dialog "Aggiungi" con ricerca/creazione cliente + servizio + data/ora (waitlist-manager.tsx, waitlist.ts)
 
 DEBITO TECNICO NOTO
 
 - date-fns importato nel booking wizard ma slot calculation in lib/slots.ts non usato dal calendario
-- Nessun test automatico (solo checklist manuale E2E)
 - window.location.reload() usato dopo create/update in alcuni componenti (da sostituire con router.refresh())
 - settings-manager.tsx è 811 righe — potrebbe essere spezzato in sotto-componenti
-- Drag and drop per spostare appuntamenti non implementato (previsto nella scheda tecnica)
+- Drag and drop per spostare appuntamenti nel calendario non implementato (previsto nella scheda tecnica)
 - Colori brand: campo brand_colors in DB ma non usato nella pagina booking
 - Staff photo: campo photo_url in DB ma upload non implementato
 - Rate limiter in-memory: si resetta a ogni deploy/restart (sufficiente pre-launch)

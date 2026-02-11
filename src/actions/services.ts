@@ -13,6 +13,8 @@ const serviceFormSchema = z.object({
   name: z.string().min(1, "Nome servizio obbligatorio"),
   duration_minutes: z.string().regex(/^\d+$/, "Durata non valida"),
   price: z.string().regex(/^\d+([.,]\d{1,2})?$/, "Prezzo non valido"),
+  is_combo: z.enum(["true", "false"]).optional(),
+  combo_service_ids: z.string().optional(),
 });
 
 const toggleServiceSchema = z.object({
@@ -73,12 +75,18 @@ export async function createService(formData: FormData) {
   const name = parsed.data.name;
   const durationMinutes = parseInt(parsed.data.duration_minutes, 10);
   const priceCents = Math.round(parseFloat(parsed.data.price) * 100);
+  const isCombo = parsed.data.is_combo === "true";
+  const comboServiceIds = isCombo && parsed.data.combo_service_ids
+    ? parsed.data.combo_service_ids.split(",").filter(Boolean)
+    : null;
 
   const { error } = await supabase.from("services").insert({
     business_id: business.id,
     name,
     duration_minutes: durationMinutes,
     price_cents: priceCents,
+    is_combo: isCombo,
+    combo_service_ids: comboServiceIds,
   });
 
   if (error) return { error: error.message };
@@ -105,6 +113,10 @@ export async function updateService(serviceId: string, formData: FormData) {
   const name = parsed.data.name;
   const durationMinutes = parseInt(parsed.data.duration_minutes, 10);
   const priceCents = Math.round(parseFloat(parsed.data.price) * 100);
+  const isCombo = parsed.data.is_combo === "true";
+  const comboServiceIds = isCombo && parsed.data.combo_service_ids
+    ? parsed.data.combo_service_ids.split(",").filter(Boolean)
+    : null;
 
   const { error } = await supabase
     .from("services")
@@ -112,6 +124,8 @@ export async function updateService(serviceId: string, formData: FormData) {
       name,
       duration_minutes: durationMinutes,
       price_cents: priceCents,
+      is_combo: isCombo,
+      combo_service_ids: comboServiceIds,
       updated_at: new Date().toISOString(),
     })
     .eq("id", serviceId);

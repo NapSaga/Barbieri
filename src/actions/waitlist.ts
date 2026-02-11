@@ -88,6 +88,101 @@ export async function removeWaitlistEntry(entryId: string) {
   return { success: true };
 }
 
+// ─── Add to Waitlist ────────────────────────────────────────────────
+
+const addToWaitlistSchema = z.object({
+  clientId: z.string().uuid("ID cliente non valido").optional(),
+  newClientFirstName: z.string().optional(),
+  newClientLastName: z.string().optional(),
+  newClientPhone: z.string().optional(),
+  serviceId: z.string().uuid("ID servizio non valido"),
+  desiredDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
+  desiredStartTime: z.string().regex(/^\d{2}:\d{2}$/, "Orario non valido"),
+  desiredEndTime: z.string().regex(/^\d{2}:\d{2}$/, "Orario non valido"),
+});
+
+export async function addToWaitlist(input: {
+  clientId?: string;
+  newClientFirstName?: string;
+  newClientLastName?: string;
+  newClientPhone?: string;
+  serviceId: string;
+  desiredDate: string;
+  desiredStartTime: string;
+  desiredEndTime: string;
+}) {
+  const parsed = addToWaitlistSchema.safeParse(input);
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!business) return { error: "Barberia non trovata" };
+
+  let clientId = parsed.data.clientId;
+
+  // Create new client if no existing client selected
+  if (!clientId) {
+    const firstName = parsed.data.newClientFirstName?.trim();
+    const phone = parsed.data.newClientPhone?.trim();
+    if (!firstName || !phone) {
+      return { error: "Nome e telefono sono obbligatori per un nuovo cliente" };
+    }
+
+    // Check if client already exists by phone
+    const { data: existing } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("business_id", business.id)
+      .eq("phone", phone)
+      .single();
+
+    if (existing) {
+      clientId = existing.id;
+    } else {
+      const { data: newClient, error: clientError } = await supabase
+        .from("clients")
+        .insert({
+          business_id: business.id,
+          first_name: firstName,
+          last_name: parsed.data.newClientLastName?.trim() || null,
+          phone,
+        })
+        .select("id")
+        .single();
+
+      if (clientError) return { error: clientError.message };
+      clientId = newClient.id;
+    }
+  }
+
+  const { error } = await supabase.from("waitlist").insert({
+    business_id: business.id,
+    client_id: clientId,
+    service_id: parsed.data.serviceId,
+    desired_date: parsed.data.desiredDate,
+    desired_start_time: parsed.data.desiredStartTime,
+    desired_end_time: parsed.data.desiredEndTime,
+    status: "waiting",
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard/waitlist");
+  return { success: true };
+}
+
 // ─── Expire Old Entries ──────────────────────────────────────────────
 
 export async function expireOldEntries() {

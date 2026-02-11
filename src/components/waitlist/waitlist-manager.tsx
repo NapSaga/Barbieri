@@ -7,15 +7,18 @@ import {
   Clock,
   Loader2,
   Phone,
+  Plus,
   Scissors,
   Search,
   Timer,
   Trash2,
+  X,
   XCircle,
 } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import type { WaitlistEntry } from "@/actions/waitlist";
-import { expireOldEntries, removeWaitlistEntry } from "@/actions/waitlist";
+import { addToWaitlist, expireOldEntries, removeWaitlistEntry } from "@/actions/waitlist";
+import { addMinutesToTime } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
 
 type StatusFilter = "all" | "waiting" | "notified" | "converted" | "expired";
@@ -80,16 +83,37 @@ function formatRelativeDate(dateStr: string): string {
   return `Tra ${diffDays}g`;
 }
 
-interface WaitlistManagerProps {
-  initialEntries: WaitlistEntry[];
+interface ClientData {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+  phone: string;
 }
 
-export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
+interface ServiceData {
+  id: string;
+  name: string;
+  duration_minutes: number;
+  active: boolean;
+}
+
+interface WaitlistManagerProps {
+  initialEntries: WaitlistEntry[];
+  clients?: ClientData[];
+  services?: ServiceData[];
+}
+
+export function WaitlistManager({
+  initialEntries,
+  clients = [],
+  services = [],
+}: WaitlistManagerProps) {
   const [entries, setEntries] = useState<WaitlistEntry[]>(initialEntries);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [isPending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const filtered = useMemo(() => {
     let result = entries;
@@ -165,6 +189,14 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAddDialog(true)}
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            Aggiungi
+          </button>
           <div className="relative flex-1 sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -377,6 +409,308 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
           })}
         </div>
       )}
+      {/* Add to waitlist dialog */}
+      {showAddDialog && (
+        <AddToWaitlistDialog
+          clients={clients}
+          services={services}
+          onClose={() => setShowAddDialog(false)}
+          onSuccess={() => {
+            setShowAddDialog(false);
+            window.location.reload();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Add to Waitlist Dialog ─────────────────────────────────────────
+
+interface AddToWaitlistDialogProps {
+  clients: ClientData[];
+  services: ServiceData[];
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWaitlistDialogProps) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  // Client mode: "existing" or "new"
+  const [clientMode, setClientMode] = useState<"existing" | "new">("existing");
+  const [clientSearch, setClientSearch] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+
+  // Service & date
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [desiredDate, setDesiredDate] = useState("");
+  const [desiredTime, setDesiredTime] = useState("");
+
+  const activeServices = services.filter((s) => s.active);
+  const selectedService = activeServices.find((s) => s.id === selectedServiceId);
+
+  const filteredClients = useMemo(() => {
+    if (!clientSearch.trim()) return clients.slice(0, 10);
+    const q = clientSearch.toLowerCase();
+    return clients
+      .filter(
+        (c) =>
+          c.first_name.toLowerCase().includes(q) ||
+          c.last_name?.toLowerCase().includes(q) ||
+          c.phone.includes(q),
+      )
+      .slice(0, 10);
+  }, [clients, clientSearch]);
+
+  const selectedClient = clients.find((c) => c.id === selectedClientId);
+
+  function handleSubmit() {
+    setError(null);
+
+    if (clientMode === "existing" && !selectedClientId) {
+      setError("Seleziona un cliente");
+      return;
+    }
+    if (clientMode === "new" && (!newFirstName.trim() || !newPhone.trim())) {
+      setError("Nome e telefono sono obbligatori");
+      return;
+    }
+    if (!selectedServiceId) {
+      setError("Seleziona un servizio");
+      return;
+    }
+    if (!desiredDate) {
+      setError("Seleziona una data");
+      return;
+    }
+
+    const startTime = desiredTime || "09:00";
+    const endTime = selectedService
+      ? addMinutesToTime(startTime, selectedService.duration_minutes)
+      : addMinutesToTime(startTime, 30);
+
+    startTransition(async () => {
+      const result = await addToWaitlist({
+        clientId: clientMode === "existing" ? selectedClientId! : undefined,
+        newClientFirstName: clientMode === "new" ? newFirstName.trim() : undefined,
+        newClientLastName: clientMode === "new" ? newLastName.trim() || undefined : undefined,
+        newClientPhone: clientMode === "new" ? newPhone.trim() : undefined,
+        serviceId: selectedServiceId!,
+        desiredDate,
+        desiredStartTime: startTime,
+        desiredEndTime: endTime,
+      });
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        onSuccess();
+      }
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-2xl">
+        {/* Dialog header */}
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-lg font-semibold text-foreground">Aggiungi alla lista d&apos;attesa</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4 px-5 py-4">
+          {/* Client selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-foreground">Cliente</label>
+            <div className="flex rounded-lg bg-muted p-0.5">
+              <button
+                type="button"
+                onClick={() => { setClientMode("existing"); setSelectedClientId(null); }}
+                className={cn(
+                  "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  clientMode === "existing"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Esistente
+              </button>
+              <button
+                type="button"
+                onClick={() => { setClientMode("new"); setSelectedClientId(null); }}
+                className={cn(
+                  "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  clientMode === "new"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Nuovo
+              </button>
+            </div>
+
+            {clientMode === "existing" ? (
+              <div className="space-y-2">
+                {selectedClient ? (
+                  <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm">
+                    <span className="font-medium text-foreground">
+                      {selectedClient.first_name}
+                      {selectedClient.last_name ? ` ${selectedClient.last_name}` : ""}
+                      <span className="ml-2 text-muted-foreground">{selectedClient.phone}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedClientId(null)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        placeholder="Cerca per nome o telefono..."
+                        className="h-9 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                      />
+                    </div>
+                    {filteredClients.length > 0 && (
+                      <div className="max-h-36 overflow-y-auto rounded-lg border border-border">
+                        {filteredClients.map((c) => (
+                          <button
+                            type="button"
+                            key={c.id}
+                            onClick={() => {
+                              setSelectedClientId(c.id);
+                              setClientSearch("");
+                            }}
+                            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+                          >
+                            <span className="font-medium text-foreground">
+                              {c.first_name}{c.last_name ? ` ${c.last_name}` : ""}
+                            </span>
+                            <span className="text-xs text-muted-foreground">{c.phone}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={newFirstName}
+                    onChange={(e) => setNewFirstName(e.target.value)}
+                    placeholder="Nome *"
+                    className="h-9 rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                  <input
+                    type="text"
+                    value={newLastName}
+                    onChange={(e) => setNewLastName(e.target.value)}
+                    placeholder="Cognome"
+                    className="h-9 rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+                <input
+                  type="tel"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="Telefono *"
+                  className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Service */}
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-foreground">Servizio</label>
+            <select
+              value={selectedServiceId || ""}
+              onChange={(e) => setSelectedServiceId(e.target.value || null)}
+              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="">Seleziona servizio...</option>
+              {activeServices.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.duration_minutes} min)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-foreground">Data desiderata</label>
+              <input
+                type="date"
+                value={desiredDate}
+                onChange={(e) => setDesiredDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-foreground">
+                Orario preferito
+                <span className="ml-1 text-xs font-normal text-muted-foreground">(opz.)</span>
+              </label>
+              <input
+                type="time"
+                value={desiredTime}
+                onChange={(e) => setDesiredTime(e.target.value)}
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="rounded-lg bg-destructive/10 p-2.5 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Dialog footer */}
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            Annulla
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isPending}
+            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Aggiungi
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

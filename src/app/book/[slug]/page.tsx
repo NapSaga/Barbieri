@@ -22,22 +22,32 @@ export default async function BookingPage({ params }: BookingPageProps) {
     notFound();
   }
 
-  // Fetch active services, staff, and closure dates in parallel
-  const [{ data: services }, { data: staffMembers }, closureDates] = await Promise.all([
-    supabase
-      .from("services")
-      .select("id, name, duration_minutes, price_cents, is_combo")
-      .eq("business_id", business.id)
-      .eq("active", true)
-      .order("display_order", { ascending: true }),
-    supabase
-      .from("staff")
-      .select("id, name, photo_url, working_hours")
-      .eq("business_id", business.id)
-      .eq("active", true)
-      .order("sort_order", { ascending: true }),
-    getClosureDates(business.id),
-  ]);
+  // Fetch active services, staff, staff_services, and closure dates in parallel
+  const [{ data: services }, { data: staffMembers }, { data: staffServicesRaw }, closureDates] =
+    await Promise.all([
+      supabase
+        .from("services")
+        .select("id, name, duration_minutes, price_cents, is_combo")
+        .eq("business_id", business.id)
+        .eq("active", true)
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("staff")
+        .select("id, name, photo_url, working_hours")
+        .eq("business_id", business.id)
+        .eq("active", true)
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("staff_services")
+        .select("staff_id, service_id, staff!inner(business_id)")
+        .eq("staff.business_id", business.id),
+      getClosureDates(business.id),
+    ]);
+
+  const staffServiceLinks = (staffServicesRaw || []).map((row) => ({
+    staffId: row.staff_id,
+    serviceId: row.service_id,
+  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,6 +64,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
           business={business}
           services={services || []}
           staffMembers={staffMembers || []}
+          staffServiceLinks={staffServiceLinks}
           closureDates={closureDates}
         />
       </div>

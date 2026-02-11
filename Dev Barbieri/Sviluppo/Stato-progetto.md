@@ -372,12 +372,7 @@ Polish, deploy, sicurezza.
      f) MEDIO: booking wizard ignorava orari di apertura della business
      g) BASSO: import dinamici ridondanti in notifyWaitlistOnCancel
      h) MEDIO: comando SI waitlist senza conflict check — ora itera tutti gli staff, verifica disponibilita', invia conferma/rifiuto WhatsApp
-   - 5 bug documentati per roadmap (feature gap, non regressioni):
-     - UI servizi combo non implementata (schema pronto)
-     - UI associazione staff-servizi mancante
-     - UI aggiunta manuale waitlist mancante
-     - Riordino staff (sort_order) non esposto in UI
-     - Filtro staff nel calendario non implementato
+   - 5 feature gap identificati e successivamente implementati (vedi punto 12)
    - typecheck + build verificati dopo i fix
 
 9. Sicurezza Pre-Lancio ✅
@@ -428,14 +423,13 @@ Polish, deploy, sicurezza.
      - CSS escluso da Biome (Tailwind v4 usa @theme/@custom-variant non supportati dal parser CSS di Biome)
    - Risultato: pnpm typecheck ✅, pnpm lint ✅ (0 errori, 43 warning), pnpm build ✅ (17 route)
 
-11. Da fare:
+13. Da fare:
    - Acquisto dominio + DNS Cloudflare
    - Configurare webhook Stripe live (richiede URL pubblica)
    - Aggiornare NEXT_PUBLIC_APP_URL con dominio produzione
    - PWA con Serwist (service worker, manifest, installabilità)
    - Performance optimization (bundle size, lazy loading, prefetch)
    - Abilitare Leaked Password Protection dalla Supabase Dashboard
-   - Implementare feature gap identificati dai test E2E (vedi Roadmap.md)
 
 ---
 

@@ -165,6 +165,82 @@ Un secondo passaggio approfondito ha individuato **4 nuovi bug** non emersi nel 
 
 ---
 
+## Implementazione Feature Gap (11/02/2026 — sessione Windsurf Cascade)
+
+Dopo i test E2E e i fix dei bug, sono stati implementati tutti e **5 i feature gap** identificati. Queste erano funzionalita' previste nello schema DB che non avevano ancora una UI.
+
+### Step 1 — Filtro staff nel calendario
+
+**Problema:** La vista giornaliera/settimanale mostrava tutti i barbieri senza possibilita' di filtrare per uno specifico.
+
+**File modificato:** `src/components/calendar/calendar-view.tsx`
+**Implementazione:**
+- Dropdown `Select` (shadcn/ui) nella toolbar con opzione "Tutti" + singoli barbieri
+- Stato filtro locale (`useState`), `useMemo` per `filteredStaff` e `filteredAppointments`
+- Lista filtrata passata a `DayView` e `WeekView`
+- Dropdown visibile solo se ci sono 2+ staff members
+
+### Step 2 — Riordino staff con drag-and-drop
+
+**Problema:** Il campo `sort_order` nella tabella `staff` non era modificabile da UI.
+
+**File modificati:** `src/components/staff/staff-manager.tsx`, `src/actions/staff.ts`
+**Implementazione:**
+- Drag-and-drop HTML5 nativo (NO librerie esterne) con handle `GripVertical`
+- Server action `reorderStaff(staffIds[])` aggiorna `sort_order` in batch
+- Aggiornamento ottimistico della lista locale + `revalidatePath`
+
+### Step 3 — Associazione staff-servizi
+
+**Problema:** La tabella `staff_services` esisteva ma nessuna UI per gestirla. Il booking wizard mostrava tutti gli staff indipendentemente dal servizio.
+
+**File modificati:** `src/components/staff/staff-manager.tsx`, `src/actions/staff.ts`, `src/components/booking/booking-wizard.tsx`, `src/app/book/[slug]/page.tsx`, `src/app/(dashboard)/dashboard/staff/page.tsx`
+**Implementazione:**
+- Sezione "Servizi" con checkbox nel pannello modifica staff (componente `StaffServicesEditor`)
+- Server actions `getStaffServices()` e `updateStaffServices(staffId, serviceIds[])` (DELETE vecchi + INSERT nuovi)
+- Booking wizard: `getStaffForService()` filtra barbieri per servizio selezionato
+- Backwards compatible: se nessuna associazione esiste, mostra tutti gli staff
+
+### Step 4 — UI servizi combo
+
+**Problema:** Lo schema aveva `is_combo` e `combo_service_ids` ma il CRUD servizi non li esponeva.
+
+**File modificati:** `src/components/services/services-manager.tsx`, `src/actions/services.ts`
+**Implementazione:**
+- Toggle "E' un combo" (checkbox con icona `Layers`) nel form servizio
+- Se attivo: lista checkbox dei servizi attivi non-combo da includere
+- Durata e prezzo del combo indipendenti (settati manualmente)
+- Server actions `createService`/`updateService` aggiornate per salvare `is_combo` + `combo_service_ids`
+- Badge "Combo" nella lista servizi
+
+### Step 5 — Aggiunta manuale entry waitlist
+
+**Problema:** Il WaitlistManager mostrava e rimuoveva entry ma non permetteva aggiunta manuale.
+
+**File modificati:** `src/components/waitlist/waitlist-manager.tsx`, `src/actions/waitlist.ts`, `src/app/(dashboard)/dashboard/waitlist/page.tsx`
+**Implementazione:**
+- Bottone "Aggiungi" nell'header + dialog modale `AddToWaitlistDialog`
+- Selezione cliente: tab "Esistente" (ricerca per nome/telefono) o "Nuovo" (form nome + cognome + telefono)
+- Selezione servizio (dropdown servizi attivi), data desiderata, orario preferito (opzionale)
+- Server action `addToWaitlist()` con Zod validation, find-or-create client per telefono
+- End time calcolato automaticamente dalla durata del servizio
+- Pagina waitlist aggiornata per passare `clients` e `services` al componente
+
+### Riepilogo dopo implementazione feature gap
+
+| Metrica | Prima | Dopo |
+|---------|-------|------|
+| Test pass | 108/126 | 114/126 |
+| Test fail | 6 | 0 |
+| Test skip | 12 | 12 |
+| Pass rate (escl. skip) | 94.7% | **100%** |
+| Feature gap | 5 | **0** |
+| Bug aperti | 5 | **0** |
+| typecheck | Pass | Pass |
+| build | Pass | Pass |
+
+---
+
 ## Test Automatici con Vitest (11/02/2026 — sessione successiva)
 
 Dopo i test manuali, e' stato attivato un test runner automatico (Vitest) per coprire tutte le **funzioni pure** della codebase con test unitari.

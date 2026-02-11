@@ -4,20 +4,24 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  GripVertical,
   Loader2,
   Pencil,
   Plus,
+  Scissors,
   ToggleLeft,
   ToggleRight,
   Trash2,
   UserCog,
   X,
 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import {
   createStaffMember,
   deleteStaffMember,
+  reorderStaff,
   updateStaffMember,
+  updateStaffServices,
   updateStaffWorkingHours,
 } from "@/actions/staff";
 import { cn } from "@/lib/utils";
@@ -51,17 +55,35 @@ const DAY_LABELS: Record<string, string> = {
 
 const DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
-interface StaffManagerProps {
-  initialStaff: StaffMemberData[];
+interface ServiceItem {
+  id: string;
+  name: string;
+  active: boolean;
 }
 
-export function StaffManager({ initialStaff }: StaffManagerProps) {
+interface StaffServiceLink {
+  staffId: string;
+  serviceId: string;
+}
+
+interface StaffManagerProps {
+  initialStaff: StaffMemberData[];
+  services?: ServiceItem[];
+  initialStaffServices?: StaffServiceLink[];
+}
+
+export function StaffManager({ initialStaff, services = [], initialStaffServices = [] }: StaffManagerProps) {
   const [staff, setStaff] = useState<StaffMemberData[]>(initialStaff);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedHours, setExpandedHours] = useState<string | null>(null);
+  const [expandedServices, setExpandedServices] = useState<string | null>(null);
+  const [staffServices, setStaffServices] = useState<StaffServiceLink[]>(initialStaffServices);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const dragItem = useRef<string | null>(null);
+  const dragOverItem = useRef<string | null>(null);
 
   function handleCreate(formData: FormData) {
     setError(null);
@@ -99,6 +121,42 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
       setStaff((prev) =>
         prev.map((s) => (s.id === staffId ? { ...s, active: !currentActive } : s)),
       );
+    });
+  }
+
+  function handleDragStart(id: string) {
+    dragItem.current = id;
+  }
+
+  function handleDragEnter(id: string) {
+    dragOverItem.current = id;
+    setDragOverId(id);
+  }
+
+  function handleDragEnd() {
+    if (!dragItem.current || !dragOverItem.current || dragItem.current === dragOverItem.current) {
+      setDragOverId(null);
+      return;
+    }
+
+    const reordered = [...staff];
+    const fromIndex = reordered.findIndex((s) => s.id === dragItem.current);
+    const toIndex = reordered.findIndex((s) => s.id === dragOverItem.current);
+    if (fromIndex === -1 || toIndex === -1) {
+      setDragOverId(null);
+      return;
+    }
+
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    setStaff(reordered);
+    setDragOverId(null);
+    dragItem.current = null;
+    dragOverItem.current = null;
+
+    startTransition(async () => {
+      const result = await reorderStaff(reordered.map((s) => s.id));
+      if (result.error) setError(result.error);
     });
   }
 
@@ -196,14 +254,26 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
           {staff.map((member) => (
             <div
               key={member.id}
+              draggable
+              onDragStart={() => handleDragStart(member.id)}
+              onDragEnter={() => handleDragEnter(member.id)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => e.preventDefault()}
               className={cn(
-                "rounded-xl bg-card border border-border transition-opacity",
+                "rounded-xl bg-card border border-border transition-all",
                 !member.active && "opacity-60",
+                dragOverId === member.id && "border-primary/50 bg-primary/5",
               )}
             >
               {/* Main row */}
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
+                  <div
+                    className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+                    onMouseDown={(e) => e.currentTarget.closest("[draggable]")?.setAttribute("draggable", "true")}
+                  >
+                    <GripVertical className="h-5 w-5" />
+                  </div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-sm font-bold text-foreground">
                     {member.name.charAt(0).toUpperCase()}
                   </div>
@@ -247,6 +317,23 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
                 </div>
 
                 <div className="flex items-center gap-1">
+                  {services.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedServices(expandedServices === member.id ? null : member.id)
+                      }
+                      className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
+                    >
+                      <Scissors className="h-3.5 w-3.5" />
+                      Servizi
+                      {expandedServices === member.id ? (
+                        <ChevronUp className="h-3 w-3" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setExpandedHours(expandedHours === member.id ? null : member.id)}
@@ -290,6 +377,23 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
                   </button>
                 </div>
               </div>
+
+              {/* Services panel */}
+              {expandedServices === member.id && services.length > 0 && (
+                <StaffServicesEditor
+                  staffId={member.id}
+                  services={services}
+                  selectedServiceIds={staffServices
+                    .filter((ss) => ss.staffId === member.id)
+                    .map((ss) => ss.serviceId)}
+                  onSave={(serviceIds) => {
+                    setStaffServices((prev) => [
+                      ...prev.filter((ss) => ss.staffId !== member.id),
+                      ...serviceIds.map((serviceId) => ({ staffId: member.id, serviceId })),
+                    ]);
+                  }}
+                />
+              )}
 
               {/* Working hours panel */}
               {expandedHours === member.id && (
@@ -394,6 +498,87 @@ function WorkingHoursEditor({ staffId, workingHours, onSave }: WorkingHoursEdito
         >
           {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
           Salva orari
+        </button>
+        {saved && <span className="text-xs text-emerald-400">Salvato!</span>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Staff Services Editor ──────────────────────────────────────────
+
+interface StaffServicesEditorProps {
+  staffId: string;
+  services: ServiceItem[];
+  selectedServiceIds: string[];
+  onSave: (serviceIds: string[]) => void;
+}
+
+function StaffServicesEditor({
+  staffId,
+  services,
+  selectedServiceIds,
+  onSave,
+}: StaffServicesEditorProps) {
+  const [selected, setSelected] = useState<Set<string>>(new Set(selectedServiceIds));
+  const [isPending, startTransition] = useTransition();
+  const [saved, setSaved] = useState(false);
+
+  function toggleService(serviceId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(serviceId)) next.delete(serviceId);
+      else next.add(serviceId);
+      return next;
+    });
+    setSaved(false);
+  }
+
+  function handleSave() {
+    const serviceIds = Array.from(selected);
+    startTransition(async () => {
+      const result = await updateStaffServices(staffId, serviceIds);
+      if (!result.error) {
+        onSave(serviceIds);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    });
+  }
+
+  const activeServices = services.filter((s) => s.active);
+
+  return (
+    <div className="border-t border-border px-4 pb-4 pt-3">
+      <p className="mb-2 text-xs text-muted-foreground">
+        Seleziona i servizi che questo barbiere può eseguire. Se nessuno è selezionato, potrà
+        eseguire tutti i servizi.
+      </p>
+      <div className="space-y-1.5">
+        {activeServices.map((service) => (
+          <label key={service.id} className="flex items-center gap-2 cursor-pointer text-sm">
+            <input
+              type="checkbox"
+              checked={selected.has(service.id)}
+              onChange={() => toggleService(service.id)}
+              className="h-4 w-4 rounded border-input text-foreground focus:ring-ring"
+            />
+            <span className="text-foreground">{service.name}</span>
+          </label>
+        ))}
+      </div>
+      {activeServices.length === 0 && (
+        <p className="text-xs text-muted-foreground">Nessun servizio attivo disponibile.</p>
+      )}
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={isPending}
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+          Salva servizi
         </button>
         {saved && <span className="text-xs text-emerald-400">Salvato!</span>}
       </div>

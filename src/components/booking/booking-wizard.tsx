@@ -35,10 +35,16 @@ interface Business {
   opening_hours: Record<string, { open: string; close: string; closed: boolean }> | null;
 }
 
+interface StaffServiceLink {
+  staffId: string;
+  serviceId: string;
+}
+
 interface BookingWizardProps {
   business: Business;
   services: Service[];
   staffMembers: StaffMember[];
+  staffServiceLinks?: StaffServiceLink[];
   closureDates?: string[];
 }
 
@@ -96,6 +102,7 @@ export function BookingWizard({
   business,
   services,
   staffMembers,
+  staffServiceLinks = [],
   closureDates = [],
 }: BookingWizardProps) {
   const [step, setStep] = useState<Step>("service");
@@ -161,14 +168,25 @@ export function BookingWizard({
     });
   }
 
+  // Filter staff by service: if any staff has associations, only show matching staff
+  // If no staff_services rows exist at all, show everyone (backwards compatible)
+  function getStaffForService(serviceId: string): StaffMember[] {
+    const linksForService = staffServiceLinks.filter((l) => l.serviceId === serviceId);
+    if (linksForService.length === 0 && staffServiceLinks.length === 0) return staffMembers;
+    if (linksForService.length === 0) return staffMembers;
+    const staffIds = new Set(linksForService.map((l) => l.staffId));
+    return staffMembers.filter((s) => staffIds.has(s.id));
+  }
+
   function handleSelectService(service: Service) {
     setSelectedService(service);
     setSelectedStaff(null);
     setSelectedDate(null);
     setSelectedTime(null);
 
-    if (staffMembers.length === 1) {
-      setSelectedStaff(staffMembers[0]);
+    const eligible = getStaffForService(service.id);
+    if (eligible.length === 1) {
+      setSelectedStaff(eligible[0]);
       setStep("datetime");
     } else {
       setStep("staff");
@@ -190,7 +208,8 @@ export function BookingWizard({
   function handleBack() {
     if (step === "staff") setStep("service");
     else if (step === "datetime") {
-      if (staffMembers.length === 1) setStep("service");
+      const eligible = selectedService ? getStaffForService(selectedService.id) : staffMembers;
+      if (eligible.length === 1) setStep("service");
       else setStep("staff");
     } else if (step === "confirm") setStep("datetime");
   }
@@ -316,7 +335,7 @@ export function BookingWizard({
       {step === "staff" && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Scegli il barbiere</h2>
-          {staffMembers.map((member) => (
+          {(selectedService ? getStaffForService(selectedService.id) : staffMembers).map((member) => (
             <button
               type="button"
               key={member.id}

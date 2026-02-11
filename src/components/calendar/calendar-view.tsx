@@ -7,14 +7,22 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Users,
 } from "lucide-react";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import {
   type CalendarAppointment,
   getAppointmentsForDate,
   getAppointmentsForWeek,
 } from "@/actions/appointments";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AppointmentSheet } from "./appointment-sheet";
 import { DayView } from "./day-view";
 import { WalkInDialog } from "./walk-in-dialog";
@@ -96,6 +104,23 @@ export function CalendarView({
   const [isPending, startTransition] = useTransition();
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<CalendarAppointment | null>(null);
+  const [staffFilter, setStaffFilter] = useState<string>("all");
+
+  const filteredStaff = useMemo(
+    () =>
+      staffFilter === "all"
+        ? staffMembers
+        : staffMembers.filter((s) => s.id === staffFilter),
+    [staffFilter, staffMembers],
+  );
+
+  const filteredAppointments = useMemo(
+    () =>
+      staffFilter === "all"
+        ? appointments
+        : appointments.filter((a) => a.staff?.id === staffFilter),
+    [staffFilter, appointments],
+  );
 
   const fetchAppointments = useCallback((date: Date, mode: ViewMode) => {
     startTransition(async () => {
@@ -195,6 +220,24 @@ export function CalendarView({
           )}
         </div>
 
+        <div className="flex items-center gap-2">
+          {staffMembers.length > 1 && (
+            <Select value={staffFilter} onValueChange={setStaffFilter}>
+              <SelectTrigger size="sm" className="gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti</SelectItem>
+                {staffMembers.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
         <div className="flex rounded-lg bg-muted p-0.5">
           <button
             type="button"
@@ -223,6 +266,7 @@ export function CalendarView({
             Settimana
           </button>
         </div>
+        </div>
       </div>
 
       {/* Closure banner */}
@@ -240,15 +284,15 @@ export function CalendarView({
         {viewMode === "day" ? (
           <DayView
             date={currentDate}
-            appointments={appointments}
-            staffMembers={staffMembers}
+            appointments={filteredAppointments}
+            staffMembers={filteredStaff}
             onSelectAppointment={setSelectedAppointment}
           />
         ) : (
           <WeekView
             weekStart={weekStart}
-            appointments={appointments}
-            staffMembers={staffMembers}
+            appointments={filteredAppointments}
+            staffMembers={filteredStaff}
             onSelectAppointment={setSelectedAppointment}
           />
         )}
