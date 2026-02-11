@@ -519,7 +519,9 @@ function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWai
       <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-2xl">
         {/* Dialog header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="text-lg font-semibold text-foreground">Aggiungi alla lista d&apos;attesa</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Aggiungi alla lista d&apos;attesa
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -536,7 +538,10 @@ function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWai
             <div className="flex rounded-lg bg-muted p-0.5">
               <button
                 type="button"
-                onClick={() => { setClientMode("existing"); setSelectedClientId(null); }}
+                onClick={() => {
+                  setClientMode("existing");
+                  setSelectedClientId(null);
+                }}
                 className={cn(
                   "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   clientMode === "existing"
@@ -548,7 +553,10 @@ function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWai
               </button>
               <button
                 type="button"
-                onClick={() => { setClientMode("new"); setSelectedClientId(null); }}
+                onClick={() => {
+                  setClientMode("new");
+                  setSelectedClientId(null);
+                }}
                 className={cn(
                   "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   clientMode === "new"
@@ -602,7 +610,8 @@ function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWai
                             className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
                           >
                             <span className="font-medium text-foreground">
-                              {c.first_name}{c.last_name ? ` ${c.last_name}` : ""}
+                              {c.first_name}
+                              {c.last_name ? ` ${c.last_name}` : ""}
                             </span>
                             <span className="text-xs text-muted-foreground">{c.phone}</span>
                           </button>

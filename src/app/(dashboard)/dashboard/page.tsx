@@ -50,12 +50,14 @@ export default async function DashboardPage() {
 
   const services = servicesResult.data || [];
 
+  // biome-ignore lint/suspicious/noExplicitAny: Supabase query result lacks working_hours shape
+  const typedStaff = staffMembers as any;
+
   return (
-    // biome-ignore lint/suspicious/noExplicitAny: Supabase query result shape matches CalendarView props
     <CalendarView
       initialDate={today}
       initialAppointments={appointments}
-      staffMembers={staffMembers as any}
+      staffMembers={typedStaff}
       services={services}
       closureDates={closureDates}
     />

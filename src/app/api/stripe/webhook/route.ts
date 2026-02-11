@@ -24,7 +24,8 @@ function getWebhookSecret() {
 
 async function updateSubscriptionStatus(customerId: string, status: string) {
   // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
-  const { error } = await (getSupabaseAdmin().from("businesses") as any).update({
+  const { error } = await (getSupabaseAdmin().from("businesses") as any)
+    .update({
       subscription_status: mapStatus(status),
       updated_at: new Date().toISOString(),
     })

@@ -63,10 +63,10 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <div
+      <button
+        type="button"
         className="fixed inset-0 bg-black/40 backdrop-blur-sm"
-        role="button"
-        tabIndex={0}
+        tabIndex={-1}
         onClick={onClose}
         onKeyDown={(e) => e.key === "Escape" && onClose()}
       />

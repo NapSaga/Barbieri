@@ -12,7 +12,11 @@ import { cn } from "@/lib/utils";
 
 const PLAN_ORDER: PlanId[] = ["essential", "professional", "enterprise"];
 
-export function ExpiredView({ subscriptionInfo: _subscriptionInfo }: { subscriptionInfo: SubscriptionInfo | null }) {
+export function ExpiredView({
+  subscriptionInfo: _subscriptionInfo,
+}: {
+  subscriptionInfo: SubscriptionInfo | null;
+}) {
   const [isPending, startTransition] = useTransition();
   const [pendingPlan, setPendingPlan] = useState<PlanId | null>(null);
 
