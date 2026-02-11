@@ -392,9 +392,24 @@ Polish, deploy, sicurezza.
    - WhatsApp sanitizzazione: renderTemplate() in src/lib/whatsapp.ts usa solo regex {{key}} → string replace (single-pass). Nessun contesto HTML/SQL. Sicuro
    - typecheck (tsc --noEmit): passa senza errori
 
-10. CI/CD GitHub Actions ✅
+10. Test Automatici Vitest ✅
+   - Framework: Vitest 4.0.18 con path alias @/* (vitest.config.ts)
+   - Script: pnpm test (run), pnpm test:watch (watch mode)
+   - 95 unit test in 6 file sotto src/lib/__tests__/:
+     - time-utils.test.ts (24): addMinutesToTime, timeToMinutes, minutesToTop, minutesToHeight, formatPrice
+     - whatsapp.test.ts (8): renderTemplate (sostituzione, injection prevention)
+     - rate-limit.test.ts (11): checkRateLimit, getClientIp
+     - slots.test.ts (11): getAvailableSlots (pause, conflitti, boundary)
+     - stripe-utils.test.ts (11): mapStatus (tutti gli stati Stripe → DB enum)
+     - validation.test.ts (30): Zod schemas da appointments, services, clients
+   - Utility deduplicate: addMinutesToTime, formatPrice, timeToMinutes, minutesToTop, minutesToHeight estratte in src/lib/time-utils.ts (prima duplicate in 4 file)
+   - mapStatus estratto da webhook route in src/lib/stripe-utils.ts
+   - Copertura: SOLO funzioni pure senza dipendenze esterne. NON copre server actions, auth, proxy, webhook E2E, rendering React
+   - Risultato: 95/95 pass in ~750ms
+
+11. CI/CD GitHub Actions ✅
    - Workflow: .github/workflows/ci.yml
-   - Pipeline: Typecheck → Lint → Build su ogni push/PR a main
+   - Pipeline: Typecheck → Lint → Test → Build su ogni push/PR a main
    - Stack CI: pnpm 10, Node.js 22, caching dipendenze pnpm
    - Concurrency: cancel-in-progress per evitare build duplicate
    - Env placeholder per build: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_APP_URL
@@ -452,3 +467,5 @@ NOTE TECNICHE
 - Rate limiting: in-memory sliding window in src/lib/rate-limit.ts, usato per protezione webhook.
 - Logo custom: SVG component in src/components/shared/barberos-logo.tsx.
 - Test E2E: checklist manuale strutturata con 126 test cases in Dev Barbieri/Testing/test-checklist.md.
+- Test automatici: 95 unit test Vitest su funzioni pure (pnpm test). CI esegue automaticamente su ogni push/PR.
+- I test automatici NON sostituiscono i test manuali E2E: coprono solo utility pure, non flussi integrati con DB/auth.

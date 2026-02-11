@@ -103,3 +103,105 @@ Questi non sono regressioni ma funzionalita' previste nello schema DB che non ha
 | 5 | Filtro per singolo barbiere nel calendario | CalendarView / DayView |
 
 Questi sono stati aggiunti alla Roadmap come "Feature Gap da test E2E".
+
+---
+
+## Secondo giro di test (11/02/2026)
+
+Un secondo passaggio approfondito ha individuato **4 nuovi bug** non emersi nel primo giro.
+
+### Fix applicati (secondo giro)
+
+#### 5. Slot no-show non liberati per rebooking (MEDIO)
+
+**Problema:** `hasConflict()` e `getStaffBookedSlots()` in `appointments.ts` escludevano solo gli appuntamenti `cancelled`, ma non quelli `no_show`. Se un cliente non si presentava e il barbiere lo segnava come no-show, quello slot restava "occupato" nel sistema: nessun nuovo walk-in o prenotazione online poteva prendere lo stesso orario.
+
+**File modificato:** `src/actions/appointments.ts`
+**Fix:** Cambiato `.neq("status", "cancelled")` con `.not("status", "in", '("cancelled","no_show")')` in entrambe le funzioni. Ora gli slot no-show vengono liberati automaticamente.
+
+---
+
+#### 6. Booking wizard ignorava gli orari di apertura della business (MEDIO)
+
+**Problema:** Il wizard di prenotazione pubblica (`/book/[slug]`) controllava solo gli orari di lavoro del singolo barbiere (`working_hours`) e le chiusure straordinarie (`closureDates`), ma NON gli orari di apertura della barberia (`business.opening_hours`). Se la barberia segnava Lunedi' come "chiuso" nelle impostazioni ma un barbiere aveva orari di lavoro il Lunedi', il cliente poteva comunque prenotare quel giorno.
+
+**File modificato:** `src/components/booking/booking-wizard.tsx`
+**Fix:** Aggiunto check `business.opening_hours?.[dayKey]?.closed === true` nella logica di disabilitazione date. Ora se la barberia e' chiusa in un giorno, quel giorno non e' selezionabile anche se il barbiere ha orari configurati.
+
+---
+
+#### 7. Import dinamici ridondanti in notifyWaitlistOnCancel (BASSO)
+
+**Problema:** La funzione `notifyWaitlistOnCancel()` faceva `await import("@/lib/whatsapp")` per importare `sendWhatsAppMessage` e `renderTemplate`, anche se questi moduli sono gia' importati staticamente in cima al file `appointments.ts`. L'import dinamico aggiungeva overhead inutile a ogni cancellazione.
+
+**File modificato:** `src/actions/appointments.ts`
+**Fix:** Rimosso l'import dinamico ridondante di `@/lib/whatsapp`. Mantenuto solo l'import dinamico di `@/lib/templates` (che NON e' importato staticamente).
+
+---
+
+### Bug documentato ma non fixato (secondo giro)
+
+| # | Descrizione | Complessita' |
+|---|-------------|------------|
+| 8 | Conversione waitlist (comando SI) non fa conflict check e sceglie il primo staff attivo arbitrariamente invece dello staff originale dell'appuntamento cancellato | Alta — richiede redesign del flusso waitlist |
+
+### Riepilogo complessivo dopo 2 giri
+
+| Metrica | Primo giro | Secondo giro | Totale |
+|---------|-----------|-------------|--------|
+| Bug trovati | 9 | 4 | 13 |
+| Bug fixati | 4 | 3 | 7 |
+| Feature gap | 5 | 1 | 6 |
+| typecheck | Pass | Pass | Pass |
+| build | Pass | Pass | Pass |
+
+---
+
+## Test Automatici con Vitest (11/02/2026 — sessione successiva)
+
+Dopo i test manuali, e' stato attivato un test runner automatico (Vitest) per coprire tutte le **funzioni pure** della codebase con test unitari.
+
+### Cosa e' stato fatto
+
+1. **Installato Vitest** (`pnpm add -D vitest`) con `vitest.config.ts` e path alias `@/*`
+2. **Estratte utility condivise** in `src/lib/time-utils.ts`:
+   - `addMinutesToTime`, `timeToMinutes`, `minutesToTop`, `minutesToHeight`, `formatPrice`
+   - Queste funzioni erano duplicate in 4 file diversi (booking-wizard, walk-in-dialog, day-view, appointment-sheet)
+   - I 4 file ora importano dal modulo condiviso
+3. **Estratto `mapStatus`** dal webhook Stripe in `src/lib/stripe-utils.ts` (testabile senza side-effect)
+4. **Scritti 95 test in 6 file:**
+
+| File test | Test | Cosa copre |
+|-----------|------|-----------|
+| `time-utils.test.ts` | 24 | addMinutesToTime (overflow, cap 23:59), timeToMinutes, minutesToTop, minutesToHeight, formatPrice (EUR locale) |
+| `whatsapp.test.ts` | 8 | renderTemplate: sostituzione variabili, variabili mancanti, injection prevention, template vuoto |
+| `rate-limit.test.ts` | 11 | checkRateLimit (limiti, reset finestra, IP indipendenti), getClientIp (x-forwarded-for, x-real-ip, fallback) |
+| `slots.test.ts` | 11 | getAvailableSlots: slot base, pause, appuntamenti esistenti, boundary duration, staff diversi |
+| `stripe-utils.test.ts` | 11 | mapStatus: tutti gli stati Stripe → DB enum, stato sconosciuto |
+| `validation.test.ts` | 30 | Zod schemas: dateSchema, timeSchema, uuidSchema, walkInSchema, bookAppointmentSchema, serviceFormSchema, createClientSchema |
+
+5. **CI aggiornata**: `pnpm test` aggiunto in `.github/workflows/ci.yml` tra Lint e Build
+
+### Risultati
+
+```
+pnpm test → 95/95 pass (749ms)
+pnpm typecheck → pass
+pnpm build → pass
+pnpm lint → 0 nuovi errori (3 pre-esistenti noExplicitAny)
+```
+
+### Cosa coprono i test automatici
+
+Funzioni pure senza dipendenze esterne: calcoli tempo, formato prezzo, rate limiter, slot availability, mapping status Stripe, template WhatsApp, validazione input Zod.
+
+### Cosa NON coprono (e perche')
+
+- **Server Actions** → richiedono Supabase reale (test di integrazione, non unitari)
+- **Flusso autenticazione** → richiede browser + Supabase Auth
+- **proxy.ts** → richiede context Next.js
+- **Webhook end-to-end** → richiedono firma Stripe/Twilio + DB
+- **Rendering componenti React** → richiederebbe @testing-library/react (non installato)
+- **Edge Functions / pg_cron** → eseguiti da Supabase, non testabili localmente
+
+I test manuali con AI (checklist 126 casi) restano la copertura principale per i flussi end-to-end. I test automatici Vitest sono un livello aggiuntivo che protegge le funzioni pure da regressioni.

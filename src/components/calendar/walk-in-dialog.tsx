@@ -3,6 +3,7 @@
 import { Loader2, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { addWalkIn } from "@/actions/appointments";
+import { addMinutesToTime, formatPrice } from "@/lib/time-utils";
 
 interface StaffMember {
   id: string;
@@ -33,20 +34,6 @@ interface WalkInDialogProps {
   services: ServiceItem[];
   appointments: ExistingAppointment[];
   onSuccess: () => void;
-}
-
-function addMinutesToTime(time: string, minutes: number): string {
-  const [h, m] = time.split(":").map(Number);
-  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59);
-  const newH = Math.floor(total / 60)
-    .toString()
-    .padStart(2, "0");
-  const newM = (total % 60).toString().padStart(2, "0");
-  return `${newH}:${newM}`;
-}
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 }
 
 export function WalkInDialog({

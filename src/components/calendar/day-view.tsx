@@ -1,6 +1,7 @@
 "use client";
 
 import type { CalendarAppointment } from "@/actions/appointments";
+import { minutesToHeight, minutesToTop, timeToMinutes } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
 import { AppointmentCard } from "./appointment-card";
 
@@ -28,19 +29,6 @@ const TOTAL_HOURS = END_HOUR - START_HOUR;
 const GUTTER_WIDTH = 64;
 
 const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function minutesToTop(minutes: number): number {
-  return ((minutes - START_HOUR * 60) / 60) * HOUR_HEIGHT;
-}
-
-function minutesToHeight(startMin: number, endMin: number): number {
-  return ((endMin - startMin) / 60) * HOUR_HEIGHT;
-}
 
 function isToday(date: Date): boolean {
   const now = new Date();
@@ -205,8 +193,8 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
                 {colAppointments.map((appointment) => {
                   const startMin = timeToMinutes(appointment.start_time);
                   const endMin = timeToMinutes(appointment.end_time);
-                  const top = minutesToTop(startMin);
-                  const height = minutesToHeight(startMin, endMin);
+                  const top = minutesToTop(startMin, START_HOUR, HOUR_HEIGHT);
+                  const height = minutesToHeight(startMin, endMin, HOUR_HEIGHT);
 
                   if (startMin < START_HOUR * 60 || startMin >= END_HOUR * 60) return null;
 
@@ -256,7 +244,7 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
 function CurrentTimeIndicator({ gutterWidth }: { gutterWidth: number }) {
   const now = new Date();
   const minutes = now.getHours() * 60 + now.getMinutes();
-  const top = minutesToTop(minutes);
+  const top = minutesToTop(minutes, START_HOUR, HOUR_HEIGHT);
 
   if (minutes < START_HOUR * 60 || minutes > END_HOUR * 60) return null;
 

@@ -63,6 +63,7 @@ Comandi WhatsApp gestiti: `CONFERMA`, `CANCELLA`, `CAMBIA ORARIO`, `SI`
 - Grafici fatturato e appuntamenti giornalieri
 - Servizi più richiesti, breakdown clienti nuovi vs ricorrenti
 - Calcolo notturno via cron SQL (`calculate_analytics_daily`)
+- [Vercel Analytics Dashboard](https://vercel.com/giovannidifonzobusinessgmailcoms-projects/barberos-mvp/9ydyH1ZnB53JpGHqJNAmYCocz44K)
 
 ### Altre Funzionalità
 - **CRUD Servizi** — nome, durata, prezzo, combo, toggle attivo

@@ -6,6 +6,7 @@ import { bookAppointment, getStaffBookedSlots } from "@/actions/appointments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { addMinutesToTime, formatPrice } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
 
 interface Service {
@@ -45,23 +46,6 @@ type Step = "service" | "staff" | "datetime" | "confirm";
 
 const DAYS_TO_SHOW = 14;
 const SLOT_INCREMENT = 15;
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-  }).format(cents / 100);
-}
-
-function addMinutesToTime(time: string, minutes: number): string {
-  const [h, m] = time.split(":").map(Number);
-  const total = h * 60 + m + minutes;
-  const newH = Math.floor(total / 60)
-    .toString()
-    .padStart(2, "0");
-  const newM = (total % 60).toString().padStart(2, "0");
-  return `${newH}:${newM}`;
-}
 
 function getDayKey(date: Date): string {
   const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -359,7 +343,9 @@ export function BookingWizard({
               const dayKey = getDayKey(date);
               const schedule = selectedStaff?.working_hours?.[dayKey];
               const isClosed = closureDates.includes(toISODate(date));
-              const isOff = !schedule || schedule.off || isClosed;
+              const businessDay = business.opening_hours?.[dayKey];
+              const isBusinessClosed = businessDay?.closed === true;
+              const isOff = !schedule || schedule.off || isClosed || isBusinessClosed;
 
               return (
                 <button

@@ -27,7 +27,7 @@ async function hasConflict(
     .eq("business_id", businessId)
     .eq("staff_id", staffId)
     .eq("date", date)
-    .neq("status", "cancelled")
+    .not("status", "in", '("cancelled","no_show")')
     .lt("start_time", endTime)
     .gt("end_time", startTime)
     .limit(1);
@@ -52,7 +52,7 @@ export async function getStaffBookedSlots(
     .eq("business_id", businessId)
     .eq("staff_id", staffId)
     .eq("date", date)
-    .neq("status", "cancelled")
+    .not("status", "in", '("cancelled","no_show")')
     .order("start_time", { ascending: true });
 
   return (data || []).map((a) => ({
@@ -593,7 +593,6 @@ async function notifyWaitlistOnCancel(
     .single();
 
   if (client?.phone) {
-    const { sendWhatsAppMessage, renderTemplate } = await import("@/lib/whatsapp");
     const { DEFAULT_TEMPLATES } = await import("@/lib/templates");
 
     await sendWhatsAppMessage({

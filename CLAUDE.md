@@ -18,9 +18,11 @@ pnpm typecheck        # TypeScript type check (tsc --noEmit)
 pnpm db:generate      # Generate Drizzle migrations
 pnpm db:push          # Push schema to database
 pnpm db:studio        # Open Drizzle Studio (visual DB editor)
+pnpm test             # Run unit tests (Vitest)
+pnpm test:watch       # Run tests in watch mode
 ```
 
-No test framework is configured. There are no tests to run.
+Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests__/`.
 
 ## Architecture
 

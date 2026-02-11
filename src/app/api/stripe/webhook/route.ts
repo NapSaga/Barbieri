@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { stripe } from "@/lib/stripe";
+import { mapStatus } from "@/lib/stripe-utils";
 
 // Use Supabase admin client to bypass RLS (same pattern as WhatsApp webhook)
 // Lazy-initialized to avoid build-time crash when env vars aren't set
@@ -19,22 +20,6 @@ function getSupabaseAdmin() {
 
 function getWebhookSecret() {
   return process.env.STRIPE_WEBHOOK_SECRET!;
-}
-
-// Map Stripe subscription status → our DB enum
-function mapStatus(stripeStatus: string): string {
-  const statusMap: Record<string, string> = {
-    active: "active",
-    past_due: "past_due",
-    canceled: "cancelled",
-    cancelled: "cancelled",
-    trialing: "trialing",
-    incomplete: "incomplete",
-    incomplete_expired: "incomplete",
-    unpaid: "past_due",
-    paused: "past_due",
-  };
-  return statusMap[stripeStatus] || "incomplete";
 }
 
 async function updateSubscriptionStatus(customerId: string, status: string) {

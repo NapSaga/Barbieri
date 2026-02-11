@@ -16,12 +16,9 @@ import {
 import { useState, useTransition } from "react";
 import type { CalendarAppointment } from "@/actions/appointments";
 import { updateAppointmentStatus } from "@/actions/appointments";
+import { formatPrice } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
 import { STATUS_LABELS, STATUS_STYLES } from "./appointment-card";
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
-}
 
 const SOURCE_LABELS: Record<string, string> = {
   online: "Online",
