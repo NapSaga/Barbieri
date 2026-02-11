@@ -1,5 +1,23 @@
+import dynamic from "next/dynamic";
 import { getAnalyticsDaily, getAnalyticsSummary, getTopServices } from "@/actions/analytics";
-import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const AnalyticsDashboard = dynamic(
+  () => import("@/components/analytics/analytics-dashboard").then((m) => m.AnalyticsDashboard),
+  {
+    loading: () => (
+      <div className="space-y-6 p-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-72 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
+      </div>
+    ),
+  },
+);
 
 export default async function AnalyticsPage() {
   const today = new Date().toISOString().split("T")[0];

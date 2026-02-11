@@ -88,6 +88,9 @@ Analytics:
 - @vercel/analytics ^1.6.1
 - @vercel/speed-insights ^1.3.1
 
+PWA:
+- @serwist/next 9.5.5 (service worker bundling per Next.js)
+
 Utility:
 - date-fns ^4.1.0
 
@@ -97,13 +100,15 @@ Dev:
 - drizzle-kit ^0.31.8
 - @tailwindcss/postcss ^4
 - babel-plugin-react-compiler 1.0.0
+- serwist 9.5.5 (runtime service worker, devDependency)
+- @next/bundle-analyzer ^16.1.6 (analisi bundle, attivo con ANALYZE=true)
 
 ---
 
 SCRIPTS (pnpm)
 
 pnpm dev           → Dev server con Turbopack (porta 3000)
-pnpm build         → Build di produzione
+pnpm build         → Build di produzione (next build --webpack, richiesto da Serwist)
 pnpm start         → Server di produzione
 pnpm lint          → Lint con Biome
 pnpm lint:fix      → Auto-fix lint
@@ -338,13 +343,13 @@ Da configurare:
 SERVIZI ESTERNI
 
 - WhatsApp API: integrazione Twilio completata (dual-mode: live o mock). Webhook pronto su /api/whatsapp/webhook. Serve configurare credenziali Twilio per invio reale. Edge Functions usano Twilio REST API direttamente (fetch, no npm).
-- Stripe: integrazione completata (stripe@20.3.1, API 2026-01-28.clover). 3 piani: Essential €300/mese (prod_TwyoUI0JLvWcj3, price_1Sz4yuK75hVrlrva5iqHgE52), Professional €500/mese (prod_TwypWo5jLd3doz, price_1Sz4yvK75hVrlrvaemSc8lLf), Enterprise custom (prod_TwyphvT1F82GrB). Trial 30gg. Webhook su /api/stripe/webhook (da configurare con dominio). Customer Portal per self-service. Setup script: npx tsx scripts/setup-stripe.ts.
+- Stripe: integrazione completata (stripe@20.3.1, API 2026-01-28.clover). 3 piani: Essential €300/mese (prod_TwyoUI0JLvWcj3, price_1Sz4yuK75hVrlrva5iqHgE52), Professional €500/mese (prod_TwypWo5jLd3doz, price_1Sz4yvK75hVrlrvaemSc8lLf), Enterprise custom (prod_TwyphvT1F82GrB). Trial 7gg. Codici promozionali abilitati (allow_promotion_codes). Webhook su /api/stripe/webhook (da configurare con dominio). Customer Portal per self-service. Setup script: npx tsx scripts/setup-stripe.ts.
 - Vercel: deploy collegato. Da configurare dominio personalizzato.
 - Sentry: non configurato (monitoring errori).
 - Vercel Analytics: @vercel/analytics ^1.6.1 + @vercel/speed-insights ^1.3.1 integrati in layout.tsx.
 
 Security Headers (next.config.ts):
-- Content-Security-Policy: self + Supabase (*.supabase.co) + Stripe (js.stripe.com, *.stripe.com) + Vercel Analytics (*.vercel-insights.com, *.vercel-analytics.com). frame-ancestors 'none', object-src 'none'.
+- Content-Security-Policy: self + Supabase (*.supabase.co) + Stripe (js.stripe.com, *.stripe.com) + Vercel Analytics (*.vercel-insights.com, *.vercel-analytics.com). img-src include https: per immagini esterne (logo/cover barberia). frame-ancestors 'none', object-src 'none'.
 - X-Frame-Options: DENY
 - X-Content-Type-Options: nosniff
 - Referrer-Policy: strict-origin-when-cross-origin

@@ -9,23 +9,24 @@ STRUTTURA CARTELLE
 barberos-mvp/
 ├── .env.local                    # Variabili d'ambiente (gitignored)
 ├── .env.example                  # Template variabili d'ambiente
-├── .gitignore
+├── .gitignore                    # Include public/sw* e public/swe-worker* (generati da Serwist)
 ├── biome.json                    # Configurazione Biome (linter + formatter)
 ├── drizzle.config.ts             # Configurazione Drizzle ORM
-├── next.config.ts                # Configurazione Next.js (React Compiler + security headers)
+├── next.config.ts                # Configurazione Next.js (React Compiler + security headers + bundle analyzer + image optimization + Serwist PWA)
 ├── package.json                  # Dipendenze e scripts
 ├── postcss.config.mjs            # PostCSS con Tailwind
-├── tsconfig.json                 # TypeScript strict mode
+├── tsconfig.json                 # TypeScript strict mode (lib: webworker, types: @serwist/next/typings)
 ├── README.md                     # Documentazione progetto
 │
 ├── scripts/
 │   └── setup-stripe.ts           # Script setup Stripe (crea prezzo ricorrente + aggiorna .env)
 │
 └── src/
+    ├── sw.ts                     # Service Worker entry point (Serwist: precache + defaultCache runtime caching)
     ├── proxy.ts                  # Proxy Next.js 16 per protezione route e refresh sessione
     │
     ├── app/                      # Route Next.js (App Router)
-    │   ├── layout.tsx            # Root layout (font Inter, metadata Barberos, lang="it")
+    │   ├── layout.tsx            # Root layout (font Inter, metadata Barberos, lang="it", PWA manifest + viewport)
     │   ├── page.tsx              # Homepage: redirect a /dashboard o /login
     │   ├── globals.css           # Stili globali Tailwind
     │   │
@@ -254,8 +255,8 @@ Salvataggio impostazioni:
 Attivazione abbonamento:
   SettingsManager > BillingSection → utente sceglie piano (Essential/Professional/Enterprise)
   → createCheckoutSession(planId) Server Action
-  → Stripe: create/ensure Customer → create Checkout Session (mode: subscription, trial 30gg)
-  → redirect a Stripe Checkout hosted page → pagamento → webhook sync status + piano su DB
+  → Stripe: create/ensure Customer → create Checkout Session (mode: subscription, trial 7gg, allow_promotion_codes)
+  → redirect a Stripe Checkout hosted page (con campo codice promo) → pagamento → webhook sync status + piano su DB
 
 Gestione abbonamento:
   SettingsManager > BillingSection → createPortalSession Server Action
@@ -373,7 +374,8 @@ Codebase Next.js (locale):
 - 1 file proxy (proxy.ts — auth + subscription gating)
 - 1 config shadcn (components.json)
 - 1 script setup (scripts/setup-stripe.ts)
-- Totale: ~76 file TypeScript/TSX
+- 1 file service worker (src/sw.ts — Serwist PWA)
+- Totale: ~78 file TypeScript/TSX
 
 Supabase Cloud:
 - 6 Edge Functions attive (confirmation-request/reminder, auto-cancel, pre-appointment, review-request, reactivation)
@@ -382,6 +384,13 @@ Supabase Cloud:
 - 19 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments)
 - 11 tabelle (10 originali + business_closures)
 
+PWA:
+- public/manifest.json (name "BarberOS", start_url "/dashboard", display "standalone", theme_color "#09090b", lang "it")
+- public/icon-192x192.png e public/icon-512x512.png (sfondo zinc-950, logo centrato)
+- public/sw.js (generato da Serwist in build, gitignored)
+- src/sw.ts (entry point service worker: precache + defaultCache)
+
 Deploy:
 - Vercel: frontend, Server Actions, API routes (collegato)
 - Supabase Cloud: database, auth, edge functions, pg_cron (attivo)
+- Build: "next build --webpack" (Serwist richiede webpack, Next.js 16 default Turbopack)

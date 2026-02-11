@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getClosureDates } from "@/actions/closures";
 import { BookingWizard } from "@/components/booking/booking-wizard";
@@ -60,22 +61,27 @@ export default async function BookingPage({ params }: BookingPageProps) {
   return (
     <div className="min-h-screen bg-background" style={cssVars as React.CSSProperties}>
       {business.cover_image_url && (
-        // biome-ignore lint/performance/noImgElement: external user-provided URL
-        <img
-          src={business.cover_image_url}
-          alt={business.name}
-          className="h-48 w-full object-cover"
-        />
+        <div className="relative h-48 w-full">
+          <Image
+            src={business.cover_image_url}
+            alt={business.name}
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+        </div>
       )}
       <div className="mx-auto max-w-lg px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
           {business.logo_url && (
-            // biome-ignore lint/performance/noImgElement: external user-provided URL
-            <img
+            <Image
               src={business.logo_url}
               alt={business.name}
-              className="mx-auto mb-3 h-16 w-16 rounded-xl object-contain"
+              width={64}
+              height={64}
+              className="mx-auto mb-3 rounded-xl object-contain"
             />
           )}
           <h1

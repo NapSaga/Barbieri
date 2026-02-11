@@ -159,11 +159,13 @@ Notifiche WhatsApp: Twilio (^5.12.1) tramite WhatsApp Business API. Dual-mode: l
 
 Autenticazione: Supabase Auth con magic link email + password. JWT con refresh token. RLS policies per isolamento dati tra barberie.
 
-Pagamenti abbonamento: Stripe Billing con 3 piani (Essential €300/mese, Professional €500/mese, Enterprise custom). Trial 30 giorni. Stripe Checkout per pagamento con selezione piano. Webhook Stripe (/api/stripe/webhook) per sync stato abbonamento su DB. Customer Portal per self-service (cambio carta, cancellazione, fatture). Setup €1.000 una tantum fatturato separatamente.
+Pagamenti abbonamento: Stripe Billing con 3 piani (Essential €300/mese, Professional €500/mese, Enterprise custom). Trial 7 giorni. Stripe Checkout per pagamento con selezione piano e codici promozionali/coupon (allow_promotion_codes). Webhook Stripe (/api/stripe/webhook) per sync stato abbonamento su DB. Customer Portal per self-service (cambio carta, cancellazione, fatture). Setup €1.000 una tantum fatturato separatamente.
 
 Cron e job scheduling: pg_cron nativo di Supabase per job ricorrenti (reminder, riattivazione, analytics). Supabase Edge Functions triggerati da database webhooks per eventi real-time.
 
-Monitoring: Sentry per error tracking. Vercel Analytics per performance. Supabase Dashboard per query e database health.
+PWA (Progressive Web App): @serwist/next 9.5.5 per service worker con precache e runtime caching. Web App Manifest (standalone, start_url /dashboard, theme_color #09090b). Icone 192x192 e 512x512. Installabile su mobile (Android + iOS) come app standalone con icona home screen. Build usa webpack (next build --webpack) perché Serwist non supporta Turbopack; dev resta Turbopack.
+
+Monitoring: Sentry per error tracking (previsto). Vercel Analytics per performance. Supabase Dashboard per query e database health.
 
 AI (fase 2 post-MVP): Claude API via Anthropic SDK per suggerimenti automatici, previsione no-show, generazione testi marketing.
 
@@ -175,7 +177,7 @@ CI/CD (attivo): GitHub Actions (.github/workflows/ci.yml) per typecheck, lint, t
 
 COSA NON FA L'MVP
 
-Nessuna app nativa iOS o Android (solo PWA e browser).
+Nessuna app nativa iOS o Android (PWA installabile su mobile + browser).
 Nessun pagamento online del cliente finale (niente POS, niente prepagamento).
 Nessuna gestione multi-sede (un account = una barberia).
 Nessuna fatturazione elettronica SDI (fase 2).

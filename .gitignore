@@ -35,6 +35,10 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# serwist (generated service worker)
+public/sw*
+public/swe-worker*
+
 # vercel
 .vercel
 

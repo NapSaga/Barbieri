@@ -1,9 +1,26 @@
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { getSubscriptionInfo } from "@/actions/billing";
 import { getCurrentBusiness, getMessageTemplates } from "@/actions/business";
 import { getClosures } from "@/actions/closures";
-import { SettingsManager } from "@/components/settings/settings-manager";
+import { Skeleton } from "@/components/ui/skeleton";
 import { isWhatsAppEnabled } from "@/lib/whatsapp";
+
+const SettingsManager = dynamic(
+  () => import("@/components/settings/settings-manager").then((m) => m.SettingsManager),
+  {
+    loading: () => (
+      <div className="space-y-6 p-4">
+        <Skeleton className="h-10 w-48" />
+        <div className="space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    ),
+  },
+);
 
 export default async function SettingsPage() {
   const [business, templates, closures, subscriptionInfo] = await Promise.all([

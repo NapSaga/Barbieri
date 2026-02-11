@@ -1,6 +1,6 @@
 BARBEROS — PIANI E PREZZI
 
-Ultimo aggiornamento: 10 febbraio 2026
+Ultimo aggiornamento: 11 febbraio 2026
 
 ---
 
@@ -9,7 +9,7 @@ Ultimo aggiornamento: 10 febbraio 2026
 Setup una tantum: €1.000 (fatturato separatamente, non su Stripe)
 Include: analisi barberia, configurazione completa, import clienti, training personalizzato, 30 giorni supporto premium.
 
-Trial: 30 giorni gratuiti per tutti i piani (tutte le funzionalità)
+Trial: 7 giorni gratuiti per tutti i piani (tutte le funzionalità)
 Fatturazione: mensile, tramite Stripe
 Contratto: 12 mesi
 Pagamento: carta di credito/debito (Visa, Mastercard, Amex), Apple Pay, Google Pay
@@ -159,7 +159,8 @@ STRIPE SETUP
 
 Vecchio prodotto "Barberos Pro" (prod_TwyPNdkh0a8xAT) → deprecato, non più usato.
 
-Trial: 30 giorni (configurato in STRIPE_CONFIG.trialDays)
+Trial: 7 giorni (configurato in STRIPE_CONFIG.trialDays)
+Codici promozionali: abilitati in Checkout (allow_promotion_codes: true) — supporta coupon e referral code
 Customer Portal: attivo per gestione self-service (cambio carta, cancellazione, fatture)
 
 Env vars:
@@ -187,7 +188,7 @@ Stati abbonamento nel DB (subscription_status enum):
 FLUSSO UTENTE
 
 1. Registrazione gratuita → business creata con subscription_status = trialing
-2. 30 giorni di prova completa (tutte le funzionalità)
+2. 7 giorni di prova completa (tutte le funzionalità)
 3. Al termine: sezione "Abbonamento" in Impostazioni → 3 card piani
 4. Scelta piano (Essential/Professional) → redirect a Stripe Checkout
 5. Pagamento → webhook → status = active, piano salvato in metadata

@@ -274,7 +274,8 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
       - BarberOS Professional (prod_TwypWo5jLd3doz) → €500/mese (price_1Sz4yvK75hVrlrvaemSc8lLf)
       - BarberOS Enterprise (prod_TwyphvT1F82GrB) → prezzo custom (gestito manualmente)
     - Vecchio prodotto "Barberos Pro" (prod_TwyPNdkh0a8xAT) deprecato
-    - Trial: 30 giorni gratuiti (configurabile in STRIPE_CONFIG.trialDays)
+    - Trial: 7 giorni gratuiti (configurabile in STRIPE_CONFIG.trialDays)
+    - Codici promozionali/coupon abilitati in Checkout (allow_promotion_codes: true)
     - stripe@20.3.1 installato, API version 2026-01-28.clover
     - src/lib/stripe.ts: Stripe server client + PLANS config (3 piani con features, prezzi, product/price IDs)
     - src/actions/billing.ts: 3 server actions
@@ -301,7 +302,7 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
 
 FASE D — IN CORSO 🔧
 
-Polish, deploy, sicurezza, personalizzazione.
+Polish, deploy, sicurezza, personalizzazione, PWA, performance.
 
 1. Deploy Vercel ✅
    - Progetto collegato a Vercel (cartella .vercel presente)
@@ -384,7 +385,7 @@ Polish, deploy, sicurezza, personalizzazione.
      - Permissions-Policy: camera=(), microphone=(), geolocation=()
      - Strict-Transport-Security: max-age=31536000; includeSubDomains
    - CORS webhook: verificato che /api/stripe/webhook e /api/whatsapp/webhook non espongono Access-Control-Allow-Origin: *. Solo POST con verifica firma (Stripe signature / Twilio x-twilio-signature)
-   - Audit RLS Supabase (security): 1 WARN "Leaked Password Protection Disabled" — richiede abilitazione dalla Supabase Dashboard (Authentication → Settings → Password Security)
+   - Audit RLS Supabase (security): Leaked Password Protection ABILITATA (HaveIBeenPwned.org) — WARN risolto
    - Audit RLS Supabase (performance): tutti i WARN risolti:
      - auth_rls_initplan: auth.uid() wrappato in (select auth.uid()) su businesses e business_closures
      - unindexed_foreign_keys: 7 indici FK aggiunti (appointments.client_id, appointments.service_id, messages.appointment_id, messages.client_id, staff_services.service_id, waitlist.client_id, waitlist.service_id)
@@ -479,12 +480,35 @@ Polish, deploy, sicurezza, personalizzazione.
    - Migrazione DB: welcome_text, cover_image_url, font_preset su businesses
    - File: brand-settings.ts, form-customizer.tsx, customize/page.tsx, business.ts, sidebar.tsx, booking-wizard.tsx, book/[slug]/page.tsx, schema.ts
 
-15. Da fare:
-   - Acquisto dominio custom + DNS Cloudflare
-   - Passaggio WhatsApp da sandbox a produzione (registrazione WhatsApp Business Sender)
-   - PWA con Serwist (service worker, manifest, installabilita')
-   - Performance optimization (bundle size, lazy loading, prefetch)
-   - Abilitare Leaked Password Protection dalla Supabase Dashboard
+15. PWA con Serwist ✅
+   - @serwist/next 9.5.5 + serwist 9.5.5 (devDependency)
+   - Service worker: src/sw.ts con precache + defaultCache runtime caching
+   - next.config.ts wrappato con withSerwist({ swSrc, swDest, disable in dev })
+   - Build: "next build --webpack" (Serwist richiede webpack, Next.js 16 default Turbopack)
+   - Dev: resta Turbopack (next dev --turbopack), Serwist disabilitato in dev
+   - Web App Manifest: public/manifest.json (name "BarberOS", start_url "/dashboard", display "standalone", theme_color "#09090b", lang "it")
+   - Icone PWA: public/icon-192x192.png e public/icon-512x512.png (sfondo zinc-950, logo centrato 80%)
+   - layout.tsx: metadata.manifest, metadata.appleWebApp, viewport.themeColor via Next.js Metadata/Viewport exports
+   - tsconfig.json: aggiunto "webworker" a lib, "@serwist/next/typings" a types, "public/sw.js" in exclude
+   - .gitignore: aggiunto public/sw* e public/swe-worker*
+   - Installabile su mobile (Android + iOS) come app standalone
+
+16. Performance Optimization ✅
+   - Bundle analyzer: @next/bundle-analyzer ^16.1.6 (devDep, attivo con ANALYZE=true)
+   - Lazy loading: 3 componenti pesanti con next/dynamic + Skeleton loading:
+     - AnalyticsDashboard (~494 righe) in analytics/page.tsx
+     - SettingsManager (~1338 righe) in settings/page.tsx
+     - FormCustomizer (~395 righe) in customize/page.tsx
+   - next/image: booking page (/book/[slug]) usa <Image> per cover_image_url (fill + priority) e logo_url (64×64)
+   - images.remotePatterns: { protocol: "https", hostname: "**" } per qualsiasi dominio HTTPS (URL utente)
+   - CSP img-src: aggiunto "https:" per coprire domini esterni
+   - Prefetch: sidebar usa next/link (auto-prefetch abilitato di default)
+   - Dettagli completi: Dev Barbieri/Performance/Ottimizzazioni.md
+
+17. Da fare (dettagli in Dev Barbieri/Piano/Task-Fase-D-Rimanenti.md):
+   - Dominio custom + DNS (attualmente su barberos-mvp.vercel.app)
+   - WhatsApp produzione: sandbox funzionante, Twilio sara' subaccount del cliente
+   - Monitoring: Sentry per error tracking
 
 ---
 
@@ -527,3 +551,5 @@ NOTE TECNICHE
 - Test automatici: 139 unit test Vitest in 7 file su funzioni pure (pnpm test). CI esegue automaticamente su ogni push/PR.
 - I test automatici NON sostituiscono i test manuali E2E: coprono solo utility pure, non flussi integrati con DB/auth.
 - Brand settings: src/lib/brand-settings.ts con hexToOklch(), generateBrandCSSVariables(), getFontPreset(), 4 preset tipografici. Personalizzazione booking page via /dashboard/customize.
+- PWA: @serwist/next 9.5.5 per service worker (precache + runtime caching). Manifest in public/manifest.json (standalone, start_url /dashboard). Icone 192x192 e 512x512. Build usa webpack (next build --webpack), dev resta Turbopack. Disabilitato in dev. Installabile su mobile.
+- Performance optimization: @next/bundle-analyzer per analisi bundle (ANALYZE=true). Lazy loading con next/dynamic per 3 componenti pesanti (AnalyticsDashboard, SettingsManager, FormCustomizer). next/image per tutte le immagini esterne con ottimizzazione WebP/AVIF e CDN caching. images.remotePatterns con hostname "**" per qualsiasi dominio. Dettagli in Dev Barbieri/Performance/Ottimizzazioni.md.

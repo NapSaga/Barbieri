@@ -1,7 +1,25 @@
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { getClosureDates } from "@/actions/closures";
-import { FormCustomizer } from "@/components/customize/form-customizer";
+import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/server";
+
+const FormCustomizer = dynamic(
+  () => import("@/components/customize/form-customizer").then((m) => m.FormCustomizer),
+  {
+    loading: () => (
+      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+        <div className="w-full space-y-4 lg:w-80">
+          <Skeleton className="h-8 w-56" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="flex-1 h-96 rounded-2xl" />
+      </div>
+    ),
+  },
+);
 
 export default async function CustomizePage() {
   const supabase = await createClient();

@@ -157,7 +157,7 @@ Proposta personalizzata con ROI calcolato per la tua barberia.
 Setup in 1 giorno, configuriamo tutto noi.
 Risultati dal primo mese: meno no-show, più tempo, più fatturato.
 
-Offerta lancio per i primi 10 barbieri: setup gratuito con risparmio di €1.000, 30 giorni di prova senza impegno, feedback prioritario sulle nuove feature.
+Offerta lancio per i primi 10 barbieri: setup gratuito con risparmio di €1.000, 7 giorni di prova senza impegno, feedback prioritario sulle nuove feature.
 
 WhatsApp: [numero]
 Email: giovannidifonzobusiness@gmail.com

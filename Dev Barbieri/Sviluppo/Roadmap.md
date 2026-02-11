@@ -9,7 +9,7 @@ PANORAMICA FASI
 Fase A — Infrastruttura         ✅ COMPLETATA
 Fase B — Funzionalità core      ✅ COMPLETATA
 Fase C — Automazioni e business  ✅ COMPLETATA
-Fase D — Polish e deploy         🔧 IN CORSO (15/19 completati)
+Fase D — Polish e deploy         🔧 IN CORSO (17/19 completati)
 
 ---
 
@@ -135,7 +135,7 @@ FASE C — AUTOMAZIONI E BUSINESS ✅
 
 [x] Stripe Billing — Multi-Piano
     - 3 prodotti Stripe: Essential €300/mese, Professional €500/mese, Enterprise custom
-    - Checkout Session con selezione piano + trial 30 giorni
+    - Checkout Session con selezione piano + trial 7 giorni + codici promozionali
     - Customer Portal per gestione pagamento/cancellazione
     - Webhook /api/stripe/webhook (subscription.created/updated/deleted, invoice.paid/failed)
     - Sync automatico subscription_status su DB via webhook
@@ -222,26 +222,37 @@ FASE D — POLISH E DEPLOY 🔧
     - Guida completa: Dev Barbieri/Sviluppo/Guida-credenziali.md
 
 [ ] Dominio Custom + WhatsApp Produzione
-    - Acquisto dominio
-    - DNS Cloudflare + CDN + SSL/TLS
-    - Aggiornare NEXT_PUBLIC_APP_URL + webhook URLs
-    - Registrazione WhatsApp Business Sender (approvazione Meta)
+    - Stato attuale: barberos-mvp.vercel.app (dominio Vercel default)
+    - WhatsApp sandbox funzionante con dominio Vercel attuale
+    - Twilio: account personale, sarà aggiunto come subaccount del cliente
+    - Acquisto dominio + DNS + SSL
+    - Aggiornare NEXT_PUBLIC_APP_URL + webhook URLs (Stripe, Twilio, Supabase Auth)
+    - Registrazione WhatsApp Business Sender (approvazione Meta, 1-7 giorni)
+    - Dettagli completi: Dev Barbieri/Piano/Task-Fase-D-Rimanenti.md
 
-[ ] PWA con Serwist
-    - Service worker per offline caching
-    - Web app manifest
-    - Installabilità su mobile
-    - Push notifications (futuro)
+[x] PWA con Serwist
+    - @serwist/next 9.5.5 + serwist 9.5.5 (devDependency)
+    - Service worker: src/sw.ts con precache + defaultCache runtime caching
+    - next.config.ts wrappato con withSerwist (disabilitato in dev per compatibilità Turbopack)
+    - Build: "next build --webpack" (Serwist richiede webpack)
+    - Web App Manifest: public/manifest.json (standalone, start_url /dashboard, theme_color #09090b)
+    - Icone PWA: public/icon-192x192.png e public/icon-512x512.png
+    - layout.tsx: metadata.manifest, appleWebApp, viewport.themeColor
+    - tsconfig.json: webworker lib, @serwist/next/typings, exclude public/sw.js
+    - Installabile su mobile (Android + iOS) come app standalone
 
-[ ] Performance
-    - Analisi bundle size
-    - Lazy loading componenti pesanti
-    - Ottimizzazione immagini (logo barberia)
-    - Prefetch route frequenti
+[x] Performance Optimization
+    - Bundle analyzer: @next/bundle-analyzer ^16.1.6 (ANALYZE=true)
+    - Lazy loading: 3 componenti pesanti con next/dynamic + Skeleton loading
+      (AnalyticsDashboard, SettingsManager, FormCustomizer)
+    - next/image: booking page usa <Image> per cover e logo (ottimizzazione WebP/AVIF + CDN)
+    - images.remotePatterns: hostname "**" per qualsiasi dominio HTTPS
+    - CSP img-src: aggiunto https: per domini esterni
+    - Prefetch: sidebar usa next/link (auto-prefetch di default)
+    - Dettagli: Dev Barbieri/Performance/Ottimizzazioni.md
 
 [ ] Monitoring
     - Sentry per error tracking
-    - Configurazione dominio personalizzato su Vercel
 
 [x] Sicurezza finale
     - CSP headers completi (self + Supabase + Stripe.js + Vercel Analytics, frame-ancestors 'none', HSTS)
@@ -249,7 +260,7 @@ FASE D — POLISH E DEPLOY 🔧
     - CORS webhook verificato (nessun Access-Control-Allow-Origin: * sui webhook)
     - Audit RLS: auth.uid() → (select auth.uid()), 7 indici FK, policy duplicate consolidate
     - WhatsApp renderTemplate() sanitizzazione verificata (plain string replace, sicuro)
-    - Nota: abilitare Leaked Password Protection dalla Supabase Dashboard
+    - Leaked Password Protection: ABILITATA (HaveIBeenPwned.org) — WARN risolto
 
 [x] CI/CD GitHub Actions
     - Workflow .github/workflows/ci.yml: typecheck → lint → test → build su ogni push/PR a main

@@ -10,7 +10,7 @@ BarberOS is an Italian-language SaaS for barbershops: online booking, multi-barb
 
 ```bash
 pnpm dev              # Dev server (Turbopack)
-pnpm build            # Production build
+pnpm build            # Production build (next build --webpack, required by Serwist)
 pnpm lint             # Biome check
 pnpm lint:fix         # Biome auto-fix
 pnpm format           # Biome format
@@ -55,10 +55,27 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 
 ### External Services
 
-- **Stripe**: Lazy-initialized client (`src/lib/stripe.ts`) to prevent build-time crashes on Vercel. Plans defined in `src/lib/stripe-plans.ts`. Checkout sessions include 30-day trial.
+- **Stripe**: Lazy-initialized client (`src/lib/stripe.ts`) to prevent build-time crashes on Vercel. Plans defined in `src/lib/stripe-plans.ts`. Checkout sessions include 7-day trial and promotion codes (allow_promotion_codes).
 - **Twilio WhatsApp**: Dual-mode in `src/lib/whatsapp.ts` — sends real messages if `TWILIO_*` env vars are set, otherwise logs to console (mock mode).
 - **WhatsApp commands**: `CONFERMA`, `CANCELLA`, `CAMBIA ORARIO`, `SI` — handled in the WhatsApp webhook route.
 - **Cron jobs** (Supabase pg_cron + Edge Functions) run confirmation requests, reminders, auto-cancel, pre-appointment messages, review requests, and client reactivation.
+
+### PWA (Serwist)
+
+- **@serwist/next 9.5.5** wraps `next.config.ts` with `withSerwist()` for service worker generation.
+- **Service worker**: `src/sw.ts` — precache manifest + `defaultCache` runtime caching.
+- **Manifest**: `public/manifest.json` — standalone, start_url `/dashboard`, theme `#09090b`, lang `it`.
+- **Icons**: `public/icon-192x192.png` and `public/icon-512x512.png` (zinc-950 background).
+- **Build**: uses `--webpack` flag because Serwist doesn't support Turbopack. Dev still uses Turbopack with Serwist disabled (`disable: process.env.NODE_ENV !== "production"`).
+- **Generated files**: `public/sw.js` and `public/sw.js.map` are gitignored (build artifacts).
+- **tsconfig.json**: `lib` includes `webworker`, `types` includes `@serwist/next/typings`, `exclude` includes `public/sw.js`.
+
+### Performance
+
+- **Bundle analyzer**: `@next/bundle-analyzer` (dev), activated with `ANALYZE=true pnpm build`.
+- **Lazy loading**: `AnalyticsDashboard`, `SettingsManager`, `FormCustomizer` use `next/dynamic` with `Skeleton` loading states.
+- **Image optimization**: Booking page (`/book/[slug]`) uses `next/image` for `cover_image_url` and `logo_url`. `images.remotePatterns` allows any HTTPS domain.
+- **CSP**: `img-src` includes `https:` for external user-provided images.
 
 ### Analytics (Vercel)
 

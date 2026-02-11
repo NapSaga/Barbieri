@@ -72,6 +72,6 @@ export const STRIPE_CONFIG = {
   portalReturnUrl: "/dashboard/settings",
   checkoutSuccessUrl: "/dashboard/settings?billing=success",
   checkoutCancelUrl: "/dashboard/settings?billing=cancel",
-  trialDays: 30,
+  trialDays: 7,
   contactEmail: "giovannidifonzobusiness@gmail.com",
 } as const;

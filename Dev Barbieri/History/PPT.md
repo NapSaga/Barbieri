@@ -227,7 +227,7 @@ Analisi barberia + configurazione completa + import clienti + training + 30gg su
 
 **Offerta lancio primi 10 barbieri:**
 - Setup GRATUITO (risparmio €1.000)
-- 30 giorni di prova senza impegno
+- 7 giorni di prova senza impegno
 - Feedback prioritario sulle feature
 
 📱 WhatsApp: [numero]

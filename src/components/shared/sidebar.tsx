@@ -40,6 +40,11 @@ const navSections = [
       { name: "Servizi", href: "/dashboard/services", icon: Scissors },
       { name: "Staff", href: "/dashboard/staff", icon: UserCog },
       { name: "Lista d'attesa", href: "/dashboard/waitlist", icon: Clock },
+    ],
+  },
+  {
+    label: "Aspetto",
+    items: [
       { name: "Personalizza", href: "/dashboard/customize", icon: Palette },
     ],
   },

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ExternalLink, Loader2, Palette, RotateCcw } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -245,12 +246,13 @@ export function FormCustomizer({
             className="text-sm"
           />
           {coverImageUrl && (
-            <div className="mt-2 overflow-hidden rounded-lg border border-border">
-              {/* biome-ignore lint/performance/noImgElement: external user-provided URL */}
-              <img
+            <div className="relative mt-2 h-24 overflow-hidden rounded-lg border border-border">
+              <Image
                 src={coverImageUrl}
                 alt="Cover preview"
-                className="h-24 w-full object-cover"
+                fill
+                className="object-cover"
+                sizes="320px"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
@@ -275,10 +277,11 @@ export function FormCustomizer({
           />
           {logoUrl && (
             <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-card p-2">
-              {/* biome-ignore lint/performance/noImgElement: external user-provided URL */}
-              <img
+              <Image
                 src={logoUrl}
                 alt="Logo preview"
+                width={40}
+                height={40}
                 className="h-10 w-10 rounded object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
@@ -341,12 +344,13 @@ export function FormCustomizer({
         >
           {/* Cover image */}
           {coverImageUrl && (
-            <div className="-mx-4 -mt-4 mb-6 sm:-mx-6 sm:-mt-6">
-              {/* biome-ignore lint/performance/noImgElement: external user-provided URL */}
-              <img
+            <div className="relative -mx-4 -mt-4 mb-6 h-36 sm:-mx-6 sm:-mt-6">
+              <Image
                 src={coverImageUrl}
                 alt="Cover"
-                className="h-36 w-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
@@ -357,11 +361,12 @@ export function FormCustomizer({
           {/* Preview header */}
           <div className="mb-6 text-center">
             {logoUrl && (
-              // biome-ignore lint/performance/noImgElement: external user-provided URL
-              <img
+              <Image
                 src={logoUrl}
                 alt={business.name}
-                className="mx-auto mb-3 h-16 w-16 rounded-xl object-contain"
+                width={64}
+                height={64}
+                className="mx-auto mb-3 rounded-xl object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
