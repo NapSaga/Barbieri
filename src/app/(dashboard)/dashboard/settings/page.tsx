@@ -10,7 +10,7 @@ export default async function SettingsPage() {
     getCurrentBusiness(),
     getMessageTemplates(),
     getClosures(),
-    getSubscriptionInfo(),
+    getSubscriptionInfo().catch(() => null),
   ]);
 
   if (!business) redirect("/login");

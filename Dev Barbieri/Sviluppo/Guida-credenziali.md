@@ -1,13 +1,29 @@
-BARBEROS MVP — GUIDA RECUPERO CREDENZIALI
+BARBEROS MVP — GUIDA CREDENZIALI E CONFIGURAZIONE SERVIZI
 
 Ultimo aggiornamento: 11 febbraio 2026
 
-Questa guida spiega dove trovare e come configurare tutte le credenziali
-necessarie per far funzionare BarberOS in produzione. Utile per:
-- Prima configurazione del progetto
-- Setup di nuovi ambienti (staging, produzione)
-- Onboarding di nuovi sviluppatori
-- Futuro: configurazione sub-account per clienti barbieri
+Questa guida copre:
+- Dove trovare ogni credenziale, passo per passo
+- Come configurare webhook e servizi esterni
+- Come verificare che tutto funzioni
+- Come passare da sandbox a produzione (WhatsApp)
+- Come gestire sub-account per clienti barbieri (futuro)
+
+Utile per: prima configurazione, nuovi ambienti, onboarding sviluppatori,
+setup clienti barbieri.
+
+---
+
+STATO CONFIGURAZIONE ATTUALE
+
+| Servizio | Stato | Note |
+|----------|-------|------|
+| Supabase (DB + Auth + Edge Functions) | ✅ Configurato | Progetto wvxkxutaasrblbdmhsny, eu-central-1 |
+| Vercel (hosting + server actions) | ✅ Configurato | barberos-mvp.vercel.app |
+| Stripe (pagamenti + abbonamenti) | ✅ Configurato | 3 piani, webhook attivo, mode live |
+| Twilio WhatsApp (messaggistica) | ✅ Configurato | Sandbox mode, webhook attivo |
+| Supabase Edge Functions (cron) | ✅ Configurato | 7 functions, secrets Twilio aggiunti |
+| Dominio custom | ❌ Non configurato | Usando barberos-mvp.vercel.app |
 
 ---
 
@@ -16,19 +32,34 @@ RIEPILOGO VARIABILI D'AMBIENTE
 Tutte le variabili vanno configurate su Vercel (Settings > Environment Variables)
 e, dove indicato, anche su Supabase Edge Functions.
 
-| Variabile | Servizio | Tipo | Ambienti |
-|-----------|----------|------|----------|
-| NEXT_PUBLIC_SUPABASE_URL | Supabase | Pubblica | Tutti |
-| NEXT_PUBLIC_SUPABASE_ANON_KEY | Supabase | Pubblica | Tutti |
-| SUPABASE_SERVICE_ROLE_KEY | Supabase | Segreta | Prod + Preview |
-| NEXT_PUBLIC_APP_URL | Vercel | Pubblica | Tutti |
-| STRIPE_SECRET_KEY | Stripe | Segreta | Prod + Preview |
-| STRIPE_WEBHOOK_SECRET | Stripe | Segreta | Prod + Preview |
-| STRIPE_PRICE_ESSENTIAL | Stripe | Segreta | Prod + Preview |
-| STRIPE_PRICE_PROFESSIONAL | Stripe | Segreta | Prod + Preview |
-| TWILIO_ACCOUNT_SID | Twilio | Segreta | Prod + Preview |
-| TWILIO_AUTH_TOKEN | Twilio | Segreta | Prod + Preview |
-| TWILIO_WHATSAPP_FROM | Twilio | Segreta | Prod + Preview |
+| # | Variabile | Servizio | Tipo | Dove su Vercel | Stato |
+|---|-----------|----------|------|----------------|-------|
+| 1 | NEXT_PUBLIC_SUPABASE_URL | Supabase | Pubblica | Dev + Preview + Prod | ✅ |
+| 2 | NEXT_PUBLIC_SUPABASE_ANON_KEY | Supabase | Pubblica | Dev + Preview + Prod | ✅ |
+| 3 | SUPABASE_SERVICE_ROLE_KEY | Supabase | Segreta | All Environments | ✅ |
+| 4 | NEXT_PUBLIC_APP_URL | Vercel | Pubblica | All Environments | ✅ |
+| 5 | STRIPE_SECRET_KEY | Stripe | Segreta | All Environments | ✅ |
+| 6 | STRIPE_WEBHOOK_SECRET | Stripe | Segreta | All Environments | ✅ |
+| 7 | STRIPE_PRICE_ESSENTIAL | Stripe | Segreta | Preview + Prod | ✅ |
+| 8 | STRIPE_PRICE_PROFESSIONAL | Stripe | Segreta | Preview + Prod | ✅ |
+| 9 | TWILIO_ACCOUNT_SID | Twilio | Segreta | All Environments | ✅ |
+| 10 | TWILIO_AUTH_TOKEN | Twilio | Segreta | All Environments | ✅ |
+| 11 | TWILIO_WHATSAPP_FROM | Twilio | Segreta | All Environments | ✅ |
+
+Configurazioni webhook esterne:
+
+| # | Configurazione | Dove | URL configurato | Stato |
+|---|---------------|------|-----------------|-------|
+| 1 | Webhook Stripe | Stripe Dashboard > Webhook | https://barberos-mvp.vercel.app/api/stripe/webhook | ✅ |
+| 2 | Webhook WhatsApp | Twilio Sandbox Settings | https://barberos-mvp.vercel.app/api/whatsapp/webhook | ✅ |
+
+Secrets su Supabase Edge Functions:
+
+| # | Secret | Stato |
+|---|--------|-------|
+| 1 | TWILIO_ACCOUNT_SID | ✅ |
+| 2 | TWILIO_AUTH_TOKEN | ✅ |
+| 3 | TWILIO_WHATSAPP_FROM | ✅ |
 
 Nota: le variabili "Pubblica" (NEXT_PUBLIC_*) sono visibili nel browser.
 Le variabili "Segreta" sono solo server-side — MAI esporle lato client.
@@ -267,3 +298,191 @@ Problema: firma Twilio non valida in produzione (403 Forbidden)
   - Supabase: rigenera da Dashboard > Settings > API > Rigenera
   - Aggiorna IMMEDIATAMENTE su Vercel + Supabase Edge Functions + .env.local
   - Fai redeploy su Vercel
+
+---
+
+9. VERIFICA CHE TUTTO FUNZIONI
+
+Dopo aver configurato tutte le variabili e fatto il redeploy su Vercel,
+esegui questi test in ordine.
+
+9.1 Verifica base — il sito funziona
+    - Apri https://barberos-mvp.vercel.app
+    - Dovresti vedere la pagina di login
+    - Accedi con le tue credenziali
+    - La dashboard deve caricarsi senza errori
+
+9.2 Verifica WhatsApp — invio messaggi (App → Cliente)
+    - Crea un appuntamento dal booking wizard (https://barberos-mvp.vercel.app/book/[slug])
+    - Oppure aggiungi un walk-in dal calendario
+    - Controlla i log Vercel (Dashboard > Logs):
+      - ✅ Se vedi "✅ WhatsApp sent to..." → Twilio funziona
+      - ❌ Se vedi "📱 WhatsApp Message (MOCK)" → le variabili Twilio mancano o il redeploy non e' stato fatto
+
+9.3 Verifica WhatsApp — ricezione risposte (Cliente → App)
+    - Dal tuo telefono, manda un messaggio qualsiasi al numero sandbox +1 415 523 8886
+    - Se il webhook funziona, dovresti ricevere una risposta con i comandi disponibili
+      (CONFERMA, CANCELLA, CAMBIA ORARIO, SI)
+    - Se ricevi "Configure your WhatsApp Sandbox's Inbound URL..." → il webhook
+      non e' configurato su Twilio (vedi sezione 4.4)
+    - Controlla i log Vercel: dovresti vedere "📥 WhatsApp webhook: from=..."
+
+    IMPORTANTE: il sistema WhatsApp di BarberOS NON e' un chatbot generico.
+    Non risponde a messaggi come "ciao" o "vorrei prenotare".
+    Risponde SOLO a comandi specifici:
+    - CONFERMA → conferma un appuntamento pending
+    - CANCELLA / ANNULLA → cancella l'appuntamento
+    - CAMBIA ORARIO → riceve link per riprenotare
+    - SI / SI' → conferma dalla waitlist
+    - Qualsiasi altro messaggio → risposta con lista comandi
+
+9.4 Verifica Stripe — webhook
+    - Vai su Stripe Dashboard > Webhook > BarberOS Webhook
+    - Clicca "Invia evento di test" (se disponibile)
+    - Oppure crea un abbonamento test dalla dashboard BarberOS
+    - Controlla le "Consegne eventi" su Stripe: devono mostrare status 200
+    - Controlla i log Vercel per conferma
+
+9.5 Verifica Edge Functions — cron automatici
+    - Supabase Dashboard > Edge Functions > Logs
+    - Le functions girano automaticamente ogni 30 minuti (conferma) o ogni ora (review)
+    - Se vedi "WhatsApp sent" nei log → invio reale attivo
+    - Se vedi "MOCK" → i secrets Twilio mancano (vedi sezione 4.5)
+
+9.6 Verifica Stripe — pagamenti
+    - Dalla dashboard BarberOS > Settings > Abbonamento
+    - Clicca su un piano per avviare il checkout Stripe
+    - Usa la carta test: 4242 4242 4242 4242, scadenza qualsiasi futura, CVC qualsiasi
+    - Dopo il pagamento, lo status deve aggiornarsi nel DB
+
+---
+
+10. WHATSAPP: DA SANDBOX A PRODUZIONE
+
+Attualmente BarberOS usa la Twilio WhatsApp Sandbox. Questo ha limitazioni:
+- Il numero e' condiviso (+1 415 523 8886)
+- Ogni utente deve fare "join [codice]" per ricevere messaggi
+- I messaggi hanno un prefisso "[Twilio Sandbox]"
+- La sandbox scade dopo 72 ore di inattivita'
+
+Per andare in produzione con WhatsApp serve:
+
+10.1 Registrare un WhatsApp Business Sender
+     a) Twilio Console > Messaging > Senders > WhatsApp Senders
+     b) Clicca "Register WhatsApp Sender"
+     c) Serve un account Facebook Business verificato
+     d) Serve un numero di telefono dedicato (puo' essere il numero Twilio acquistato)
+     e) Meta deve approvare il profilo WhatsApp Business (1-7 giorni lavorativi)
+
+10.2 Configurare i Message Templates
+     WhatsApp Business richiede template pre-approvati per messaggi proattivi
+     (cioe' messaggi che il sistema invia per primo, non risposte).
+     
+     Template necessari per BarberOS:
+     - Conferma appuntamento (confirmation)
+     - Richiesta conferma (confirm_request)
+     - Reminder conferma (confirm_reminder)
+     - Pre-appuntamento (pre_appointment)
+     - Cancellazione (cancellation)
+     - Richiesta recensione (review_request)
+     - Riattivazione cliente dormiente (reactivation)
+     - Notifica waitlist (waitlist_notify)
+     
+     I template vanno creati su Twilio Console > Content Template Builder
+     e approvati da Meta (24-48 ore).
+
+10.3 Aggiornare le variabili
+     - TWILIO_WHATSAPP_FROM: cambia da whatsapp:+14155238886 a whatsapp:+[tuo-numero]
+     - Aggiorna su: Vercel + Supabase Edge Functions Secrets + .env.local
+     - Aggiorna il webhook URL su Twilio (non piu' Sandbox ma Sender Configuration)
+
+10.4 Costi WhatsApp in produzione
+     - Twilio: ~$0.005/messaggio (costo piattaforma)
+     - Meta: ~$0.03-0.08/messaggio (varia per paese e tipo)
+     - Italia: ~€0.05-0.10 per conversazione (24h window)
+     - Stima 100 messaggi/giorno: ~€150-300/mese
+     - Incluso nel prezzo dei piani BarberOS (€300-500/mese)
+
+---
+
+11. SUB-ACCOUNT TWILIO PER CLIENTI BARBIERI (FUTURO)
+
+Attualmente BarberOS usa UN SOLO account Twilio centralizzato.
+Tutti i messaggi partono dallo stesso numero. Questo e' il modello
+corretto per l'MVP e i primi clienti.
+
+Quando si vuole che ogni barbiere abbia il proprio numero WhatsApp:
+
+11.1 Come funzionano i Sub-Account Twilio
+     - Dal tuo account master Twilio, crei un sub-account per ogni barbiere
+     - Ogni sub-account ha il proprio SID, Auth Token e numero WhatsApp
+     - I costi vengono fatturati al tuo account master
+     - Puoi rifatturare al barbiere tramite il piano BarberOS
+
+11.2 Modifiche necessarie al codice
+     a) Aggiungere colonne alla tabella `businesses`:
+        - twilio_account_sid (text, nullable)
+        - twilio_auth_token (text, nullable — crittografato)
+        - twilio_whatsapp_from (text, nullable)
+     
+     b) Modificare src/lib/whatsapp.ts:
+        - getTwilioConfig() deve accettare un business_id opzionale
+        - Se la business ha credenziali proprie → usa quelle
+        - Se non le ha → fallback alle variabili d'ambiente globali
+     
+     c) Modificare le Edge Functions:
+        - Ogni function deve leggere le credenziali Twilio dalla business
+        - Fallback alle env vars globali se non configurate
+     
+     d) Aggiungere UI in Settings:
+        - Sezione "WhatsApp" con campi per SID, Token, Numero
+        - Bottone "Testa connessione"
+
+11.3 Processo per ogni nuovo barbiere
+     a) Crea sub-account: Twilio Console > Account > Subaccounts > Create
+     b) Acquista numero: Sub-account > Phone Numbers > Buy
+     c) Registra WhatsApp Sender per quel numero
+     d) Attendi approvazione Meta
+     e) Inserisci credenziali nelle Settings BarberOS del barbiere
+     f) Testa invio messaggio
+
+11.4 Alternativa semplice (senza sub-account)
+     Se non serve un numero dedicato per ogni barbiere, puoi:
+     - Usare un solo numero WhatsApp Business approvato
+     - Personalizzare il nome del mittente nel profilo WhatsApp Business
+       (es. "BarberOS - Prenotazioni")
+     - I clienti vedono lo stesso numero ma il messaggio include
+       il nome della barberia nel testo
+
+---
+
+12. CAMBIO DOMINIO — CHECKLIST
+
+Quando acquisti un dominio custom (es. barberos.it):
+
+[ ] Configurare DNS su Cloudflare (o altro provider)
+[ ] Aggiungere dominio su Vercel (Settings > Domains)
+[ ] Aggiornare NEXT_PUBLIC_APP_URL su Vercel con il nuovo dominio
+[ ] Creare NUOVO endpoint webhook su Stripe con il nuovo URL
+[ ] Aggiornare STRIPE_WEBHOOK_SECRET con il nuovo signing secret
+[ ] Aggiornare webhook URL su Twilio (Sandbox o Sender Configuration)
+[ ] Redeploy su Vercel
+[ ] Testare tutti i webhook (WhatsApp + Stripe)
+[ ] (Opzionale) Mantenere il vecchio endpoint Stripe per un periodo di transizione
+
+---
+
+13. LOG CONFIGURAZIONE
+
+11/02/2026 — Configurazione iniziale completata
+- Vercel: tutte le 11 variabili d'ambiente configurate
+- Stripe: webhook "BarberOS Webhook" creato (we_1SzTPcK75hVrlrvaBhwjn63H)
+  URL: https://barberos-mvp.vercel.app/api/stripe/webhook
+  Eventi: 46 (inclusi i 5 critici per subscription + invoice)
+- Twilio: sandbox configurata
+  Webhook URL: https://barberos-mvp.vercel.app/api/whatsapp/webhook
+  Numero sandbox: +1 415 523 8886
+  Codice sandbox: "join drink-room"
+  1 partecipante sandbox: whatsapp:+393667461897
+- Supabase Edge Functions: 3 secrets Twilio aggiunti
+- Redeploy: da eseguire

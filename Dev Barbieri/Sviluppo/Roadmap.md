@@ -9,7 +9,7 @@ PANORAMICA FASI
 Fase A — Infrastruttura         ✅ COMPLETATA
 Fase B — Funzionalità core      ✅ COMPLETATA
 Fase C — Automazioni e business  ✅ COMPLETATA
-Fase D — Polish e deploy         🔧 IN CORSO (13/14 completati)
+Fase D — Polish e deploy         🔧 IN CORSO (14/15 completati)
 
 ---
 
@@ -197,11 +197,18 @@ FASE D — POLISH E DEPLOY 🔧
     - 8 bug fixati in 2 giri + fix successivi
     - 5 feature gap implementati (vedi sotto)
 
-[ ] Dominio + Infrastruttura
+[x] Configurazione Servizi Esterni
+    - 11 variabili d'ambiente su Vercel (Supabase, Stripe, Twilio, APP_URL)
+    - Webhook Stripe creato: https://barberos-mvp.vercel.app/api/stripe/webhook
+    - Webhook Twilio Sandbox: https://barberos-mvp.vercel.app/api/whatsapp/webhook
+    - 3 secrets Twilio su Supabase Edge Functions
+    - Guida completa: Dev Barbieri/Sviluppo/Guida-credenziali.md
+
+[ ] Dominio Custom + WhatsApp Produzione
     - Acquisto dominio
     - DNS Cloudflare + CDN + SSL/TLS
-    - Configurare webhook Stripe live (richiede URL pubblica)
-    - Aggiornare NEXT_PUBLIC_APP_URL con dominio produzione
+    - Aggiornare NEXT_PUBLIC_APP_URL + webhook URLs
+    - Registrazione WhatsApp Business Sender (approvazione Meta)
 
 [ ] PWA con Serwist
     - Service worker per offline caching

@@ -437,11 +437,35 @@ Polish, deploy, sicurezza.
    - Configurazione biome.json NON modificata (regole restano warn, ma ora 0 warning nel codice)
    - Risultato: pnpm lint ✅ (0 errori, 0 warning), pnpm typecheck ✅, pnpm build ✅, pnpm test ✅ (95/95)
 
-13. Da fare:
-   - Acquisto dominio + DNS Cloudflare
-   - Configurare webhook Stripe live (richiede URL pubblica)
-   - Aggiornare NEXT_PUBLIC_APP_URL con dominio produzione
-   - PWA con Serwist (service worker, manifest, installabilità)
+13. Configurazione Servizi Esterni ✅
+   Tutte le credenziali e webhook configurati per produzione (dettagli in Guida-credenziali.md):
+   
+   Vercel (barberos-mvp.vercel.app):
+   - 11 variabili d'ambiente configurate (Supabase, Stripe, Twilio, APP_URL)
+   - Deploy attivo e funzionante
+   
+   Stripe:
+   - STRIPE_SECRET_KEY (sk_live_...) configurata
+   - Webhook "BarberOS Webhook" creato (we_1SzTPcK75hVrlrvaBhwjn63H)
+   - URL: https://barberos-mvp.vercel.app/api/stripe/webhook
+   - 46 eventi in ascolto (inclusi i 5 critici: subscription.created/updated/deleted, invoice.paid/payment_failed)
+   - STRIPE_WEBHOOK_SECRET (whsec_...) configurata
+   
+   Twilio WhatsApp:
+   - Account SID + Auth Token configurati su Vercel
+   - Sandbox attiva: numero +1 415 523 8886, codice "join drink-room"
+   - Webhook URL configurato: https://barberos-mvp.vercel.app/api/whatsapp/webhook
+   - 1 partecipante sandbox: whatsapp:+393667461897
+   - Nota: ancora in sandbox mode — per produzione serve registrazione WhatsApp Business Sender (vedi Guida-credenziali.md sezione 10)
+   
+   Supabase Edge Functions:
+   - 3 secrets Twilio aggiunti (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM)
+   - 7 Edge Functions attive con secrets configurati
+
+14. Da fare:
+   - Acquisto dominio custom + DNS Cloudflare
+   - Passaggio WhatsApp da sandbox a produzione (registrazione WhatsApp Business Sender)
+   - PWA con Serwist (service worker, manifest, installabilita')
    - Performance optimization (bundle size, lazy loading, prefetch)
    - Abilitare Leaked Password Protection dalla Supabase Dashboard
 

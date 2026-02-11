@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 import twilio from "twilio";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
@@ -162,6 +163,8 @@ async function handleConfirm(supabase: AdminClient, phone: string, phoneWithPlus
       .update({ status: "confirmed", updated_at: new Date().toISOString() })
       .eq("id", appointment.id);
 
+    revalidatePath("/dashboard");
+
     const { data: service } = await supabase
       .from("services")
       .select("name")
@@ -262,7 +265,7 @@ async function handleReschedule(supabase: AdminClient, phone: string, phoneWithP
 
     if (!business) continue;
 
-    const bookingLink = `https://barberos.app/book/${business.slug}`;
+    const bookingLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://barberos-mvp.vercel.app"}/book/${business.slug}`;
 
     await sendReply(
       phoneWithPlus,
@@ -286,9 +289,20 @@ async function handleUnknown(
   console.log(`ℹ️ Messaggio non riconosciuto da ${phone}: "${originalMessage}"`);
 
   if (clients.length > 0) {
+    const client = clients[0];
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("slug")
+      .eq("id", client.business_id)
+      .single();
+
+    const bookingLink = business
+      ? `\n\n📅 Prenota qui → ${process.env.NEXT_PUBLIC_APP_URL || "https://barberos-mvp.vercel.app"}/book/${business.slug}`
+      : "";
+
     await sendReply(
       phoneWithPlus,
-      `Non ho capito il messaggio. Rispondi con:\n\n✅ CONFERMA — per confermare l'appuntamento\n❌ CANCELLA — per cancellare\n🔄 CAMBIA ORARIO — per riprogrammare`,
+      `Non ho capito il messaggio. Rispondi con:\n\n✅ CONFERMA — per confermare l'appuntamento\n❌ CANCELLA — per cancellare\n🔄 CAMBIA ORARIO — per riprogrammare${bookingLink}`,
     );
   }
 }
@@ -315,6 +329,8 @@ async function handleCancel(supabase: AdminClient, phone: string, phoneWithPlus:
       })
       .eq("id", appointment.id);
 
+    revalidatePath("/dashboard");
+
     await supabase
       .from("messages")
       .update({ status: "failed" })
@@ -327,7 +343,9 @@ async function handleCancel(supabase: AdminClient, phone: string, phoneWithPlus:
       .eq("id", appointment.business_id)
       .single();
 
-    const bookingLink = business ? `https://barberos.app/book/${business.slug}` : "";
+    const bookingLink = business
+      ? `${process.env.NEXT_PUBLIC_APP_URL || "https://barberos-mvp.vercel.app"}/book/${business.slug}`
+      : "";
 
     await sendReply(
       phoneWithPlus,
@@ -439,7 +457,9 @@ async function handleWaitlistConfirm(supabase: AdminClient, phone: string, phone
         .eq("id", entry.business_id)
         .single();
 
-      const bookingLink = business ? `https://barberos.app/book/${business.slug}` : "";
+      const bookingLink = business
+        ? `${process.env.NEXT_PUBLIC_APP_URL || "https://barberos-mvp.vercel.app"}/book/${business.slug}`
+        : "";
 
       await sendReply(
         phoneWithPlus,
@@ -468,6 +488,8 @@ async function handleWaitlistConfirm(supabase: AdminClient, phone: string, phone
       console.error(`❌ SI: errore creazione appuntamento:`, appointmentError.message);
       continue;
     }
+
+    revalidatePath("/dashboard");
 
     await supabase.from("waitlist").update({ status: "converted" }).eq("id", entry.id);
 

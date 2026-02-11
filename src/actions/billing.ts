@@ -183,7 +183,8 @@ export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
       cancelAtPeriodEnd: sub.cancel_at_period_end,
       trialEnd: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
     };
-  } catch {
+  } catch (err) {
+    console.error("❌ getSubscriptionInfo Stripe error:", err);
     return {
       status: business.subscription_status || "trialing",
       planId: null,

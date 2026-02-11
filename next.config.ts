@@ -3,9 +3,9 @@ import type { NextConfig } from "next";
 const cspDirectives = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.stripe.com https://va.vercel-scripts.com",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.supabase.co",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.stripe.com https://vitals.vercel-insights.com https://*.vercel-insights.com https://*.vercel-analytics.com",
   "frame-src https://js.stripe.com https://hooks.stripe.com",
   "frame-ancestors 'none'",
