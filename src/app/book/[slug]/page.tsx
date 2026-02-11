@@ -5,6 +5,8 @@ import { BookingWizard } from "@/components/booking/booking-wizard";
 import { generateBrandCSSVariables, generateFontCSSVariables } from "@/lib/brand-settings";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 interface BookingPageProps {
   params: Promise<{ slug: string }>;
 }

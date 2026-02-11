@@ -17,18 +17,9 @@ const addClosureSchema = z.object({
   reason: z.string().optional(),
 });
 
-// ─── Types ───────────────────────────────────────────────────────────
-
-export interface ClosureEntry {
-  id: string;
-  date: string;
-  reason: string | null;
-  created_at: string;
-}
-
 // ─── Get Closures ────────────────────────────────────────────────────
 
-export async function getClosures(): Promise<ClosureEntry[]> {
+export async function getClosures() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -49,7 +40,7 @@ export async function getClosures(): Promise<ClosureEntry[]> {
     .eq("business_id", business.id)
     .order("date", { ascending: true });
 
-  return (data as ClosureEntry[]) || [];
+  return (data as Array<{ id: string; date: string; reason: string | null; created_at: string }>) || [];
 }
 
 // ─── Get Closure Dates (for booking) ─────────────────────────────────

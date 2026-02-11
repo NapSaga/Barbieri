@@ -14,9 +14,9 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
-import type { AnalyticsDayRow, AnalyticsSummary, TopService } from "@/actions/analytics";
 import { getAnalyticsDaily, getAnalyticsSummary, getTopServices } from "@/actions/analytics";
 import { cn } from "@/lib/utils";
+import type { AnalyticsDayRow, AnalyticsSummary, TopService } from "@/types";
 
 type Period = "7d" | "30d" | "90d";
 
@@ -286,7 +286,11 @@ export function AnalyticsDashboard({
           <div className="p-5">
             {topServices.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
-                Nessun dato per il periodo selezionato
+                Nessun appuntamento completato negli ultimi {PERIOD_LABELS[period]}.
+                <br />
+                <span className="text-xs">
+                  I servizi appariranno qui dopo il primo appuntamento completato.
+                </span>
               </p>
             ) : (
               <div className="space-y-4">

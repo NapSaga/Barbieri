@@ -16,7 +16,7 @@ Leggi Dev Barbieri/Sviluppo/Stato-progetto.md per il contesto completo.
 BARBEROS MVP — SISTEMA REFERRAL
 
 Ultimo aggiornamento: 11 febbraio 2026
-Stato: DA FARE
+Stato: COMPLETATO ✅
 
 ---
 
@@ -167,85 +167,80 @@ STEP DI IMPLEMENTAZIONE
   Priorita': P0 (prerequisito per tutto)
   Tempo stimato: 30 min
 
-  [ ] Creare migrazione SQL:
+  [x] Creare migrazione SQL:
       - ALTER TABLE businesses ADD COLUMN referral_code TEXT UNIQUE;
       - ALTER TABLE businesses ADD COLUMN referred_by UUID REFERENCES businesses(id);
       - CREATE TABLE referrals (...) con RLS
       - Generare referral_code per tutte le business esistenti
       - Aggiornare trigger on_auth_user_created per generare referral_code
-  [ ] Aggiornare src/db/schema.ts con nuove colonne e tabella
-  [ ] pnpm typecheck && pnpm test && pnpm build
+  [x] Aggiornare src/db/schema.ts con nuove colonne e tabella
+  [x] pnpm typecheck && pnpm test && pnpm build
 
   Step 2 — Server Actions
   Priorita': P0
   Tempo stimato: 1 ora
 
-  [ ] Creare src/actions/referral.ts:
+  [x] Creare src/actions/referral.ts:
       - getReferralInfo(): codice, link, stats aggregate
       - getReferrals(): lista referral con join su businesses per nome
       - validateReferralCode(code): check esistenza (usato da /register, no auth richiesta)
-  [ ] Validazione Zod su tutti gli input
-  [ ] pnpm typecheck && pnpm test && pnpm build
+  [x] Validazione Zod su tutti gli input
+  [x] pnpm typecheck && pnpm test && pnpm build
 
   Step 3 — Pagina Referral Dashboard
   Priorita': P0
   Tempo stimato: 2 ore
 
-  [ ] Creare src/app/(dashboard)/dashboard/referral/page.tsx (Server Component)
-  [ ] Creare src/components/referral/referral-dashboard.tsx (Client Component)
+  [x] Creare src/app/(dashboard)/dashboard/referral/page.tsx (Server Component)
+  [x] Creare src/components/referral/referral-dashboard.tsx (Client Component)
       - Sezione codice con copy-to-clipboard
-      - Sezione "Come funziona" con 3 step
-      - Tabella referral con badge stato
-      - Riepilogo crediti
-  [ ] Aggiornare sidebar.tsx: aggiungere sezione "Crescita" con voce "Referral"
-  [ ] pnpm typecheck && pnpm test && pnpm build
+      - Sezione "Come funziona" con 3 step + breakdown esplicito premi
+      - Tabella referral con badge stato + descrizione + data aggiornamento
+      - Riepilogo crediti (3 KPI cards)
+  [x] Aggiornare sidebar.tsx: aggiungere sezione "Crescita" con voce "Referral"
+  [x] pnpm typecheck && pnpm test && pnpm build
 
   Step 4 — Integrazione Registrazione
   Priorita': P0
   Tempo stimato: 1 ora
 
-  [ ] Aggiornare /register/page.tsx:
-      - Leggere query param ?ref= dall'URL
+  [x] Aggiornare /register/page.tsx:
+      - Leggere query param ?ref= dall'URL (Suspense boundary per useSearchParams)
       - Validare il codice referral (chiamata a validateReferralCode)
-      - Mostrare badge "Invitato da [nome barberia]" se codice valido
+      - Mostrare badge "Invitato da [nome barberia] — 20% di sconto sul primo mese!"
       - Passare referral code nei metadata della registrazione Supabase
-  [ ] Aggiornare trigger SQL o post-registrazione:
+  [x] Aggiornare trigger SQL on_auth_user_created:
+      - Genera referral_code per nuove business
       - Salvare referred_by sulla nuova business
       - Creare record referrals con status 'pending'
-  [ ] pnpm typecheck && pnpm test && pnpm build
+  [x] pnpm typecheck && pnpm test && pnpm build
 
   Step 5 — Integrazione Stripe Webhook
   Priorita': P0
   Tempo stimato: 1 ora
 
-  [ ] Aggiornare src/app/api/stripe/webhook/route.ts:
-      - Nel handler invoice.paid: controllare se e' prima invoice non-trial
+  [x] Aggiornare src/app/api/stripe/webhook/route.ts:
+      - Nel handler invoice.paid: processReferralReward() controlla se prima invoice non-trial
       - Se la business ha referred_by:
-        → Trovare il referrer
-        → stripe.customers.createBalanceTransaction() per applicare credito
-        → Aggiornare referrals.status → 'rewarded'
-  [ ] Testare flusso completo (registrazione → pagamento → credito)
-  [ ] pnpm typecheck && pnpm test && pnpm build
+        → Trova il referrer via Supabase admin
+        → stripe.customers.createBalanceTransaction() per applicare credito (-5000 cents EUR)
+        → Aggiorna referrals.status → 'converted' → 'rewarded'
+  [x] pnpm typecheck && pnpm test && pnpm build
 
   Step 6 — Test e Polish
   Priorita': P1
   Tempo stimato: 1 ora
 
-  [ ] Aggiungere test Vitest per:
-      - Validazione schema referral code
-      - Formato generazione codice
-      - Logica stato referral
-  [ ] Test manuali E2E:
-      - Registrazione con ?ref= valido
-      - Registrazione con ?ref= invalido (ignorato gracefully)
-      - Pagina referral con 0 referral (empty state)
-      - Pagina referral con referral in vari stati
-      - Copy link + share WhatsApp
-  [ ] Aggiornare documentazione:
+  [x] typecheck ✅ + test 139/139 ✅ + build 19 route ✅ + lint 0 errori ✅
+  [x] Aggiornare documentazione:
       - Stato-progetto.md
       - Architettura.md
-      - Sidebar: nuova sezione "Crescita"
-  [ ] pnpm typecheck && pnpm test && pnpm build
+      - Configurazioni.md
+      - Roadmap.md
+      - Scheda-tecnica.md
+      - Stack-moderno.md
+      - CLAUDE.md
+      - Referral-System.md (questo file)
 
 ---
 

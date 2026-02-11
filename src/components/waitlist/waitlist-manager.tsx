@@ -16,7 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
-import type { WaitlistEntry } from "@/actions/waitlist";
+import type { WaitlistEntry } from "@/types";
 import { addToWaitlist, expireOldEntries, removeWaitlistEntry } from "@/actions/waitlist";
 import { addMinutesToTime } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
@@ -486,6 +486,10 @@ function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWai
     }
     if (!desiredDate) {
       setError("Seleziona una data");
+      return;
+    }
+    if (desiredDate < new Date().toISOString().split("T")[0]) {
+      setError("La data deve essere oggi o nel futuro");
       return;
     }
 

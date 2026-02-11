@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
+import { getPlanLimits } from "@/actions/billing";
 import { createClient } from "@/lib/supabase/server";
 
 // ─── Zod Schemas ─────────────────────────────────────────────────────
@@ -92,6 +93,19 @@ export async function createStaffMember(formData: FormData) {
     .single();
 
   if (!business) return { error: "Barberia non trovata" };
+
+  // Check staff limit for current plan
+  const { count } = await supabase
+    .from("staff")
+    .select("id", { count: "exact", head: true })
+    .eq("business_id", business.id);
+
+  const limits = await getPlanLimits();
+  if ((count ?? 0) >= limits.maxStaff) {
+    return {
+      error: `Hai raggiunto il limite di ${limits.maxStaff} barbieri per il tuo piano. Passa a un piano superiore per aggiungerne altri.`,
+    };
+  }
 
   const name = parsed.data.name;
 
@@ -264,6 +278,7 @@ export async function updateStaffServices(staffId: string, serviceIds: string[])
   }
 
   revalidatePath("/dashboard/staff");
+  revalidatePath("/book", "layout");
   return { success: true };
 }
 

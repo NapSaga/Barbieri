@@ -24,20 +24,18 @@ import {
   ToggleLeft,
   ToggleRight,
   Trash2,
+  UserX,
 } from "lucide-react";
 import { useState, useTransition } from "react";
+import { createCheckoutSession, createPortalSession } from "@/actions/billing";
 import {
-  createCheckoutSession,
-  createPortalSession,
-  type SubscriptionInfo,
-} from "@/actions/billing";
-import {
+  deleteAccount,
   updateBusinessInfo,
   updateBusinessOpeningHours,
   updateBusinessThresholds,
   upsertMessageTemplate,
 } from "@/actions/business";
-import { addClosure, type ClosureEntry, removeClosure } from "@/actions/closures";
+import { addClosure, removeClosure } from "@/actions/closures";
 import { PLANS, type PlanId, STRIPE_CONFIG } from "@/lib/stripe-plans";
 import {
   DEFAULT_TEMPLATES,
@@ -47,6 +45,7 @@ import {
   TEMPLATE_LABELS,
 } from "@/lib/templates";
 import { cn } from "@/lib/utils";
+import type { ClosureEntry, SubscriptionInfo } from "@/types";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -225,6 +224,17 @@ export function SettingsManager({
           onToggle={() => toggleSection("billing")}
         >
           <BillingSection subscriptionInfo={subscriptionInfo} />
+        </SettingsSection>
+
+        <SettingsSection
+          id="delete-account"
+          icon={<UserX className="h-5 w-5 text-destructive" />}
+          title="Cancella account"
+          description="Elimina definitivamente il tuo account e tutti i dati"
+          isOpen={openSection === "delete-account"}
+          onToggle={() => toggleSection("delete-account")}
+        >
+          <DeleteAccountSection />
         </SettingsSection>
       </div>
     </div>
@@ -1332,6 +1342,101 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
         Contratto 12 mesi. Garanzia risultati: se dopo 3 mesi non vedi un ritorno almeno 2x, esci
         senza penali.
       </p>
+    </div>
+  );
+}
+
+// ─── Delete Account Section ──────────────────────────────────────────
+
+function DeleteAccountSection() {
+  const [confirmText, setConfirmText] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function handleDelete() {
+    setError(null);
+    startTransition(async () => {
+      const result = await deleteAccount(confirmText);
+      if (result?.error) {
+        setError(result.error);
+      }
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-3 rounded-lg bg-red-950/30 p-4 text-sm text-red-300">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+        <div>
+          <p className="font-semibold">Attenzione: questa azione è irreversibile</p>
+          <p className="mt-1 text-red-400">
+            Eliminando il tuo account verranno cancellati permanentemente tutti i dati della tua
+            barberia, inclusi clienti, appuntamenti, staff, servizi, messaggi e analytics.
+            L&apos;abbonamento Stripe verrà cancellato automaticamente.
+          </p>
+        </div>
+      </div>
+
+      {!showConfirm ? (
+        <button
+          type="button"
+          onClick={() => setShowConfirm(true)}
+          className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/20 transition-colors"
+        >
+          <Trash2 className="h-4 w-4" />
+          Voglio cancellare il mio account
+        </button>
+      ) : (
+        <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-sm text-foreground">
+            Per confermare, scrivi{" "}
+            <code className="rounded bg-destructive/20 px-1.5 py-0.5 text-xs font-bold text-destructive">
+              ELIMINA
+            </code>{" "}
+            nel campo sottostante:
+          </p>
+          <input
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="Scrivi ELIMINA"
+            className="block w-full max-w-xs rounded-lg border border-destructive/30 bg-muted px-3 py-2 text-sm focus:border-destructive focus:outline-none focus:ring-1 focus:ring-destructive"
+            autoComplete="off"
+          />
+
+          {error && (
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isPending || confirmText !== "ELIMINA"}
+              className="flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 transition-colors"
+            >
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              Elimina definitivamente
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowConfirm(false);
+                setConfirmText("");
+                setError(null);
+              }}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
+            >
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

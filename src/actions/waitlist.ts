@@ -9,23 +9,9 @@ import { createClient } from "@/lib/supabase/server";
 
 const uuidSchema = z.string().uuid("ID non valido");
 
-// ─── Types ───────────────────────────────────────────────────────────
-
-export interface WaitlistEntry {
-  id: string;
-  client: { id: string; first_name: string; last_name: string | null; phone: string } | null;
-  service: { id: string; name: string } | null;
-  desired_date: string;
-  desired_start_time: string;
-  desired_end_time: string;
-  status: string;
-  notified_at: string | null;
-  created_at: string;
-}
-
 // ─── Get Waitlist Entries ────────────────────────────────────────────
 
-export async function getWaitlistEntries(): Promise<WaitlistEntry[]> {
+export async function getWaitlistEntries() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -52,7 +38,17 @@ export async function getWaitlistEntries(): Promise<WaitlistEntry[]> {
     .order("desired_date", { ascending: true })
     .order("desired_start_time", { ascending: true });
 
-  return (data as unknown as WaitlistEntry[]) || [];
+  return (data as unknown as Array<{
+    id: string;
+    client: { id: string; first_name: string; last_name: string | null; phone: string } | null;
+    service: { id: string; name: string } | null;
+    desired_date: string;
+    desired_start_time: string;
+    desired_end_time: string;
+    status: string;
+    notified_at: string | null;
+    created_at: string;
+  }>) || [];
 }
 
 // ─── Remove Waitlist Entry ───────────────────────────────────────────
@@ -96,7 +92,13 @@ const addToWaitlistSchema = z.object({
   newClientLastName: z.string().optional(),
   newClientPhone: z.string().optional(),
   serviceId: z.string().uuid("ID servizio non valido"),
-  desiredDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
+  desiredDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida")
+    .refine(
+      (d) => d >= new Date().toISOString().split("T")[0],
+      "La data deve essere oggi o nel futuro",
+    ),
   desiredStartTime: z.string().regex(/^\d{2}:\d{2}$/, "Orario non valido"),
   desiredEndTime: z.string().regex(/^\d{2}:\d{2}$/, "Orario non valido"),
 });
@@ -180,6 +182,114 @@ export async function addToWaitlist(input: {
 
   revalidatePath("/dashboard/waitlist");
   return { success: true };
+}
+
+// ─── Add to Waitlist (Public — no auth, for booking page) ───────────
+
+const addToWaitlistPublicSchema = z.object({
+  businessId: z.string().uuid("ID barberia non valido"),
+  serviceId: z.string().uuid("ID servizio non valido"),
+  clientFirstName: z.string().min(1, "Nome obbligatorio"),
+  clientLastName: z.string().optional(),
+  clientPhone: z.string().min(5, "Telefono obbligatorio"),
+  desiredDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida")
+    .refine(
+      (d) => d >= new Date().toISOString().split("T")[0],
+      "La data deve essere oggi o nel futuro",
+    ),
+});
+
+export async function addToWaitlistPublic(input: {
+  businessId: string;
+  serviceId: string;
+  clientFirstName: string;
+  clientLastName?: string;
+  clientPhone: string;
+  desiredDate: string;
+}) {
+  const parsed = addToWaitlistPublicSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
+  const supabase = await createClient();
+
+  // Find or create client by phone
+  const { data: existing } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("business_id", parsed.data.businessId)
+    .eq("phone", parsed.data.clientPhone)
+    .single();
+
+  let clientId: string;
+  if (existing) {
+    clientId = existing.id;
+  } else {
+    const { data: newClient, error: clientError } = await supabase
+      .from("clients")
+      .insert({
+        business_id: parsed.data.businessId,
+        first_name: parsed.data.clientFirstName,
+        last_name: parsed.data.clientLastName?.trim() || null,
+        phone: parsed.data.clientPhone,
+      })
+      .select("id")
+      .single();
+
+    if (clientError) return { error: clientError.message };
+    clientId = newClient.id;
+  }
+
+  const { error } = await supabase.from("waitlist").insert({
+    business_id: parsed.data.businessId,
+    client_id: clientId,
+    service_id: parsed.data.serviceId,
+    desired_date: parsed.data.desiredDate,
+    desired_start_time: "09:00",
+    desired_end_time: "19:00",
+    status: "waiting",
+  });
+
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
+
+// ─── Get Waitlist Counts by Date (for calendar badge) ───────────────
+
+export async function getWaitlistCountsByDate(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return {};
+
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!business) return {};
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const { data } = await supabase
+    .from("waitlist")
+    .select("desired_date")
+    .eq("business_id", business.id)
+    .eq("status", "waiting")
+    .gte("desired_date", today);
+
+  if (!data) return {};
+
+  const counts: Record<string, number> = {};
+  for (const row of data) {
+    counts[row.desired_date] = (counts[row.desired_date] || 0) + 1;
+  }
+  return counts;
 }
 
 // ─── Expire Old Entries ──────────────────────────────────────────────

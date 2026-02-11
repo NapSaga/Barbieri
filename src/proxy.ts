@@ -72,14 +72,19 @@ export default async function proxy(request: NextRequest) {
   if (user && isDashboardPath && !isGatingExempt) {
     const { data: business } = await supabase
       .from("businesses")
-      .select("subscription_status")
+      .select("subscription_status, stripe_customer_id")
       .eq("owner_id", user.id)
       .single();
 
     const status = business?.subscription_status || "trialing";
-    const allowedStatuses = ["active", "trialing", "past_due"];
 
-    if (!allowedStatuses.includes(status)) {
+    // Users must go through Stripe Checkout before accessing the dashboard.
+    // Trialing users without a Stripe customer haven't picked a plan yet.
+    const hasStripeCustomer = !!business?.stripe_customer_id;
+    const allowedStatuses = ["active", "trialing", "past_due"];
+    const isSubscriptionValid = allowedStatuses.includes(status) && hasStripeCustomer;
+
+    if (!isSubscriptionValid) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard/expired";
       return NextResponse.redirect(url);

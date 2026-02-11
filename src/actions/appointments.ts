@@ -46,7 +46,7 @@ export async function getStaffBookedSlots(
 ): Promise<BookedSlot[]> {
   const supabase = await createClient();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("appointments")
     .select("start_time, end_time")
     .eq("business_id", businessId)
@@ -98,25 +98,14 @@ const updateStatusSchema = z.object({
   status: z.enum(["confirmed", "completed", "cancelled", "no_show"]),
 });
 
+const revertStatusSchema = z.object({
+  appointmentId: uuidSchema,
+  from: z.enum(["completed", "no_show"]),
+});
+
 // ─── Calendar Data Fetching ──────────────────────────────────────────
 
-export type ConfirmationStatus = "none" | "pending" | "confirmed" | "auto_cancelled";
-
-export interface CalendarAppointment {
-  id: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  source: string;
-  confirmationStatus: ConfirmationStatus;
-  confirmRequestSentAt: string | null;
-  client: { id: string; first_name: string; last_name: string | null; phone: string } | null;
-  staff: { id: string; name: string } | null;
-  service: { id: string; name: string; duration_minutes: number; price_cents: number } | null;
-}
-
-export async function getAppointmentsForDate(date: string): Promise<CalendarAppointment[]> {
+export async function getAppointmentsForDate(date: string) {
   const parsed = dateSchema.safeParse(date);
   if (!parsed.success) return [];
 
@@ -152,7 +141,7 @@ export async function getAppointmentsForDate(date: string): Promise<CalendarAppo
 export async function getAppointmentsForWeek(
   startDate: string,
   endDate: string,
-): Promise<CalendarAppointment[]> {
+) {
   const parsed = z
     .object({ startDate: dateSchema, endDate: dateSchema })
     .safeParse({ startDate, endDate });
@@ -196,7 +185,7 @@ async function enrichWithConfirmationStatus(
   // biome-ignore lint/suspicious/noExplicitAny: raw Supabase query result
   rawAppointments: any[],
   businessId: string,
-): Promise<CalendarAppointment[]> {
+) {
   if (rawAppointments.length === 0) return [];
 
   const appointmentIds = rawAppointments.map((a) => a.id);
@@ -221,7 +210,7 @@ async function enrichWithConfirmationStatus(
     const msgs = msgByAppt[appt.id] || [];
     const confirmReq = msgs.find((m) => m.type === "confirm_request");
 
-    let confirmationStatus: ConfirmationStatus = "none";
+    let confirmationStatus: "none" | "pending" | "confirmed" | "auto_cancelled" = "none";
     if (appt.status === "confirmed") {
       confirmationStatus = "confirmed";
     } else if (appt.status === "cancelled" && confirmReq) {
@@ -234,7 +223,7 @@ async function enrichWithConfirmationStatus(
       ...appt,
       confirmationStatus,
       confirmRequestSentAt: confirmReq?.sent_at || null,
-    } as CalendarAppointment;
+    };
   });
 }
 
@@ -368,6 +357,13 @@ export async function bookAppointment(input: BookAppointmentInput) {
   const parsed = bookAppointmentSchema.safeParse(input);
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Dati prenotazione non validi" };
+
+  // Reject appointments in the past
+  const now = new Date();
+  const slotStart = new Date(`${parsed.data.date}T${parsed.data.startTime}`);
+  if (slotStart < now) {
+    return { error: "Non è possibile prenotare un appuntamento nel passato." };
+  }
 
   const supabase = await createClient();
 
@@ -508,6 +504,14 @@ export async function updateAppointmentStatus(
     .eq("id", appointmentId)
     .single();
 
+  // Block completing or marking no-show for future appointments
+  if ((status === "completed" || status === "no_show") && appointmentData?.date) {
+    const today = new Date().toISOString().split("T")[0];
+    if (appointmentData.date > today) {
+      return { error: "Non puoi completare o segnare no-show un appuntamento futuro" };
+    }
+  }
+
   const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
 
   if (error) {
@@ -526,7 +530,19 @@ export async function updateAppointmentStatus(
 
   // If no-show, increment client no_show_count
   if (status === "no_show" && appointmentData?.client_id) {
-    await supabase.rpc("increment_no_show", { client_uuid: appointmentData.client_id });
+    const { data: client } = await supabase
+      .from("clients")
+      .select("no_show_count")
+      .eq("id", appointmentData.client_id)
+      .single();
+
+    await supabase
+      .from("clients")
+      .update({
+        no_show_count: (client?.no_show_count || 0) + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", appointmentData.client_id);
   }
 
   // If completed, increment total_visits and update last_visit_at
@@ -549,6 +565,72 @@ export async function updateAppointmentStatus(
 
   revalidatePath("/dashboard");
 
+  return { success: true };
+}
+
+// ─── Revert Status (undo completed / no_show → confirmed) ──────────
+
+export async function revertAppointmentStatus(
+  appointmentId: string,
+  from: "completed" | "no_show",
+) {
+  const parsed = revertStatusSchema.safeParse({ appointmentId, from });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
+  const supabase = await createClient();
+
+  const { data: appointmentData } = await supabase
+    .from("appointments")
+    .select("client_id, business_id, status")
+    .eq("id", appointmentId)
+    .single();
+
+  if (!appointmentData) return { error: "Appuntamento non trovato" };
+  if (appointmentData.status !== from) {
+    return { error: `L'appuntamento non è in stato "${from}"` };
+  }
+
+  const { error } = await supabase
+    .from("appointments")
+    .update({ status: "confirmed", updated_at: new Date().toISOString() })
+    .eq("id", appointmentId);
+
+  if (error) return { error: error.message };
+
+  // Undo side-effects
+  if (from === "completed" && appointmentData.client_id) {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("total_visits")
+      .eq("id", appointmentData.client_id)
+      .single();
+
+    await supabase
+      .from("clients")
+      .update({
+        total_visits: Math.max((client?.total_visits || 1) - 1, 0),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", appointmentData.client_id);
+  }
+
+  if (from === "no_show" && appointmentData.client_id) {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("no_show_count")
+      .eq("id", appointmentData.client_id)
+      .single();
+
+    await supabase
+      .from("clients")
+      .update({
+        no_show_count: Math.max((client?.no_show_count || 1) - 1, 0),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", appointmentData.client_id);
+  }
+
+  revalidatePath("/dashboard");
   return { success: true };
 }
 

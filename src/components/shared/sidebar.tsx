@@ -4,6 +4,7 @@ import {
   BarChart3,
   Calendar,
   Clock,
+  Gift,
   LogOut,
   Menu,
   Moon,
@@ -12,6 +13,7 @@ import {
   Scissors,
   Settings,
   Sun,
+  TrendingUp,
   UserCog,
   Users,
   X,
@@ -44,8 +46,13 @@ const navSections = [
   },
   {
     label: "Aspetto",
+    items: [{ name: "Personalizza", href: "/dashboard/customize", icon: Palette }],
+  },
+  {
+    label: "Crescita",
     items: [
-      { name: "Personalizza", href: "/dashboard/customize", icon: Palette },
+      { name: "ROI & Vantaggi", href: "/dashboard/roi", icon: TrendingUp },
+      { name: "Referral", href: "/dashboard/referral", icon: Gift },
     ],
   },
   {

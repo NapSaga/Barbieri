@@ -35,7 +35,7 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 
 ### Data Layer
 
-- **Drizzle ORM** for schema definition (`src/db/schema.ts`) and migrations. Schema has 10 tables, 6 enums.
+- **Drizzle ORM** for schema definition (`src/db/schema.ts`) and migrations. Schema has 12 tables, 7 enums.
 - **Supabase JS client** for runtime queries (benefits from RLS). Drizzle is used for schema-as-code and `db:push`/`db:generate`.
 - **Two DB URLs**: `DATABASE_URL` (connection pooler, port 6543) for Vercel/serverless, `DIRECT_URL` (port 5432) for local/migrations.
 - **RLS enabled** on every table with `business_id` isolation. Webhooks use `SUPABASE_SERVICE_ROLE_KEY` to bypass RLS.
@@ -43,22 +43,25 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 
 ### Server Actions & API Routes
 
-- **9 server action modules** in `src/actions/` handle all authenticated mutations. No REST API for CRUD.
+- **10 server action modules** in `src/actions/` handle all authenticated mutations. No REST API for CRUD.
 - **Only 2 API routes** exist: `/api/stripe/webhook` and `/api/whatsapp/webhook` — both verify signatures.
+- `waitlist.ts` includes `addToWaitlistPublic()` (no auth, for booking page) and `getWaitlistCountsByDate()` (calendar badge).
+- `appointments.ts`: `bookAppointment()` rejects past date+time slots server-side. Booking wizard also hides past slots client-side for today's date.
 - Server actions call `revalidatePath()` after mutations.
 
 ### Auth
 
 - Supabase Auth (email/password + magic link). JWT stored in HTTP-only cookies.
 - Server-side client: `src/lib/supabase/server.ts`. Browser client: `src/lib/supabase/client.ts`.
-- A Supabase trigger `on_auth_user_created` auto-creates a business row on signup.
+- A Supabase trigger `on_auth_user_created` auto-creates a business row on signup, generates a unique `referral_code` (REF-NAME-XXXX), and if a referral code is present in metadata, saves `referred_by` and creates a `referrals` record with status 'pending'.
 
 ### External Services
 
-- **Stripe**: Lazy-initialized client (`src/lib/stripe.ts`) to prevent build-time crashes on Vercel. Plans defined in `src/lib/stripe-plans.ts`. Checkout sessions include 7-day trial and promotion codes (allow_promotion_codes).
+- **Stripe**: Lazy-initialized client (`src/lib/stripe.ts`) to prevent build-time crashes on Vercel. Plans defined in `src/lib/stripe-plans.ts`. Checkout sessions include 7-day trial and promotion codes (allow_promotion_codes). Webhook `invoice.paid` also processes referral rewards (€50 credit via Customer Balance to referrer).
 - **Twilio WhatsApp**: Dual-mode in `src/lib/whatsapp.ts` — sends real messages if `TWILIO_*` env vars are set, otherwise logs to console (mock mode).
 - **WhatsApp commands**: `CONFERMA`, `CANCELLA`, `CAMBIA ORARIO`, `SI` — handled in the WhatsApp webhook route.
 - **Cron jobs** (Supabase pg_cron + Edge Functions) run confirmation requests, reminders, auto-cancel, pre-appointment messages, review requests, and client reactivation.
+- **Analytics trigger**: `trg_recalc_analytics` on `appointments` table (AFTER INSERT/UPDATE OF status,date,service_id/DELETE) recalculates `analytics_daily` in real-time via `recalc_analytics_on_appointment_change()`. Nightly cron `analytics-daily-calc` (02:05 UTC) recalculates yesterday + today as safety net.
 
 ### PWA (Serwist)
 

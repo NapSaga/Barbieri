@@ -1,6 +1,6 @@
 BARBEROS MVP — STATO DEL PROGETTO
 
-Ultimo aggiornamento: 11 febbraio 2026
+Ultimo aggiornamento: 11 febbraio 2026 (notte)
 
 ---
 
@@ -25,7 +25,7 @@ Infrastruttura, database, autenticazione, layout base.
    - pnpm 10.29.2 come package manager
 
 3. Database migrato
-   - 10 tabelle create con tutti gli enums, indici e foreign keys
+   - 12 tabelle create con tutti gli enums, indici e foreign keys
    - RLS abilitato su ogni tabella con policy per isolamento business_id
    - Funzione helper get_user_business_id() con search_path fissato
    - Trigger on_auth_user_created per auto-creazione business alla registrazione
@@ -40,7 +40,7 @@ Infrastruttura, database, autenticazione, layout base.
    - Sessione persistente con JWT refresh automatico
 
 5. Layout dashboard
-   - Sidebar responsive con navigazione a 7 sezioni
+   - Sidebar responsive con navigazione a 8 sezioni
    - Mobile: hamburger menu con overlay
    - Desktop: sidebar fissa 256px
    - Logout con invalidazione sessione
@@ -66,8 +66,12 @@ Calendario interattivo, CRUD servizi, CRUD staff, CRM clienti.
 
 2. CRUD Servizi (/dashboard/services)
    - Lista servizi con nome, durata (minuti), prezzo (€), badge combo/disattivato
-   - Creazione servizio: form inline con nome, durata, prezzo
+   - Creazione servizio: form inline con nome, durata (dropdown), prezzo
    - Modifica servizio: form inline con valori precompilati
+   - Durate predefinite obbligatorie: 15, 30, 45, 60, 75, 90, 105, 120 minuti (ALLOWED_DURATIONS)
+     - UI: select dropdown (non input numerico libero) per evitare durate arbitrarie
+     - Validazione Zod server-side: rifiuta qualsiasi durata non nell'elenco
+     - Garantisce compatibilità con la griglia slot a 15 minuti del booking
    - Toggle attiva/disattiva senza eliminare (soft disable)
    - Eliminazione con conferma dialog
    - Contatore servizi totali nell'header
@@ -78,8 +82,13 @@ Calendario interattivo, CRUD servizi, CRUD staff, CRM clienti.
    - Modifica nome inline con salvataggio
    - Editor orari di lavoro: pannello espandibile per ogni barbiere con 7 giorni, toggle aperto/chiuso, ora inizio e fine per ogni giorno
    - Salvataggio orari separato con feedback "Salvato!"
+   - Associazione servizi per barbiere: pannello "Servizi" espandibile con checkbox per ogni servizio attivo
+     - Se nessun barbiere ha servizi associati → tutti i barbieri appaiono per ogni servizio (fallback)
+     - Se almeno un barbiere ha servizi configurati → nel booking appare solo chi ha quel servizio associato
+     - Tabella ponte staff_services (many-to-many) con server action updateStaffServices
    - Toggle attiva/disattiva barbiere
    - Eliminazione con conferma dialog e avviso appuntamenti
+   - Drag & drop per riordinare i barbieri (reorderStaff server action)
 
 4. CRM Clienti (/dashboard/clients)
    - Lista clienti ordinata per ultima visita
@@ -220,19 +229,23 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
    - CalendarAppointment arricchito con confirmationStatus e confirmRequestSentAt
    - Query batch su tabella messages (confirm_request/confirm_reminder) per appointment_id
    - Pallino 🟡 pulsante sulla card se status="pending" (attesa conferma)
+   - Pallino 🔴 sulla card se status="auto_cancelled" (non confermato via WhatsApp) — distingue cancellazioni manuali da automatiche
    - AppointmentSheet mostra sezione "Stato conferma WhatsApp":
      - "In attesa di conferma WhatsApp" (amber, con timestamp invio)
      - "Confermato via WhatsApp" (emerald)
-     - "Non confermato — cancellato automaticamente" (red)
+     - "Il cliente non ha confermato via WhatsApp entro il termine previsto — cancellato automaticamente" (red, messaggio esplicativo)
 
 9. Waitlist UI Funzionale ✅
-   - Server actions: getWaitlistEntries(), removeWaitlistEntry(), expireOldEntries()
+   - Server actions: getWaitlistEntries(), removeWaitlistEntry(), expireOldEntries(), addToWaitlist(), addToWaitlistPublic(), getWaitlistCountsByDate()
    - Componente WaitlistManager con:
      - Filtro per stato (tutti, in attesa, notificato, convertito, scaduto)
      - Ricerca per nome, telefono, servizio
      - Badge colorati per stato (🟡 In attesa, 🔔 Notificato, ✅ Convertito, ⏰ Scaduto)
      - Azione rimuovi entry, pulsante "Scaduti" per bulk-expire
    - Pagina /dashboard/waitlist funzionale (sostituito placeholder)
+   - Validazione date: Zod .refine() server-side + check client-side per rifiutare date passate
+   - Auto-add dal booking pubblico: quando nessun slot disponibile, il cliente può iscriversi alla lista d'attesa direttamente dalla pagina /book/[slug] (addToWaitlistPublic, no auth, find-or-create client per telefono)
+   - Badge calendario: banner blu nella vista giornaliera quando ci sono clienti in waitlist per la data visualizzata (getWaitlistCountsByDate)
 
 10. Tag Automatici Clienti ✅
     - Nuovi tag disponibili: "Affidabile" (emerald), "Non conferma" (arancione)
@@ -258,6 +271,7 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
     - Grafico fatturato giornaliero (barre blu con tooltip)
     - Grafico appuntamenti giornaliero (stacked: completati verde, cancellati rosso, no-show amber)
     - Tabella servizi più richiesti con progress bar e revenue
+    - Empty state descrittivo: "Nessun appuntamento completato negli ultimi X giorni" + hint su quando appariranno i dati
     - Breakdown clienti nuovi vs ricorrenti con barra proporzionale
 
 14. Chiusure Straordinarie ✅
@@ -331,7 +345,8 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
    - Walk-in dialog: riceve appointments dal calendario → warning arancione se orario selezionato confligge
    - Server-side conflict check in bookAppointment(): query overlap prima di INSERT, rifiuta con errore "Questo orario non è più disponibile"
    - Server-side conflict check in addWalkIn(): stessa logica, rifiuta con errore "Conflitto: il barbiere ha già un appuntamento in questo orario"
-   - Difesa a 4 livelli: (1) slot nascosti nel wizard, (2) warning visivo nel walk-in, (3) reject server-side per race condition, (4) conflict check nel flusso waitlist (comando SI via WhatsApp)
+   - Blocco slot passati: per la data odierna, il booking wizard nasconde gli slot con orario ≤ ora attuale; bookAppointment() rifiuta server-side se data+ora nel passato (errore: "Non è possibile prenotare un appuntamento nel passato.")
+   - Difesa a 5 livelli: (1) slot passati nascosti nel wizard, (2) slot occupati nascosti nel wizard, (3) warning visivo nel walk-in, (4) reject server-side per slot passato o race condition, (5) conflict check nel flusso waitlist (comando SI via WhatsApp)
    - hasConflict() usa query SQL con .lt("start_time", endTime).gt("end_time", startTime) per overlap detection
    - hasConflictAdmin() replica la stessa logica con AdminClient per il webhook WhatsApp (waitlist → appuntamento)
 
@@ -505,7 +520,119 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
    - Prefetch: sidebar usa next/link (auto-prefetch abilitato di default)
    - Dettagli completi: Dev Barbieri/Performance/Ottimizzazioni.md
 
-17. Da fare (dettagli in Dev Barbieri/Piano/Task-Fase-D-Rimanenti.md):
+17. Sistema Referral ✅
+   - Modello: referrer guadagna €50 credito Stripe per ogni barbiere invitato che si abbona; invitato riceve 20% sconto primo mese
+   - Database: tabella referrals (id, referrer_business_id, referred_business_id, status enum pending/converted/rewarded/expired, reward_amount_cents, stripe_credit_id, converted_at, rewarded_at, created_at) + colonne referral_code/referred_by su businesses
+   - Migrazioni Supabase: referral_system (tabella + colonne + RLS + indici + codici generati per business esistenti) + referral_trigger_update (trigger on_auth_user_created aggiornato per generare referral_code e creare record referral)
+   - Schema Drizzle: referralStatusEnum, colonne referralCode/referredBy su businesses, tabella referrals con relazioni
+   - Server actions (src/actions/referral.ts): getReferralInfo(), getReferrals(), validateReferralCode() con validazione Zod
+   - Pagina /dashboard/referral: Server Component + Client Component referral-dashboard.tsx
+     - 3 KPI cards (invitati totali, convertiti, crediti guadagnati)
+     - Codice referral copiabile + link condivisibile + share WhatsApp
+     - Sezione "Come funziona" con 3 step + breakdown esplicito premi per entrambe le parti
+     - Tabella referral con badge stato, descrizione, data registrazione, data aggiornamento, credito
+     - Empty state + fine print
+   - Sidebar: nuova sezione "Crescita" con voce "Referral" (icona Gift)
+   - Integrazione /register?ref=CODICE: legge query param, valida codice, mostra badge "Invitato da X — 20% di sconto!", passa codice nei metadata signUp
+   - Integrazione Stripe webhook: processReferralReward() su invoice.paid applica €50 credito via stripe.customers.createBalanceTransaction() al referrer
+   - Trigger SQL aggiornato: genera referral_code per nuove business, salva referred_by, crea record referrals con status 'pending'
+   - typecheck ✅, test 139/139 ✅, build 19 route ✅, lint 0 errori ✅
+
+18. Feature Gating per Piano ✅
+   Differenziazione funzionalità tra Essential, Professional, Enterprise.
+
+   Architettura:
+   - src/lib/plan-limits.ts: definizione centralizzata limiti e feature flags per piano
+   - src/actions/billing.ts: getPlanLimits() server action — legge piano attivo da Stripe e restituisce limiti
+   - Fix trial: se DB dice "trialing", restituisce TRIAL_LIMITS (Professional-level) senza passare da Stripe
+   - Colonna subscription_plan su businesses (migration add_subscription_plan) — salvata dal webhook Stripe
+   - Webhook Stripe aggiornato: detectPlanFromSubscription() salva plan ID su subscription.created/updated/deleted
+   - Schema Drizzle aggiornato: subscriptionPlan su businesses
+
+   Limiti per piano:
+   - Essential (€300/mese): max 2 barbieri
+   - Professional (€500/mese): max 5 barbieri
+   - Enterprise (custom): illimitato
+   - Trial: accesso Professional completo (maxStaff: 5, tutte le feature)
+
+   Cosa è uguale per tutti i piani:
+   - Servizi: illimitati (nessun gate)
+   - Analytics: completi per tutti (fatturato, appuntamenti, no-show, nuovi clienti, grafici, top servizi)
+   - Personalizzazione: completa per tutti (colori, logo, font, copertina)
+   - WhatsApp base: conferma, 2 reminder, notifica pre-appuntamento 2h prima
+   - WhatsApp auto-cancel: cancellazione automatica se il cliente non conferma (tutti i piani)
+   - Lista d'attesa: notifica automatica su cancellazione (tutti i piani)
+   - Chiusure straordinarie, CRM clienti, prenotazione online
+
+   Gate Staff:
+   - Server-side: createStaffMember() verifica count vs maxStaff
+   - UI: banner amber con Crown icon quando limite raggiunto, bottone "Nuovo" disabilitato
+   - Errore italiano: "Hai raggiunto il limite di N barbieri per il tuo piano."
+
+   Gate WhatsApp Avanzato (solo Professional/Enterprise):
+   - Riattivazione clienti dormienti (find_dormant_clients SQL + Edge Function reactivation)
+   - Richiesta recensione Google dopo appuntamento (find_review_appointments SQL + Edge Function review-request)
+   - Tag automatici clienti: "Affidabile" (≥3 conferme) / "Non conferma" (≥2 auto-cancel)
+   - Implementazione: SQL functions filtrano per subscription_plan — skip essential
+   - Auto-tag (webhook WhatsApp): check subscription_plan prima di eseguire tagging
+   - Migration auto_cancel_all_plans: rimosso filtro piano da auto_cancel_unconfirmed (ora gira per tutti)
+
+   Feature list in stripe-plans.ts:
+   - Essential: 11 feature elencate (incluso auto-cancel e lista d'attesa automatica)
+   - Professional: 7 feature ("Tutto Essential +" + 5 barbieri + 3 WhatsApp avanzati + tag + supporto)
+   - Enterprise: 6 feature ("Tutto Professional +" + illimitato + dedicato + multi-sede)
+
+   File principali:
+   - src/lib/plan-limits.ts (PlanLimits, PLAN_LIMITS, TRIAL_LIMITS, getPlanLimitsForPlan)
+   - src/lib/stripe-plans.ts (PLANS con features reali e descrittive)
+   - src/actions/billing.ts (getPlanLimits con fix trial)
+   - src/actions/staff.ts (limit check maxStaff)
+   - src/components/staff/staff-manager.tsx (maxStaff prop, banner)
+   - src/app/(dashboard)/dashboard/staff/page.tsx (passa maxStaff da getPlanLimits)
+   - 3 migrazioni Supabase: add_subscription_plan, gate_edge_functions_by_plan, auto_cancel_all_plans
+
+   typecheck ✅, test 139/139 ✅, lint ✅
+
+19. Pagina ROI & Vantaggi ✅
+   Pagina interattiva per mostrare al barbiere il ritorno sull'investimento e tutti i vantaggi di BarberOS.
+
+   Route: /dashboard/roi
+   Sidebar: sezione "Crescita" → "ROI & Vantaggi" (icona TrendingUp) + "Referral" (icona Gift)
+
+   Simulatore ROI interattivo:
+   - 5 slider con CSS custom (filled track, thumb con hover scale, dark mode):
+     - Poltrone/Barbieri (1-10)
+     - Scontrino medio (€10-80)
+     - Appuntamenti al giorno (4-40)
+     - Tasso no-show attuale (0-40%)
+     - Giorni lavorativi/mese (16-28)
+   - 4 risultati calcolati in tempo reale:
+     - No-show eliminati (70% riduzione)
+     - Slot recuperati da lista d'attesa (40% recovery rate)
+     - Clienti riattivati (15% dei dormienti)
+     - Tempo risparmiato (45 min/giorno)
+   - Box riepilogo con breakdown chiaro:
+     - Guadagno lordo mensile (somma dei 3 risparmi)
+     - Costo piano (auto-seleziona Essential ≤2 poltrone, Professional 3+)
+     - Guadagno netto mensile (lordo - costo)
+     - ROI multiplier (es. 3.0x = ogni €1 investito genera €3)
+
+   10 card vantaggi (mostra 6, espandibile):
+   - WhatsApp Automatico, Cancellazione Automatica, Lista d'Attesa Intelligente
+   - Prenotazione Online 24/7, CRM Clienti Completo, Recensioni Google Automatiche
+   - Riattivazione Clienti Dormienti, Calendario Multi-Poltrona, App Nativa (PWA), Zero Double Booking
+
+   CTA finale: link a /dashboard/settings per attivare il piano.
+
+   File:
+   - src/components/roi/roi-simulator.tsx (componente client con simulatore + vantaggi)
+   - src/app/(dashboard)/dashboard/roi/page.tsx (dynamic import con skeleton loading)
+   - src/components/shared/sidebar.tsx (aggiunto TrendingUp import + link ROI)
+   - src/app/globals.css (CSS custom .roi-slider per range input)
+
+   typecheck ✅, build ✅
+
+20. Da fare (dettagli in Dev Barbieri/Piano/Task-Fase-D-Rimanenti.md):
    - Dominio custom + DNS (attualmente su barberos-mvp.vercel.app)
    - WhatsApp produzione: sandbox funzionante, Twilio sara' subaccount del cliente
    - Monitoring: Sentry per error tracking
@@ -516,9 +643,27 @@ BOOKING PUBBLICO — FUNZIONANTE
 
 Pagina /book/[slug] completamente funzionante:
 - Wizard multi-step: Servizio → Barbiere → Data/Ora → Conferma
-- Calcolo slot disponibili basato su orari staff, durata servizio e appuntamenti esistenti (conflict-aware)
+- Logica slot disponibili (getSlots in booking-wizard.tsx):
+  - INTERSEZIONE orari di apertura business e orari di lavoro staff:
+    - effectiveStart = MAX(business.open, staff.start) — il più tardi dei due
+    - effectiveEnd = MIN(business.close, staff.end) — il più presto dei due
+    - Se staff è off → nessuno slot (anche se business è aperto)
+    - Se business è chiuso → nessuno slot (anche se staff è disponibile)
+    - Se intersezione vuota (start >= end) → nessuno slot
+  - Break dello staff applicati dentro l'intersezione
+  - Slot occupati filtrati: appuntamenti con status booked, confirmed o completed bloccano gli slot
+  - bookedSlots passato esplicitamente a getSlots() per compatibilità con React Compiler (auto-memoization)
+- Filtro staff per servizio (getStaffForService):
+  - Se tabella staff_services è vuota → mostra tutti i barbieri (fallback, nessuno ha configurato)
+  - Se almeno un barbiere ha servizi configurati → mostra SOLO i barbieri associati al servizio selezionato
+  - Se nessun barbiere è associato a quel servizio → lista vuota
+- Filtro servizi prenotabili (bookableServices):
+  - Se staff_services ha almeno un record → mostra SOLO i servizi che hanno almeno un barbiere associato
+  - Se staff_services è vuota → mostra tutti i servizi attivi (backwards compatible)
+  - Servizi senza barbiere associato non appaiono nella pagina di booking pubblica
+- Durate servizi predefinite: solo 15, 30, 45, 60, 75, 90, 105, 120 minuti (ALLOWED_DURATIONS)
 - useEffect fetcha slot occupati via getStaffBookedSlots() al cambio staff/data
-- Slot in conflitto con appuntamenti non cancellati vengono rimossi automaticamente
+- Blocco slot passati (data odierna): client-side filtra slot con orario ≤ ora attuale; server-side bookAppointment() rifiuta se data+ora < now
 - Server-side conflict check in bookAppointment() previene race condition
 - Creazione automatica client se non esiste (lookup per telefono)
 - Creazione appuntamento con status "booked" e source "online"
@@ -528,6 +673,40 @@ Pagina /book/[slug] completamente funzionante:
 - Branding personalizzabile: colori primario/secondario (hex→oklch), logo, welcome text, cover image, font preset
 - Pagina applica brand_colors, logo_url, welcome_text, cover_image_url, font_preset dalla business
 - Preview live nella pagina /dashboard/customize
+- Integrazione waitlist: se nessun slot disponibile per la data selezionata, appare bottone "Avvisami se si libera un posto" → form inline (nome, cognome, telefono) → iscrizione automatica alla lista d'attesa → schermata conferma "Sei in lista d'attesa!" → notifica WhatsApp automatica su cancellazione
+- Revalidazione automatica: tutte le server action che modificano orari business, servizi, staff o associazioni staff-servizi chiamano revalidatePath("/book", "layout") per aggiornare la pagina pubblica in tempo reale
+- export const dynamic = "force-dynamic" per evitare caching della pagina server-side
+
+---
+
+GESTIONE STATO APPUNTAMENTI
+
+- Blocco completamento/no-show futuro:
+  - Server-side: updateAppointmentStatus() verifica che la data dell'appuntamento non sia futura prima di accettare status "completed" o "no_show"
+  - Client-side: i pulsanti "Completato" e "No-show" sono disabilitati per appuntamenti con data > oggi
+  - Errore italiano: "Non puoi completare o segnare no-show un appuntamento futuro"
+- Ripristino stato (revertAppointmentStatus):
+  - Permette di annullare "completed" o "no_show" riportando l'appuntamento a "confirmed"
+  - Annulla side-effect: decrementa total_visits (se da completed) o no_show_count (se da no_show) del cliente
+  - Pulsante "Ripristina a Confermato" visibile solo per appuntamenti in stato completed/no_show
+  - Validazione Zod con revertStatusSchema
+- Incremento no_show_count: aggiornamento diretto sulla tabella clients (non più via RPC inesistente)
+- Auto-complete: pg_cron ogni 20 min segna confirmed → completed dopo end_time + ritardo configurabile per business (default 20 min)
+
+---
+
+REFACTORING TIPI — "use server" COMPATIBILITY
+
+Next.js 16 con webpack non permette ai file "use server" di esportare valori non-async-function (interfacce, tipi, costanti).
+Tutti i tipi condivisi sono stati spostati in src/types/index.ts:
+- CalendarAppointment, ConfirmationStatus (da appointments.ts)
+- AnalyticsDayRow, AnalyticsSummary, TopService (da analytics.ts)
+- ReferralInfo, ReferralEntry (da referral.ts)
+- ClosureEntry (da closures.ts)
+- SubscriptionInfo (da billing.ts)
+- WaitlistEntry (da waitlist.ts)
+- ALLOWED_DURATIONS (da services.ts — reso non-exported nel file server action)
+12 file componenti aggiornati per importare da @/types invece che dai file server action.
 
 ---
 
@@ -536,12 +715,12 @@ NOTE TECNICHE
 - Next.js 16 usa proxy.ts invece di middleware.ts per la protezione route e il refresh sessione.
 - proxy.ts gestisce anche il subscription gating: verifica subscription_status e redirect a /dashboard/expired se non valido.
 - Le policy RLS per booking anonimo (INSERT su clients e appointments) sono state ristrette a richiedere un business_id valido (non più WITH CHECK true).
-- Il trigger on_auth_user_created genera uno slug unico per la business appendendo i primi 8 caratteri dell'UUID utente.
+- Il trigger on_auth_user_created genera uno slug unico per la business appendendo i primi 8 caratteri dell'UUID utente. Genera anche un referral_code unico (REF-NOME-XXXX) e, se presente un referral_code nei metadata, salva referred_by e crea un record referrals con status 'pending'.
 - WhatsApp dual-mode: se variabili TWILIO_* configurate → invio reale via Twilio API. Altrimenti → mock con console.log dettagliato. Trasparente per il resto del codice.
 - Webhook WhatsApp usa Supabase admin client (service role key) per bypassare RLS nelle operazioni server-to-server.
 - Template messaggi: default italiani hardcoded in lib/templates.ts, personalizzabili dal barbiere via UI e salvati su DB (message_templates).
-- Stripe: getStripe() con lazy init + Proxy per alias. stripe-plans.ts separato (importabile da client components). STRIPE_PRICES server-only da env.
-- Validazione Zod: tutti i 9 moduli Server Actions usano zod/v4 con safeParse() per validare input utente prima di qualsiasi query DB. Errori restituiti come { error: "messaggio italiano" }, mai eccezioni.
+- Stripe: getStripe() con lazy init + Proxy per alias. stripe-plans.ts separato (importabile da client components). STRIPE_PRICES server-only da env. Webhook invoice.paid processa anche referral reward (€50 credito via Customer Balance al referrer).
+- Validazione Zod: tutti i 10 moduli Server Actions usano zod/v4 con safeParse() per validare input utente prima di qualsiasi query DB. Errori restituiti come { error: "messaggio italiano" }, mai eccezioni. Waitlist: .refine() per rifiutare date passate sia server-side che client-side.
 - Deploy: Vercel per frontend/server actions/API routes. Supabase Cloud per DB/auth/edge functions/pg_cron (già attivo).
 - shadcn/ui: 17 componenti Radix-based integrati in src/components/ui/. CLI configurato con components.json.
 - Dark mode: next-themes con ThemeProvider, defaultTheme="dark", attribute="class".

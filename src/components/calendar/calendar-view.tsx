@@ -6,15 +6,13 @@ import {
   CalendarOff,
   ChevronLeft,
   ChevronRight,
+  ClockAlert,
   Plus,
   Users,
 } from "lucide-react";
 import { useCallback, useMemo, useState, useTransition } from "react";
-import {
-  type CalendarAppointment,
-  getAppointmentsForDate,
-  getAppointmentsForWeek,
-} from "@/actions/appointments";
+import type { CalendarAppointment } from "@/types";
+import { getAppointmentsForDate, getAppointmentsForWeek } from "@/actions/appointments";
 import {
   Select,
   SelectContent,
@@ -51,6 +49,7 @@ interface CalendarViewProps {
   staffMembers: StaffMember[];
   services: ServiceItem[];
   closureDates?: string[];
+  waitlistCounts?: Record<string, number>;
 }
 
 type ViewMode = "day" | "week";
@@ -97,6 +96,7 @@ export function CalendarView({
   staffMembers,
   services,
   closureDates = [],
+  waitlistCounts = {},
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date(`${initialDate}T00:00:00`));
   const [viewMode, setViewMode] = useState<ViewMode>("day");
@@ -265,6 +265,20 @@ export function CalendarView({
           </div>
         </div>
       </div>
+
+      {/* Waitlist banner */}
+      {viewMode === "day" && (waitlistCounts[toISODate(currentDate)] || 0) > 0 && (
+        <div className="flex items-center gap-2.5 rounded-xl border border-blue-800/50 bg-blue-950/30 px-4 py-3 text-sm text-blue-400">
+          <ClockAlert className="h-5 w-5 shrink-0 text-blue-400" />
+          <span className="font-medium">
+            {waitlistCounts[toISODate(currentDate)]}{" "}
+            {waitlistCounts[toISODate(currentDate)] === 1
+              ? "cliente in lista d\u2019attesa"
+              : "clienti in lista d\u2019attesa"}{" "}
+            per questa data
+          </span>
+        </div>
+      )}
 
       {/* Closure banner */}
       {viewMode === "day" && closureDates.includes(toISODate(currentDate)) && (

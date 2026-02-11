@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { ExternalLink, Loader2, Palette, RotateCcw } from "lucide-react";
+import Image from "next/image";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateBrandSettings } from "@/actions/business";

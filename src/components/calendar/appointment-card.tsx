@@ -1,6 +1,6 @@
 "use client";
 
-import type { CalendarAppointment } from "@/actions/appointments";
+import type { CalendarAppointment } from "@/types";
 import { cn } from "@/lib/utils";
 
 const STATUS_STYLES: Record<string, { accent: string; bg: string; text: string; muted: string }> = {
@@ -77,6 +77,12 @@ export function AppointmentCard({ appointment, compact = false, onClick }: Appoi
               title="In attesa conferma"
             />
           )}
+          {appointment.confirmationStatus === "auto_cancelled" && (
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-red-400"
+              title="Non confermato via WhatsApp"
+            />
+          )}
         </div>
       </button>
     );
@@ -101,6 +107,12 @@ export function AppointmentCard({ appointment, compact = false, onClick }: Appoi
             <span
               className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-amber-400"
               title="In attesa conferma"
+            />
+          )}
+          {appointment.confirmationStatus === "auto_cancelled" && (
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-red-400"
+              title="Non confermato via WhatsApp"
             />
           )}
         </div>

@@ -197,13 +197,33 @@ async function handleConfirm(supabase: AdminClient, phone: string, phoneWithPlus
   }
 }
 
-// ─── Auto-tag logic ─────────────────────────────────────────────────
+// ─── Auto-tag logic (Professional/Enterprise only) ──────────────────
 
 async function autoTagClient(
   supabase: AdminClient,
   clientId: string,
   event: "confirm" | "auto_cancel",
 ) {
+  // Plan gating: check business subscription_plan
+  const { data: client } = await supabase
+    .from("clients")
+    .select("business_id")
+    .eq("id", clientId)
+    .single();
+
+  if (client) {
+    const { data: biz } = await supabase
+      .from("businesses")
+      .select("subscription_plan")
+      .eq("id", client.business_id)
+      .single();
+
+    // Skip auto-tagging for essential plan
+    if (biz?.subscription_plan === "essential") {
+      console.log(`🏷️ Auto-tag skipped: business on essential plan`);
+      return;
+    }
+  }
   const { data: clientData } = await supabase
     .from("clients")
     .select("tags")

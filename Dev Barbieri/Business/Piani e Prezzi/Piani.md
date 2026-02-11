@@ -75,10 +75,22 @@ Calendario e Prenotazioni
 Gestione Staff
 - Profili barbiere illimitati
 - Orari di lavoro personalizzati per ogni barbiere (7 giorni, pausa pranzo)
+- Associazione servizi per barbiere: ogni barbiere può essere abilitato solo ai servizi che sa eseguire
+  - Il cliente nella pagina di prenotazione vede solo i barbieri abilitati al servizio scelto
+  - Se nessun barbiere ha servizi configurati, tutti appaiono per ogni servizio (retrocompatibile)
+- Logica orari intelligente: gli slot disponibili sono calcolati come INTERSEZIONE tra orari di apertura del negozio e orari di lavoro del barbiere
+  - Esempio: negozio aperto fino alle 19:00, barbiere lavora fino alle 17:00 il sabato → slot fino alle 16:30 (ultimo slot da 30 min)
+  - Esempio: negozio aperto fino alle 21:00 il giovedì, barbiere lavora fino alle 19:00 → slot fino alle 18:30
+  - Se il barbiere è in giorno di riposo → nessuno slot, anche se il negozio è aperto
+  - Se il negozio è chiuso → nessuno slot, anche se il barbiere è disponibile
 - Attivazione/disattivazione senza perdere storico
+- Drag & drop per riordinare i barbieri nella pagina di prenotazione
 
 Gestione Servizi
 - Servizi illimitati con nome, durata, prezzo
+- Durate predefinite: 15, 30, 45, 60, 75, 90, 105 o 120 minuti (incrementi di 15 min)
+  - Garantisce compatibilità con la griglia slot del booking
+  - Selezione tramite dropdown (non input libero) per evitare errori
 - Servizi combo (es. taglio + barba)
 - Ordine visualizzazione personalizzabile
 - Attivazione/disattivazione

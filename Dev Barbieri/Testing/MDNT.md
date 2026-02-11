@@ -14,7 +14,7 @@ Oggi e' stata la prima volta che sono stati configurati e eseguiti i test E2E pe
 
 Il processo di testing e' progettato per essere eseguito con l'AI (Claude Code):
 
-1. **La checklist** (`test-checklist.md`) contiene 126 test cases organizzati in 16 sezioni che coprono tutta l'app: Auth, Onboarding, Booking, Conferma Smart, Calendario, Walk-in, Cancellazione, No-Show, Waitlist, CRM, Billing, Subscription Gating, Settings, Analytics, Edge Functions, Responsiveness.
+1. **La checklist** (`test-checklist.md`) contiene 146 test cases organizzati in 17 sezioni che coprono tutta l'app: Auth, Onboarding, Booking, Conferma Smart, Calendario, Walk-in, Cancellazione, No-Show, Waitlist, CRM, Billing, Subscription Gating, Settings, Analytics, Edge Functions, Responsiveness, Personalizza Form.
 
 2. **L'AI legge la checklist**, poi analizza tutto il codice sorgente (server actions, componenti, proxy, webhook, schema DB) e confronta il comportamento del codice con il risultato atteso di ogni test.
 
@@ -374,3 +374,229 @@ pnpm test → 95/95 pass
 ### Nota
 
 La configurazione `biome.json` NON e' stata modificata. Le regole restano a `warn`, ma ora tutti i warning sono stati risolti nel codice. Questo significa che nuovi warning introdotti in futuro verranno segnalati dalla CI.
+
+---
+
+## Test Manuale Pagina Clienti (11/02/2026 — sessione Windsurf Cascade)
+
+Test approfondito della pagina `/dashboard/clients` eseguito manualmente nel browser (localhost:3000). Tutti i 10 casi verificati con esito positivo.
+
+### Funzionalita' testate
+
+| # | Funzionalita' | Esito | Dettagli |
+|---|---------------|-------|----------|
+| 1 | Ricerca per nome | ✅ | Filtraggio real-time, "Giovanni" → 2 risultati |
+| 2 | Ricerca per telefono | ✅ | "3456" → risultati corrispondenti |
+| 3 | Reset ricerca | ✅ | Torna alla lista completa |
+| 4 | Aggiunta nuovo cliente | ✅ | "Luca Bianchi" creato, validazione campi funzionante, lista aggiornata automaticamente (7 clienti totali) |
+| 5 | Dettagli cliente espandibili | ✅ | Click espande card con statistiche: visite, no-show, ultima visita, email |
+| 6 | Sistema tag (6 tag) | ✅ | VIP, Nuovo, Affidabile, Non conferma, Problematico, Alto rischio no-show — selezione multipla con feedback visivo |
+| 7 | Note cliente | ✅ | Testo libero salvato e persistente tra navigazioni |
+| 8 | Statistiche visite | ✅ | Contatore visite e data ultima visita corretti |
+| 9 | Tasso no-show | ✅ | Calcolato e mostrato (0 per clienti test) |
+| 10 | Lista clienti | ✅ | Ordinamento alfabetico, avatar con iniziali, espandi/comprimi smooth |
+
+### Osservazioni
+
+- **UX eccellente**: interfaccia intuitiva e fluida
+- **Ricerca potente**: filtraggio real-time per nome e telefono
+- **Sistema tag completo**: 6 tag con selezione multipla e colori differenziati
+- **Auto-save**: tag e note salvati automaticamente
+- **Validazione form**: previene errori di inserimento (campi obbligatori: nome, telefono)
+- **Responsive**: animazioni smooth e feedback visivo chiaro
+
+### Conclusione
+
+La pagina Clienti e' **pienamente funzionale** e pronta per uso in produzione. Nessun bug riscontrato. Conferma i risultati della sezione 10 (CRM) della test-checklist.
+
+---
+
+## Test Manuale Pagina Servizi (11/02/2026 — sessione Windsurf Cascade)
+
+Test approfondito della pagina `/dashboard/services` eseguito manualmente nel browser (localhost:3000). Tutte le 6 funzionalita' CRUD verificate con esito positivo.
+
+### Funzionalita' testate
+
+| # | Funzionalita' | Esito | Dettagli |
+|---|---------------|-------|----------|
+| 1 | Visualizzazione lista servizi | ✅ | 3 servizi iniziali, nome/durata/prezzo visibili, contatore totale corretto |
+| 2 | Aggiunta nuovo servizio | ✅ | "Rasatura Completa" (25 min, 18€) creato, lista aggiornata automaticamente, contatore 3→4 |
+| 3 | Modifica servizio | ✅ | Prezzo cambiato da 18€ a 20€, campi pre-compilati, salvataggio immediato |
+| 4 | Toggle disattiva/attiva | ✅ | Badge "Disattivato" visibile, toggle inverso funzionante, stato visivo chiaro |
+| 5 | Eliminazione servizio | ✅ | "Rasatura Completa" eliminato, rimozione immediata, contatore 4→3 |
+| 6 | Validazione campi obbligatori | ✅ | Campo nome vuoto → messaggio "Compila questo campo", salvataggio impedito |
+
+### Osservazioni
+
+- **Performance eccellenti**: tutte le operazioni CRUD istantanee senza lag
+- **Validazione robusta**: campi obbligatori validati con messaggi nativi del browser
+- **Gestione stato**: contatore servizi aggiornato automaticamente ad ogni operazione
+- **UX fluida**: modal apertura/chiusura senza problemi, toggle attiva/disattiva reversibile
+- **Icone chiare**: ogni azione (Disattiva, Modifica, Elimina) ha icona riconoscibile
+
+### Conclusione
+
+La pagina Servizi e' **pienamente funzionale** e pronta per uso in produzione. Nessun bug riscontrato. Conferma i risultati della sezione 2 (Onboarding, test 2.3-2.4) della test-checklist.
+
+---
+
+## Test Manuale Pagina Staff (11/02/2026 — sessione Windsurf Cascade)
+
+Test approfondito della pagina `/dashboard/staff` eseguito manualmente nel browser (localhost:3000). 6 funzionalita' testate, tutte ✅, 1 bug UX trovato e fixato.
+
+### Funzionalita' testate
+
+| # | Funzionalita' | Esito | Dettagli |
+|---|---------------|-------|----------|
+| 1 | Visualizzazione lista staff | ✅ | 2 barbieri iniziali (Antonio Romano, Luca Ferrari), iniziale/nome/stato visibili, contatore corretto |
+| 2 | Aggiunta nuovo membro | ✅ | "Marco Bianchi" aggiunto, appare con iniziale "M" e stato "Attivo", contatore 2→3 |
+| 3 | Modifica membro | ✅ | Modifica inline tramite assegnazione servizi e gestione orari |
+| 4 | Assegnazione servizi | ✅ | Pannello checkbox espandibile, "Taglio Uomo" e "Barba" assegnati, messaggio "Salvato!" |
+| 5 | Toggle attiva/disattiva | ✅ | Badge "Disattivato" visibile, riattivazione immediata |
+| 6 | Eliminazione membro | ✅ | "Marco Bianchi" eliminato, contatore 3→2 |
+
+### Bug trovato e fixato
+
+#### ⚠️ Mancanza conferma eliminazione staff (BASSO → FIXATO)
+
+**Problema:** Il click sul cestino eliminava immediatamente il barbiere senza conferma. Un click accidentale poteva cancellare un membro staff senza possibilita' di annullamento.
+
+**File modificato:** `src/components/staff/staff-manager.tsx`
+**Fix:** Sostituito `confirm()` nativo del browser con un pannello di conferma inline integrato nella card del barbiere:
+- Icona `AlertTriangle` rossa con messaggio "Eliminare [nome]?"
+- Testo esplicativo: "Tutti i suoi appuntamenti resteranno ma senza barbiere assegnato."
+- Bottone "Elimina" (rosso) + bottone "Annulla"
+- Spinner durante l'operazione, stato `deletingId` per gestire quale card mostra la conferma
+
+### Osservazioni
+
+- **Design inline efficiente**: form di aggiunta compatto e intuitivo
+- **Gestione servizi granulare**: checkbox per assegnare servizi specifici a ciascun barbiere
+- **Performance ottimali**: tutte le operazioni istantanee
+- **Flessibilita'**: se nessun servizio selezionato, il barbiere puo' eseguire tutti i servizi
+
+### Conclusione
+
+La pagina Staff e' **pienamente funzionale** e pronta per uso in produzione. Bug di conferma eliminazione fixato. Conferma i risultati della sezione 2 (Onboarding, test 2.5-2.8) della test-checklist.
+
+---
+
+## Test Manuale Pagina Lista d'Attesa (11/02/2026 — sessione Windsurf Cascade)
+
+Test approfondito della pagina `/dashboard/waitlist` eseguito manualmente nel browser (localhost:3000). 5 funzionalita' testate, tutte ✅, 1 bug di validazione trovato e fixato.
+
+### Funzionalita' testate
+
+| # | Funzionalita' | Esito | Dettagli |
+|---|---------------|-------|----------|
+| 1 | Stato vuoto | ✅ | Icona orologio, "Nessuno in lista d'attesa", 4 contatori a 0 (In attesa, Notificati, Convertiti, Scaduti) |
+| 2 | Aggiunta cliente | ✅ | Modal con tab "Esistente"/"Nuovo", ricerca cliente, dropdown servizi con durata, date picker, orario opzionale |
+| 3 | Validazione campi | ✅ | Errore "Seleziona una data" se data vuota, campi obbligatori identificati |
+| 4 | Dashboard contatori | ✅ | 4 card statistiche con icone distintive (orologio, campanella, check, calendario) |
+| 5 | Ricerca | ✅ | Barra di ricerca con placeholder "Cerca nome, telefono, servizio..." |
+
+### Bug trovato e fixato
+
+#### ⚠️ Validazione date passate mancante lato server (MEDIO → FIXATO)
+
+**Problema:** L'input date HTML aveva gia' `min={today}` che impediva la selezione di date passate nel browser, ma il server action `addToWaitlist` non validava che la data fosse oggi o nel futuro. Un client modificato o una richiesta diretta poteva inserire date passate nella waitlist.
+
+**File modificati:**
+- `src/actions/waitlist.ts` — Aggiunto `.refine()` allo schema Zod `addToWaitlistSchema` per rifiutare date passate con messaggio "La data deve essere oggi o nel futuro"
+- `src/components/waitlist/waitlist-manager.tsx` — Aggiunta validazione client-side esplicita `desiredDate < today` in `handleSubmit()` come doppia protezione
+
+### Osservazioni
+
+- **Interfaccia chiara**: stato vuoto ben progettato con messaggi informativi
+- **Dashboard completa**: 4 contatori per monitorare lo stato della lista
+- **Automazione intelligente**: clienti aggiunti automaticamente su cancellazione appuntamenti
+- **Form strutturato**: selezione clienti esistenti/nuovi + servizi con durata
+- **Flessibilita'**: orario preferito opzionale
+
+### Conclusione
+
+La pagina Lista d'Attesa e' **pienamente funzionale** e pronta per uso in produzione. Bug di validazione date fixato (server + client). Conferma i risultati della sezione 9 (Waitlist) della test-checklist.
+
+---
+
+## Integrazione Waitlist — Booking + Calendario (11/02/2026 — sessione Windsurf Cascade)
+
+Due nuove feature implementate per collegare la lista d'attesa al booking pubblico e al calendario del barbiere.
+
+### Feature 1 — Auto-add waitlist dal booking wizard
+
+Quando un cliente seleziona una data senza slot disponibili nella pagina di prenotazione pubblica (`/book/[slug]`), ora appare un bottone **"Avvisami se si libera un posto"**. Cliccandolo si apre un form inline (nome, cognome, telefono) che iscrive il cliente alla lista d'attesa per quella data e servizio.
+
+**File modificati:**
+- `src/actions/waitlist.ts` — Nuova server action `addToWaitlistPublic()` (no auth, usa businessId direttamente, find-or-create client per telefono, Zod validation con date future)
+- `src/components/booking/booking-wizard.tsx` — Stato `waitlistMode`, form inline con nome/cognome/telefono, schermata di successo "Sei in lista d'attesa!" con icona blu
+
+**Flusso completo:**
+1. Cliente sceglie servizio → barbiere → data
+2. Se nessun slot disponibile → appare "Avvisami se si libera un posto"
+3. Cliente inserisce dati → "Iscrivimi"
+4. Entry creata in `waitlist` con `status = waiting`
+5. Schermata conferma: "Ti avviseremo via WhatsApp se si libera un posto"
+6. Quando un appuntamento viene cancellato → `notifyWaitlistOnCancel()` invia WhatsApp automaticamente
+
+### Feature 2 — Badge waitlist nel calendario
+
+Il calendario del barbiere ora mostra un banner blu quando ci sono clienti in lista d'attesa per la data visualizzata. Es: "2 clienti in lista d'attesa per questa data".
+
+**File modificati:**
+- `src/actions/waitlist.ts` — Nuova server action `getWaitlistCountsByDate()` (ritorna mappa `date → count` per entry `waiting` da oggi in poi)
+- `src/app/(dashboard)/dashboard/page.tsx` — Fetch `waitlistCounts` in parallelo con gli altri dati, passato a `CalendarView`
+- `src/components/calendar/calendar-view.tsx` — Nuova prop `waitlistCounts`, banner blu con icona `ClockAlert` sopra il banner chiusure
+
+### Risultato
+
+Il barbiere ora ha visibilita' immediata sulla domanda dei clienti per ogni giorno, e i clienti che non trovano posto vengono automaticamente catturati nella lista d'attesa invece di perdersi.
+
+---
+
+## Analytics Real-Time Trigger (11/02/2026 — sessione Windsurf Cascade)
+
+La pagina Analytics (/dashboard/analytics) non mostrava i dati degli appuntamenti completati. Indagine completa del flusso dati ha rivelato il problema e la fix e' stata applicata.
+
+### Problema identificato
+
+La tabella `analytics_daily` veniva popolata **solo una volta al giorno** dal cron job `analytics-daily-calc` (02:05 UTC), che calcolava **solo il giorno precedente** (`CURRENT_DATE - 1`). Conseguenze:
+
+1. Appuntamenti completati oggi non apparivano in Analytics fino a dopodomani mattina
+2. Se un appuntamento veniva completato/modificato dopo il passaggio del cron per quella data, il dato restava sbagliato
+3. Il barbiere vedeva sempre dati in ritardo di 1-2 giorni
+
+Dati trovati su Supabase:
+- `analytics_daily` aveva solo 2 righe (9 e 10 Feb), entrambe con 0 completati e 0 fatturato
+- 1 appuntamento completato il 13 Feb ("Taglio Uomo", €25.00) non era stato calcolato
+- Il cron del 11 Feb alle 02:05 aveva calcolato il 10 Feb (correttamente 0)
+
+### Soluzione implementata
+
+**Approccio: trigger real-time + cron notturno come safety net**
+
+1. **Backfill dati mancanti**: eseguito `calculate_analytics_daily()` per tutte le date con appuntamenti (11-14 Feb). Il 13 Feb ora mostra correttamente €25.00 fatturato, 1 completato, 1 no-show.
+
+2. **Trigger SQL real-time** (migrazione #22 `analytics_realtime_trigger`):
+   - Funzione `recalc_analytics_on_appointment_change()` (SECURITY DEFINER, search_path = 'public')
+   - Trigger `trg_recalc_analytics` su `appointments` (AFTER INSERT/UPDATE OF status,date,service_id/DELETE)
+   - Quando un appuntamento cambia stato, data o servizio → `calculate_analytics_daily(date)` viene chiamata istantaneamente
+   - Se la data cambia su UPDATE, ricalcola sia la vecchia che la nuova data
+   - Su DELETE, ricalcola la data dell'appuntamento eliminato
+
+3. **Cron aggiornato**: `analytics-daily-calc` ora calcola sia `CURRENT_DATE - 1` che `CURRENT_DATE` (safety net per eventuali incongruenze)
+
+### File modificati/creati
+
+- `supabase/migrations/20260211_analytics_realtime_trigger.sql` — nuova migrazione (trigger + funzione + cron update)
+- `Dev Barbieri/Sviluppo/Architettura.md` — 10 SQL functions, trigger, 22 migrazioni, flusso cambio stato aggiornato
+- `Dev Barbieri/Sviluppo/Configurazioni.md` — funzioni DB (calculate_analytics_daily, recalc_analytics_on_appointment_change), migrazione #22
+- `CLAUDE.md` — analytics trigger info nella sezione External Services
+- `Dev Barbieri/Sviluppo/Stato-progetto.md` — Sezione 12 aggiornata con trigger real-time
+- `Dev Barbieri/Sviluppo/Scheda-tecnica.md` — CORE 11, analytics_daily, Flusso analytics aggiornati
+- `Dev Barbieri/Sviluppo/Roadmap.md` — Fase C analytics entry aggiornata
+- `Dev Barbieri/Sviluppo/Stack-moderno.md` — Sezione cron aggiornata
+
+### Risultato
+
+D'ora in poi, ogni cambio di stato appuntamento (completato, cancellato, no-show) aggiorna Analytics **istantaneamente**. Il barbiere vede fatturato, appuntamenti e servizi piu' richiesti in tempo reale senza ritardi.

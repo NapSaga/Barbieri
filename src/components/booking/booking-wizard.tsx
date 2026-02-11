@@ -1,8 +1,9 @@
 "use client";
 
-import { Check, ChevronLeft, Clock, Loader2, Scissors, User } from "lucide-react";
+import { Check, ChevronLeft, Clock, ClockAlert, Loader2, Scissors, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { bookAppointment, getStaffBookedSlots } from "@/actions/appointments";
+import { addToWaitlistPublic } from "@/actions/waitlist";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -120,6 +121,13 @@ export function BookingWizard({
   const [error, setError] = useState<string | null>(null);
   const [bookedSlots, setBookedSlots] = useState<{ startTime: string; endTime: string }[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [waitlistMode, setWaitlistMode] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [waitlistName, setWaitlistName] = useState("");
+  const [waitlistLastName, setWaitlistLastName] = useState("");
+  const [waitlistPhone, setWaitlistPhone] = useState("");
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
 
   useEffect(() => {
     if (previewMode || !selectedDate || !selectedStaff) {
@@ -145,40 +153,69 @@ export function BookingWizard({
     return d;
   });
 
-  const availableSlots =
-    selectedDate && selectedStaff && selectedService
-      ? getSlots(selectedDate, selectedStaff, selectedService.duration_minutes)
-      : [];
-
-  function getSlots(date: Date, staff: StaffMember, duration: number): string[] {
+  function getSlots(
+    date: Date,
+    staff: StaffMember,
+    duration: number,
+    booked: { startTime: string; endTime: string }[],
+  ): string[] {
     const dayKey = getDayKey(date);
-    const schedule = staff.working_hours?.[dayKey];
+    const staffSchedule = staff.working_hours?.[dayKey];
+    const businessDay = business.opening_hours?.[dayKey];
 
-    if (!schedule || schedule.off) return [];
+    if (!staffSchedule || staffSchedule.off) return [];
+    if (businessDay?.closed) return [];
+
+    const effectiveStart = businessDay
+      ? staffSchedule.start > businessDay.open ? staffSchedule.start : businessDay.open
+      : staffSchedule.start;
+    const effectiveEnd = businessDay
+      ? staffSchedule.end < businessDay.close ? staffSchedule.end : businessDay.close
+      : staffSchedule.end;
+
+    if (effectiveStart >= effectiveEnd) return [];
 
     const allSlots = generateTimeSlots(
-      schedule.start,
-      schedule.end,
+      effectiveStart,
+      effectiveEnd,
       duration,
-      schedule.breakStart,
-      schedule.breakEnd,
+      staffSchedule.breakStart,
+      staffSchedule.breakEnd,
     );
 
+    // Filter out booked slots and past slots (for today)
+    const now = new Date();
+    const isToday = toISODate(date) === toISODate(now);
+    const currentTime = isToday
+      ? `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`
+      : null;
+
     return allSlots.filter((slotStart) => {
+      if (currentTime && slotStart <= currentTime) return false;
       const slotEnd = addMinutesToTime(slotStart, duration);
-      return !bookedSlots.some((appt) => slotStart < appt.endTime && slotEnd > appt.startTime);
+      return !booked.some((appt) => slotStart < appt.endTime && slotEnd > appt.startTime);
     });
   }
+
+  const availableSlots =
+    selectedDate && selectedStaff && selectedService
+      ? getSlots(selectedDate, selectedStaff, selectedService.duration_minutes, bookedSlots)
+      : [];
 
   // Filter staff by service: if any staff has associations, only show matching staff
   // If no staff_services rows exist at all, show everyone (backwards compatible)
   function getStaffForService(serviceId: string): StaffMember[] {
+    if (staffServiceLinks.length === 0) return staffMembers;
     const linksForService = staffServiceLinks.filter((l) => l.serviceId === serviceId);
-    if (linksForService.length === 0 && staffServiceLinks.length === 0) return staffMembers;
-    if (linksForService.length === 0) return staffMembers;
     const staffIds = new Set(linksForService.map((l) => l.staffId));
     return staffMembers.filter((s) => staffIds.has(s.id));
   }
+
+  // Filter services: if staff_services links exist, only show services that have at least one staff member
+  const bookableServices =
+    staffServiceLinks.length === 0
+      ? services
+      : services.filter((s) => staffServiceLinks.some((l) => l.serviceId === s.id));
 
   function handleSelectService(service: Service) {
     setSelectedService(service);
@@ -250,6 +287,23 @@ export function BookingWizard({
     }
   }
 
+  if (waitlistSuccess) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-8 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/20">
+          <ClockAlert className="h-8 w-8 text-blue-400" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">Sei in lista d&apos;attesa!</h2>
+        <p className="mt-2 text-muted-foreground">
+          {selectedService?.name} — {selectedDate && formatDate(selectedDate)}
+        </p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Ti avviseremo via WhatsApp se si libera un posto.
+        </p>
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="rounded-xl border border-border bg-card p-8 text-center">
@@ -305,10 +359,10 @@ export function BookingWizard({
       {step === "service" && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Scegli il servizio</h2>
-          {services.length === 0 ? (
+          {bookableServices.length === 0 ? (
             <p className="text-muted-foreground text-sm">Nessun servizio disponibile al momento.</p>
           ) : (
-            services.map((service) => (
+            bookableServices.map((service) => (
               <button
                 type="button"
                 key={service.id}
@@ -410,9 +464,94 @@ export function BookingWizard({
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : availableSlots.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nessun orario disponibile per questa data.
-                </p>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Nessun orario disponibile per questa data.
+                  </p>
+                  {!previewMode && !waitlistMode && (
+                    <button
+                      type="button"
+                      onClick={() => setWaitlistMode(true)}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-medium text-foreground transition-colors hover:border-input hover:bg-accent"
+                    >
+                      <ClockAlert className="h-4 w-4 text-muted-foreground" />
+                      Avvisami se si libera un posto
+                    </button>
+                  )}
+                  {waitlistMode && (
+                    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                      <h4 className="text-sm font-semibold text-foreground">Lista d&apos;attesa</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Inserisci i tuoi dati e ti avviseremo via WhatsApp se si libera un posto.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="text"
+                          value={waitlistName}
+                          onChange={(e) => setWaitlistName(e.target.value)}
+                          placeholder="Nome *"
+                        />
+                        <Input
+                          type="text"
+                          value={waitlistLastName}
+                          onChange={(e) => setWaitlistLastName(e.target.value)}
+                          placeholder="Cognome"
+                        />
+                      </div>
+                      <Input
+                        type="tel"
+                        value={waitlistPhone}
+                        onChange={(e) => setWaitlistPhone(e.target.value)}
+                        placeholder="Telefono *"
+                      />
+                      {waitlistError && (
+                        <p className="text-xs text-destructive">{waitlistError}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setWaitlistMode(false);
+                            setWaitlistError(null);
+                          }}
+                        >
+                          Annulla
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={waitlistLoading}
+                          onClick={async () => {
+                            if (!waitlistName.trim() || !waitlistPhone.trim()) {
+                              setWaitlistError("Nome e telefono sono obbligatori");
+                              return;
+                            }
+                            if (!selectedService || !selectedDate) return;
+                            setWaitlistLoading(true);
+                            setWaitlistError(null);
+                            const result = await addToWaitlistPublic({
+                              businessId: business.id,
+                              serviceId: selectedService.id,
+                              clientFirstName: waitlistName.trim(),
+                              clientLastName: waitlistLastName.trim() || undefined,
+                              clientPhone: waitlistPhone.trim(),
+                              desiredDate: toISODate(selectedDate),
+                            });
+                            setWaitlistLoading(false);
+                            if (result.error) {
+                              setWaitlistError(result.error);
+                            } else {
+                              setWaitlistSuccess(true);
+                            }
+                          }}
+                        >
+                          {waitlistLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                          Iscrivimi
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="grid grid-cols-4 gap-2">
                   {availableSlots.map((time) => (

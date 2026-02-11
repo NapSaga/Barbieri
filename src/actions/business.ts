@@ -1,9 +1,11 @@
 "use server";
 
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { updateBrandSettingsSchema } from "@/lib/brand-settings";
+import { stripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import type { MessageTemplate, MessageTemplateType } from "@/lib/templates";
 
@@ -97,6 +99,7 @@ export async function updateBusinessInfo(data: {
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard/settings");
+  revalidatePath("/book", "layout");
   return { success: true };
 }
 
@@ -124,6 +127,7 @@ export async function updateBusinessOpeningHours(
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard/settings");
+  revalidatePath("/book", "layout");
   return { success: true };
 }
 
@@ -202,6 +206,7 @@ export async function updateBrandSettings(data: {
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard/customize");
+  revalidatePath("/book", "layout");
   return { success: true };
 }
 
@@ -287,4 +292,75 @@ export async function upsertMessageTemplate(
 
   revalidatePath("/dashboard/settings");
   return { success: true };
+}
+
+// ─── Delete Account ──────────────────────────────────────────────────
+
+let _supabaseAdmin: ReturnType<typeof createAdminClient> | null = null;
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      throw new Error("SUPABASE_SERVICE_ROLE_KEY non configurata. Impossibile eliminare l'account.");
+    }
+    _supabaseAdmin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
+  }
+  return _supabaseAdmin;
+}
+
+export async function deleteAccount(confirmText: string) {
+  if (confirmText !== "ELIMINA") {
+    return { error: "Conferma non valida. Scrivi ELIMINA per procedere." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("id, stripe_customer_id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!business) redirect("/login");
+
+  // 1. Cancel all active Stripe subscriptions
+  if (business.stripe_customer_id) {
+    try {
+      const subscriptions = await stripe.subscriptions.list({
+        customer: business.stripe_customer_id,
+        status: "all",
+      });
+      for (const sub of subscriptions.data) {
+        if (sub.status !== "canceled") {
+          await stripe.subscriptions.cancel(sub.id);
+        }
+      }
+    } catch (err) {
+      console.error("❌ deleteAccount: Stripe cancellation error:", err);
+    }
+  }
+
+  // 2. Delete business row (CASCADE deletes all related data)
+  const { error: deleteError } = await supabase.from("businesses").delete().eq("id", business.id);
+
+  if (deleteError) {
+    return { error: `Errore durante l'eliminazione dei dati: ${deleteError.message}` };
+  }
+
+  // 3. Delete auth user via admin client
+  const admin = getSupabaseAdmin();
+  const { error: authError } = await admin.auth.admin.deleteUser(user.id);
+  if (authError) {
+    console.error("❌ deleteAccount: Auth deletion error:", authError);
+  }
+
+  // 4. Sign out current session
+  await supabase.auth.signOut();
+
+  redirect("/login");
 }

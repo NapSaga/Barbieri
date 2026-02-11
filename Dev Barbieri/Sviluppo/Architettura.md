@@ -1,6 +1,6 @@
 BARBEROS MVP — ARCHITETTURA E STRUTTURA CODICE
 
-Ultimo aggiornamento: 11 febbraio 2026
+Ultimo aggiornamento: 11 febbraio 2026 (notte)
 
 ---
 
@@ -32,7 +32,7 @@ barberos-mvp/
     │   │
     │   ├── (auth)/               # Route group autenticazione
     │   │   ├── login/page.tsx    # Pagina login (email+password, magic link)
-    │   │   └── register/page.tsx # Pagina registrazione (nome barberia, email, password)
+    │   │   └── register/page.tsx # Pagina registrazione (nome barberia, email, password, supporto ?ref= referral)
     │   │
     │   ├── api/
     │   │   ├── stripe/
@@ -54,6 +54,8 @@ barberos-mvp/
     │   │       ├── analytics/page.tsx# ANALYTICS — dashboard KPI, grafici, top servizi
     │   │       ├── customize/page.tsx# PERSONALIZZA — branding booking page con preview live
     │   │       ├── expired/page.tsx  # ABBONAMENTO SCADUTO — redirect qui se subscription non valida
+    │   │       ├── referral/page.tsx # REFERRAL — dashboard programma referral con KPI, codice, tabella
+    │   │       ├── roi/page.tsx      # ROI & VANTAGGI — simulatore ROI interattivo + 10 card vantaggi
     │   │       └── settings/page.tsx # IMPOSTAZIONI — 8 sezioni: info, orari, WhatsApp, template, review, soglie, chiusure, billing
     │   │
     │   └── book/
@@ -65,7 +67,9 @@ barberos-mvp/
     │   │                         # getAppointmentsForDate, getAppointmentsForWeek,
     │   │                         # getStaffForCalendar, addWalkIn, bookAppointment,
     │   │                         # updateAppointmentStatus, hasConflict (internal)
-    │   ├── billing.ts            # createCheckoutSession(planId), createPortalSession, getSubscriptionInfo
+    │   ├── billing.ts            # createCheckoutSession(planId), createPortalSession, getSubscriptionInfo,
+    │   │                         # getPlanLimits (legge piano attivo → restituisce limiti)
+    │   ├── referral.ts           # getReferralInfo, getReferrals, validateReferralCode
     │   ├── business.ts           # getCurrentBusiness, updateBusinessInfo,
     │   │                         # updateBusinessOpeningHours, updateBusinessThresholds,
     │   │                         # getMessageTemplates, upsertMessageTemplate
@@ -78,14 +82,16 @@ barberos-mvp/
     │   │                         # updateStaffWorkingHours, deleteStaffMember,
     │   │                         # reorderStaff, getStaffServices, updateStaffServices
     │   └── waitlist.ts           # getWaitlistEntries, removeWaitlistEntry, expireOldEntries,
-    │                              # addToWaitlist
+    │                             # addToWaitlist, addToWaitlistPublic (no auth, per booking page),
+    │                             # getWaitlistCountsByDate (per badge calendario)
     │
     ├── components/               # Componenti React
     │   ├── booking/
     │   │   └── booking-wizard.tsx # Wizard prenotazione multi-step (servizio → barbiere → data/ora → conferma)
+    │   │                      # + integrazione waitlist: se nessun slot, "Avvisami se si libera un posto"
     │   │
     │   ├── calendar/
-    │   │   ├── calendar-view.tsx  # Componente principale calendario (state, navigazione, view toggle)
+    │   │   ├── calendar-view.tsx  # Componente principale calendario (state, navigazione, view toggle, banner waitlist)
     │   │   ├── day-view.tsx       # Vista giornaliera: timeline oraria con colonne staff
     │   │   ├── week-view.tsx      # Vista settimanale: griglia 7 giorni
     │   │   ├── appointment-card.tsx # Card appuntamento con colori stato (5 varianti)
@@ -102,6 +108,14 @@ barberos-mvp/
     │   ├── customize/
     │   │   └── form-customizer.tsx # Personalizzazione booking page: color picker, logo, welcome text,
     │   │                          # cover image, font preset, preview live BookingWizard
+    │   │
+    │   ├── referral/
+    │   │   └── referral-dashboard.tsx # Dashboard referral: 3 KPI cards, codice copiabile, share WhatsApp,
+    │   │                              # sezione "Come funziona" con breakdown premi, tabella referral con stati
+    │   │
+    │   ├── roi/
+    │   │   └── roi-simulator.tsx     # Simulatore ROI: 5 slider interattivi, 4 result cards, box lordo/netto/ROI,
+    │   │                              # 10 card vantaggi (espandibile), CTA verso piani
     │   │
     │   ├── clients/
     │   │   └── clients-manager.tsx # CRM clienti: lista, ricerca, form creazione, scheda espandibile con tag/note
@@ -124,7 +138,7 @@ barberos-mvp/
     │       └── barberos-logo.tsx  # Logo SVG custom (LogoIcon + LogoFull)
     │
     ├── db/
-    │   ├── schema.ts             # Schema Drizzle ORM completo (10 tabelle, 6 enums, relazioni)
+    │   ├── schema.ts             # Schema Drizzle ORM completo (12 tabelle, 7 enums, relazioni)
     │   └── index.ts              # Connessione database (postgres.js + drizzle)
     │
     ├── lib/
@@ -140,6 +154,8 @@ barberos-mvp/
     │   │                         # STRIPE_PRICES server-only da env
     │   ├── stripe-plans.ts       # Definizione piani (Essential, Professional, Enterprise),
     │   │                         # prezzi, features, product IDs — importabile da client components
+    │   ├── plan-limits.ts       # Limiti per piano: PlanLimits, PLAN_LIMITS, TRIAL_LIMITS,
+    │   │                         # getPlanLimitsForPlan() — importabile da client components
     │   ├── stripe-utils.ts       # mapStatus() estratto da webhook Stripe (testabile senza side-effect)
     │   ├── whatsapp.ts           # WhatsApp dual-mode: Twilio live o mock console.log
     │   │                         # sendWhatsAppMessage(), renderTemplate(), isWhatsAppEnabled()
@@ -160,7 +176,11 @@ barberos-mvp/
     │       └── middleware.ts     # Supabase middleware client (usato da proxy.ts)
     │
     └── types/
-        └── index.ts              # TypeScript types derivati dallo schema (Select + Insert per ogni tabella)
+        └── index.ts              # TypeScript types condivisi: Select/Insert per ogni tabella,
+                                  # CalendarAppointment, ConfirmationStatus, AnalyticsDayRow,
+                                  # AnalyticsSummary, TopService, ReferralInfo, ReferralEntry,
+                                  # ClosureEntry, SubscriptionInfo, WaitlistEntry, ALLOWED_DURATIONS,
+                                  # OpeningHours, WorkingHours, enums (AppointmentStatus, etc.)
 
 ---
 
@@ -213,12 +233,28 @@ PATTERN ARCHITETTURALI
 FLUSSI DATI PRINCIPALI
 
 Prenotazione online:
-  Browser /book/[slug] → Server Component (fetch business + services + staff)
-  → BookingWizard (client) → useEffect: getStaffBookedSlots(businessId, staffId, date)
-  → Slot filtrati: generateTimeSlots() meno slot in conflitto con appuntamenti esistenti
-  → bookAppointment Server Action → hasConflict() check (reject se overlap)
-  → Supabase: find/create client + create appointment + send WhatsApp mock + create message record
-  → revalidatePath("/dashboard")
+  Browser /book/[slug] → Server Component (fetch business + services + staff + staffServiceLinks + closureDates)
+  → BookingWizard (client):
+    1. Selezione servizio → getStaffForService() filtra barbieri:
+       - Se staff_services vuota → tutti i barbieri (fallback)
+       - Se staff_services ha righe → solo barbieri associati a quel servizio
+    2. Selezione barbiere → selezione data → useEffect: getStaffBookedSlots(businessId, staffId, date)
+    3. Calcolo slot (getSlots): INTERSEZIONE orari business e staff:
+       - effectiveStart = MAX(business.open, staff.start)
+       - effectiveEnd = MIN(business.close, staff.end)
+       - Staff off o business chiuso → nessuno slot
+       - Break staff applicati dentro l'intersezione
+       - Slot occupati (booked/confirmed/completed) filtrati via overlap detection
+       - Slot passati filtrati: per la data odierna, slot con orario ≤ ora attuale nascosti
+       - bookedSlots passato esplicitamente per compatibilità React Compiler
+    4. Durate servizi: solo 15-120 min in incrementi di 15 (ALLOWED_DURATIONS, validazione Zod)
+  → Se slot disponibili: bookAppointment Server Action → reject se data+ora nel passato → hasConflict() check (reject se overlap)
+    → Supabase: find/create client + create appointment + send WhatsApp mock + create message record
+    → revalidatePath("/dashboard")
+  → Se nessun slot: bottone "Avvisami se si libera un posto" → form inline (nome, telefono)
+    → addToWaitlistPublic Server Action (no auth, usa businessId)
+    → Supabase: find/create client per telefono + create waitlist entry (status: waiting)
+    → Schermata conferma "Sei in lista d'attesa!"
 
 Walk-in:
   Dashboard → WalkInDialog (client, riceve appointments dal calendario)
@@ -230,11 +266,13 @@ Walk-in:
 Cambio stato appuntamento:
   Dashboard → AppointmentSheet (client) → updateAppointmentStatus Server Action
   → Supabase: update appointment + increment no_show_count o total_visits se necessario
+  → Trigger SQL recalc_analytics_on_appointment_change() ricalcola analytics_daily per quella data
   → revalidatePath("/dashboard")
 
 Navigazione calendario:
   CalendarView (client) → useTransition + getAppointmentsForDate/getAppointmentsForWeek Server Action
   → Aggiornamento state locale con nuovi appuntamenti
+  → Banner blu waitlist: se waitlistCounts[data] > 0, mostra "N clienti in lista d'attesa per questa data"
 
 Webhook WhatsApp (ANNULLA):
   Twilio POST /api/whatsapp/webhook → parse From + Body
@@ -249,8 +287,9 @@ Webhook WhatsApp (SI):
 
 Salvataggio impostazioni:
   SettingsManager (client) → updateBusinessInfo / updateBusinessOpeningHours /
-  updateBusinessThresholds / upsertMessageTemplate Server Action
-  → Supabase update/upsert → revalidatePath("/dashboard/settings")
+  updateBusinessThresholds / upsertMessageTemplate / updateBrandSettings Server Action
+  → Supabase update/upsert → revalidatePath("/dashboard/settings") + revalidatePath("/book", "layout")
+  Nota: orari apertura, info business e brand settings invalidano anche la pagina booking pubblica
 
 Attivazione abbonamento:
   SettingsManager > BillingSection → utente sceglie piano (Essential/Professional/Enterprise)
@@ -266,8 +305,9 @@ Gestione abbonamento:
 Webhook Stripe:
   Stripe POST /api/stripe/webhook → verifica firma (STRIPE_WEBHOOK_SECRET)
   → Supabase admin client (service role, bypassa RLS)
-  → subscription.created/updated/deleted → mapStatus() → update businesses.subscription_status
-  → invoice.paid → status active / invoice.payment_failed → status past_due
+  → subscription.created/updated/deleted → detectPlanFromSubscription() + mapStatus()
+    → update businesses.subscription_status + subscription_plan
+  → invoice.paid → status active + processReferralReward() (€50 credito al referrer) / invoice.payment_failed → status past_due
 
 Flusso conferma intelligente (per ogni appuntamento):
   1. pg_cron → confirmation-request Edge Function
@@ -315,10 +355,10 @@ SUPABASE EDGE FUNCTIONS (Deno, deployate su Supabase Cloud)
 6 Edge Functions attive per automazioni:
 - confirmation-request (v1, ACTIVE) — Richiesta conferma (timing smart)
 - confirmation-reminder (v1, ACTIVE) — Secondo avviso non confermati
-- auto-cancel (v1, ACTIVE) — Auto-cancella + notifica alla deadline
+- auto-cancel (v1, ACTIVE) — Auto-cancella + notifica alla deadline (Professional/Enterprise only)
 - pre-appointment (v1, ACTIVE) — "Ci vediamo!" ~2h prima (solo confermati)
-- review-request (v1, ACTIVE) — Richiesta recensione Google
-- reactivation (v1, ACTIVE) — Riattivazione clienti dormienti
+- review-request (v1, ACTIVE) — Richiesta recensione Google (Professional/Enterprise only)
+- reactivation (v1, ACTIVE) — Riattivazione clienti dormienti (Professional/Enterprise only)
 
 Pattern comune per ogni Edge Function:
 1. Crea Supabase admin client (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY, auto-disponibili)
@@ -333,16 +373,18 @@ PostgreSQL Extensions abilitate:
 - pg_cron v1.6.4 — Job scheduler (cron.schedule, cron.job)
 - pg_net v0.19.5 — Async HTTP da SQL (net.http_post per chiamare Edge Functions)
 
-7 SQL Helper Functions:
+10 SQL Helper Functions:
 - find_appointments_needing_confirm_request() — timing smart, SECURITY DEFINER
 - find_appointments_needing_confirm_reminder() — secondo avviso, SECURITY DEFINER
-- auto_cancel_unconfirmed() — UPDATE + RETURNING, SECURITY DEFINER
+- auto_cancel_unconfirmed() — UPDATE + RETURNING, plan gating (skip essential), SECURITY DEFINER
 - find_confirmed_needing_pre_reminder() — confermati ~2h prima, SECURITY DEFINER
-- find_review_appointments(hours_min, hours_max) — SECURITY DEFINER
-- find_dormant_clients(min_days_since_last_msg) — SECURITY DEFINER
+- find_review_appointments(hours_min, hours_max) — plan gating (skip essential), SECURITY DEFINER
+- find_dormant_clients(min_days_since_last_msg) — plan gating (skip essential), SECURITY DEFINER
 - auto_complete_appointments() — SQL diretto, ritardo per-business, SECURITY DEFINER
+- on_auth_user_created() — trigger per nuovo utente, crea referral entry, SECURITY DEFINER
+- recalc_analytics_on_appointment_change() — trigger su appointments, ricalcola analytics_daily in tempo reale, SECURITY DEFINER
 
-7 pg_cron Schedules:
+8 pg_cron Schedules:
 - confirmation-request: */30 * * * * → pg_net → Edge Function
 - confirmation-reminder: */30 * * * * → pg_net → Edge Function
 - auto-cancel: */30 * * * * → pg_net → Edge Function
@@ -363,26 +405,26 @@ Timing smart conferma (in base a orario appuntamento):
 CONTEGGIO FILE
 
 Codebase Next.js (locale):
-- 9 Server Actions (analytics, appointments, billing, business, clients, closures, services, staff, waitlist)
-- 19 route/pagine (incluso layout, callback, booking, customize, expired, 2 webhook)
+- 10 Server Actions (analytics, appointments, billing, business, clients, closures, referral, services, staff, waitlist)
+- 21 route/pagine (incluso layout, callback, booking, customize, expired, referral, roi, 2 webhook)
 - 17 componenti UI shadcn/ui (avatar, badge, button, card, dialog, dropdown-menu, input, label, popover, select, separator, sheet, skeleton, sonner, table, tabs, tooltip)
-- 12 componenti feature (6 calendar, 1 analytics, 1 billing, 1 booking, 1 clients, 1 customize, 1 services, 1 settings, 1 staff, 1 waitlist)
+- 14 componenti feature (6 calendar, 1 analytics, 1 billing, 1 booking, 1 clients, 1 customize, 1 referral, 1 roi, 1 services, 1 settings, 1 staff, 1 waitlist)
 - 2 componenti shared (sidebar, barberos-logo)
-- 11 file lib/utility (utils, slots, brand-settings, rate-limit, stripe, stripe-plans, stripe-utils, whatsapp, templates, time-utils, 3 supabase clients)
+- 12 file lib/utility (utils, slots, brand-settings, plan-limits, rate-limit, stripe, stripe-plans, stripe-utils, whatsapp, templates, time-utils, 3 supabase clients)
 - 2 file database (schema, index)
 - 1 file types
 - 1 file proxy (proxy.ts — auth + subscription gating)
-- 1 config shadcn (components.json)
 - 1 script setup (scripts/setup-stripe.ts)
 - 1 file service worker (src/sw.ts — Serwist PWA)
-- Totale: ~78 file TypeScript/TSX
+- Totale: ~82 file TypeScript/TSX
 
 Supabase Cloud:
 - 6 Edge Functions attive (confirmation-request/reminder, auto-cancel, pre-appointment, review-request, reactivation)
-- 8 SQL helper/functions (6 conferma + calculate_analytics_daily + auto_complete_appointments)
-- 8 pg_cron schedules (6 conferma + analytics-daily-calc + auto-complete-appointments)
-- 19 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments)
-- 11 tabelle (10 originali + business_closures)
+- 10 SQL helper/functions (6 conferma + calculate_analytics_daily + recalc_analytics_on_appointment_change + auto_complete_appointments + on_auth_user_created con referral)
+- 8 pg_cron schedules (6 conferma + analytics-daily-calc alle 02:05 UTC (03:05 Roma), calcola giorno precedente + oggi (safety net))
+- 1 trigger SQL: trg_recalc_analytics su appointments (AFTER INSERT/UPDATE/DELETE → ricalcola analytics_daily)
+- 25 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans)
+- 12 tabelle (10 originali + business_closures + referrals)
 
 PWA:
 - public/manifest.json (name "BarberOS", start_url "/dashboard", display "standalone", theme_color "#09090b", lang "it")

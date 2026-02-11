@@ -65,6 +65,13 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
   "incomplete",
 ]);
 
+export const referralStatusEnum = pgEnum("referral_status", [
+  "pending",
+  "converted",
+  "rewarded",
+  "expired",
+]);
+
 // ─── Tables ──────────────────────────────────────────────────────────
 
 export const businesses = pgTable("businesses", {
@@ -87,9 +94,14 @@ export const businesses = pgTable("businesses", {
   timezone: text("timezone").default("Europe/Rome").notNull(),
   stripeCustomerId: text("stripe_customer_id"),
   subscriptionStatus: subscriptionStatusEnum("subscription_status").default("trialing"),
+  subscriptionPlan: text("subscription_plan"),
   dormantThresholdDays: integer("dormant_threshold_days").default(28),
   noShowThreshold: integer("no_show_threshold").default(2),
   autoCompleteDelayMinutes: integer("auto_complete_delay_minutes").default(20),
+  setupFeePaid: boolean("setup_fee_paid").default(false).notNull(),
+  referralCode: text("referral_code").unique(),
+  // biome-ignore lint/suspicious/noExplicitAny: self-referencing FK requires any for circular reference
+  referredBy: uuid("referred_by").references((): any => businesses.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -298,6 +310,30 @@ export const businessClosures = pgTable(
   ],
 );
 
+export const referrals = pgTable(
+  "referrals",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    referrerBusinessId: uuid("referrer_business_id")
+      .references(() => businesses.id, { onDelete: "cascade" })
+      .notNull(),
+    referredBusinessId: uuid("referred_business_id")
+      .references(() => businesses.id, { onDelete: "cascade" })
+      .notNull(),
+    status: referralStatusEnum("status").default("pending").notNull(),
+    rewardAmountCents: integer("reward_amount_cents").default(5000).notNull(),
+    stripeCreditId: text("stripe_credit_id"),
+    convertedAt: timestamp("converted_at", { withTimezone: true }),
+    rewardedAt: timestamp("rewarded_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("referrals_unique_pair").on(table.referrerBusinessId, table.referredBusinessId),
+    index("referrals_referrer_idx").on(table.referrerBusinessId),
+    index("referrals_referred_idx").on(table.referredBusinessId),
+  ],
+);
+
 // ─── Relations ───────────────────────────────────────────────────────
 
 export const businessesRelations = relations(businesses, ({ many }) => ({
@@ -310,6 +346,8 @@ export const businessesRelations = relations(businesses, ({ many }) => ({
   analyticsDaily: many(analyticsDaily),
   waitlist: many(waitlist),
   closures: many(businessClosures),
+  referralsMade: many(referrals, { relationName: "referrer" }),
+  referralsReceived: many(referrals, { relationName: "referred" }),
 }));
 
 export const staffRelations = relations(staff, ({ one, many }) => ({
@@ -419,5 +457,18 @@ export const businessClosuresRelations = relations(businessClosures, ({ one }) =
   business: one(businesses, {
     fields: [businessClosures.businessId],
     references: [businesses.id],
+  }),
+}));
+
+export const referralsRelations = relations(referrals, ({ one }) => ({
+  referrer: one(businesses, {
+    fields: [referrals.referrerBusinessId],
+    references: [businesses.id],
+    relationName: "referrer",
+  }),
+  referred: one(businesses, {
+    fields: [referrals.referredBusinessId],
+    references: [businesses.id],
+    relationName: "referred",
   }),
 }));

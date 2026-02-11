@@ -90,7 +90,7 @@ Guadagno netto: €700-1.800/mese
 
 SLIDE 7: COSA INCLUDE
 
-Booking e agenda: pagina booking personalizzata con il tuo brand, calendario multi-poltrona drag and drop, gestione walk-in con lista d'attesa intelligente, prenotazione combinata taglio + barba + trattamento, gestione turni staff.
+Booking e agenda: pagina booking personalizzata con il tuo brand, calendario multi-poltrona drag and drop, gestione walk-in con lista d'attesa intelligente, prenotazione combinata taglio + barba + trattamento, gestione turni staff con orari personalizzati per barbiere e associazione servizi (ogni barbiere vede solo i servizi che sa fare). Logica orari intelligente: gli slot disponibili sono l'intersezione tra orari di apertura del negozio e disponibilità del singolo barbiere — il sistema calcola automaticamente quando un barbiere è realmente prenotabile.
 
 Comunicazione WhatsApp nativa: conferma prenotazione istantanea, reminder 24h e 2h prima, cancellazione con riempimento slot automatico da lista d'attesa, riattivazione clienti dormienti, campagne broadcast promozioni ed eventi, richiesta recensione Google post-appuntamento.
 
@@ -99,6 +99,8 @@ CRM clienti: scheda completa con storico tagli, preferenze, note e foto. Segment
 Analytics: dashboard fatturato giornaliero, settimanale e mensile. Performance per poltrona e per barbiere. No-show rate e trend. Servizi più redditizi. Orari di punta e slot sotto-utilizzati.
 
 AI integrata: suggerimenti automatici tipo "3 slot vuoti domani, invio promo ai clienti dormienti?". Previsione no-show basata su storico cliente. Suggerimenti upselling. Ottimizzazione pricing per fascia oraria.
+
+Programma Referral: invita un collega barbiere e ricevi €50 di credito sulla prossima fattura. L'invitato riceve 20% di sconto sul primo mese. Nessun limite: più inviti, più risparmi. Dashboard dedicata con codice personale, tracking inviti e crediti guadagnati.
 
 Compliance italiana (fase 2): fatturazione elettronica SDI, scontrino telematico, GDPR nativo.
 
@@ -158,6 +160,8 @@ Setup in 1 giorno, configuriamo tutto noi.
 Risultati dal primo mese: meno no-show, più tempo, più fatturato.
 
 Offerta lancio per i primi 10 barbieri: setup gratuito con risparmio di €1.000, 7 giorni di prova senza impegno, feedback prioritario sulle nuove feature.
+
+Programma Referral: invita un collega e guadagna €50 di credito. 5 referral = quasi 1 mese gratis su Essential.
 
 WhatsApp: [numero]
 Email: giovannidifonzobusiness@gmail.com

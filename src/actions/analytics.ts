@@ -11,37 +11,6 @@ const dateStringSchema = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato data non valido (atteso YYYY-MM-DD)");
 const periodSchema = z.enum(["7d", "30d", "90d"]);
 
-// ─── Types ───────────────────────────────────────────────────────────
-
-export interface AnalyticsDayRow {
-  date: string;
-  total_revenue_cents: number;
-  appointments_completed: number;
-  appointments_cancelled: number;
-  appointments_no_show: number;
-  new_clients: number;
-  returning_clients: number;
-}
-
-export interface AnalyticsSummary {
-  totalRevenue: number;
-  totalAppointments: number;
-  noShowRate: number;
-  newClients: number;
-  returningClients: number;
-  // Comparison with previous period
-  revenueDelta: number | null;
-  appointmentsDelta: number | null;
-  noShowDelta: number | null;
-  newClientsDelta: number | null;
-}
-
-export interface TopService {
-  name: string;
-  count: number;
-  revenue_cents: number;
-}
-
 // ─── Helper ──────────────────────────────────────────────────────────
 
 async function getBusinessId() {
@@ -71,7 +40,7 @@ function subtractDays(dateStr: string, days: number): string {
 export async function getAnalyticsDaily(
   startDate: string,
   endDate: string,
-): Promise<AnalyticsDayRow[]> {
+) {
   const parsed = z
     .object({ startDate: dateStringSchema, endDate: dateStringSchema })
     .safeParse({ startDate, endDate });
@@ -90,12 +59,20 @@ export async function getAnalyticsDaily(
     .lte("date", endDate)
     .order("date", { ascending: true });
 
-  return (data as AnalyticsDayRow[]) || [];
+  return (data as Array<{
+    date: string;
+    total_revenue_cents: number;
+    appointments_completed: number;
+    appointments_cancelled: number;
+    appointments_no_show: number;
+    new_clients: number;
+    returning_clients: number;
+  }>) || [];
 }
 
 // ─── Get Summary with Delta ──────────────────────────────────────────
 
-export async function getAnalyticsSummary(period: "7d" | "30d" | "90d"): Promise<AnalyticsSummary> {
+export async function getAnalyticsSummary(period: "7d" | "30d" | "90d") {
   const parsed = periodSchema.safeParse(period);
   if (!parsed.success)
     return {
@@ -120,7 +97,7 @@ export async function getAnalyticsSummary(period: "7d" | "30d" | "90d"): Promise
     getAnalyticsDaily(prevStart, subtractDays(startDate, 1)),
   ]);
 
-  function sum(rows: AnalyticsDayRow[], key: keyof AnalyticsDayRow): number {
+  function sum(rows: Array<Record<string, number | string>>, key: string): number {
     return rows.reduce((acc, r) => acc + (r[key] as number), 0);
   }
 
@@ -162,7 +139,7 @@ export async function getAnalyticsSummary(period: "7d" | "30d" | "90d"): Promise
 
 // ─── Top Services ────────────────────────────────────────────────────
 
-export async function getTopServices(period: "7d" | "30d" | "90d"): Promise<TopService[]> {
+export async function getTopServices(period: "7d" | "30d" | "90d") {
   const parsed = periodSchema.safeParse(period);
   if (!parsed.success) return [];
 

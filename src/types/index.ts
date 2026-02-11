@@ -6,6 +6,7 @@ import type {
   clients,
   messages,
   messageTemplates,
+  referrals,
   services,
   staff,
   waitlist,
@@ -21,6 +22,7 @@ export type Waitlist = InferSelectModel<typeof waitlist>;
 export type Message = InferSelectModel<typeof messages>;
 export type MessageTemplate = InferSelectModel<typeof messageTemplates>;
 export type AnalyticsDaily = InferSelectModel<typeof analyticsDaily>;
+export type Referral = InferSelectModel<typeof referrals>;
 
 // Insert types (write to DB)
 export type NewBusiness = InferInsertModel<typeof businesses>;
@@ -31,6 +33,7 @@ export type NewAppointment = InferInsertModel<typeof appointments>;
 export type NewWaitlist = InferInsertModel<typeof waitlist>;
 export type NewMessage = InferInsertModel<typeof messages>;
 export type NewMessageTemplate = InferInsertModel<typeof messageTemplates>;
+export type NewReferral = InferInsertModel<typeof referrals>;
 
 // Appointment status and source types
 export type AppointmentStatus = "booked" | "confirmed" | "completed" | "cancelled" | "no_show";
@@ -45,6 +48,107 @@ export type MessageType =
   | "reactivation"
   | "waitlist_notify";
 export type MessageStatus = "queued" | "sent" | "delivered" | "read" | "failed";
+export type ReferralStatus = "pending" | "converted" | "rewarded" | "expired";
+
+// Waitlist entry (joined shape used by UI)
+export interface WaitlistEntry {
+  id: string;
+  client: { id: string; first_name: string; last_name: string | null; phone: string } | null;
+  service: { id: string; name: string } | null;
+  desired_date: string;
+  desired_start_time: string;
+  desired_end_time: string;
+  status: string;
+  notified_at: string | null;
+  created_at: string;
+}
+
+// Calendar appointment (joined shape used by UI)
+export type ConfirmationStatus = "none" | "pending" | "confirmed" | "auto_cancelled";
+
+export interface CalendarAppointment {
+  id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  source: string;
+  confirmationStatus: ConfirmationStatus;
+  confirmRequestSentAt: string | null;
+  client: { id: string; first_name: string; last_name: string | null; phone: string } | null;
+  staff: { id: string; name: string } | null;
+  service: { id: string; name: string; duration_minutes: number; price_cents: number } | null;
+}
+
+// Analytics types (joined shapes used by UI)
+export interface AnalyticsDayRow {
+  date: string;
+  total_revenue_cents: number;
+  appointments_completed: number;
+  appointments_cancelled: number;
+  appointments_no_show: number;
+  new_clients: number;
+  returning_clients: number;
+}
+
+export interface AnalyticsSummary {
+  totalRevenue: number;
+  totalAppointments: number;
+  noShowRate: number;
+  newClients: number;
+  returningClients: number;
+  revenueDelta: number | null;
+  appointmentsDelta: number | null;
+  noShowDelta: number | null;
+  newClientsDelta: number | null;
+}
+
+export interface TopService {
+  name: string;
+  count: number;
+  revenue_cents: number;
+}
+
+// Referral types (joined shapes used by UI)
+export interface ReferralInfo {
+  referralCode: string;
+  referralLink: string;
+  totalReferrals: number;
+  convertedReferrals: number;
+  totalCreditsEarned: number;
+  pendingCredits: number;
+}
+
+export interface ReferralEntry {
+  id: string;
+  referredBusinessName: string;
+  status: string;
+  rewardAmountCents: number;
+  createdAt: string;
+  convertedAt: string | null;
+  rewardedAt: string | null;
+}
+
+// Closure entry (joined shape used by UI)
+export interface ClosureEntry {
+  id: string;
+  date: string;
+  reason: string | null;
+  created_at: string;
+}
+
+// Subscription info
+export interface SubscriptionInfo {
+  status: string;
+  planId: string | null;
+  planName: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  trialEnd: string | null;
+}
+
+// Services
+export const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120] as const;
 
 // Opening hours shape
 export type OpeningHours = Record<string, { open: string; close: string; closed: boolean }>;

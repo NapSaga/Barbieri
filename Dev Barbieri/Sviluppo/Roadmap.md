@@ -9,7 +9,7 @@ PANORAMICA FASI
 Fase A — Infrastruttura         ✅ COMPLETATA
 Fase B — Funzionalità core      ✅ COMPLETATA
 Fase C — Automazioni e business  ✅ COMPLETATA
-Fase D — Polish e deploy         🔧 IN CORSO (17/19 completati)
+Fase D — Polish e deploy         🔧 IN CORSO (18/19 completati)
 
 ---
 
@@ -102,9 +102,11 @@ FASE C — AUTOMAZIONI E BUSINESS ✅
     - Anti-spam: max 2 msg conferma + 1 pre-appuntamento per appuntamento
     - Slot liberation: auto-cancel → notifica waitlist automatica
 
-[x] Calcolo analytics_daily notturno (cron SQL)
+[x] Calcolo analytics_daily (cron SQL + trigger real-time)
     - Funzione SQL calculate_analytics_daily con UPSERT
-    - pg_cron: analytics-daily-calc alle 02:05 UTC (03:05 Roma)
+    - Trigger SQL trg_recalc_analytics su appointments (AFTER INSERT/UPDATE/DELETE)
+      → ricalcola analytics_daily in tempo reale ad ogni cambio stato/data/servizio
+    - pg_cron: analytics-daily-calc alle 02:05 UTC (03:05 Roma), calcola ieri + oggi (safety net)
 
 [x] Badge conferma nel calendario
     - CalendarAppointment arricchito con confirmationStatus
@@ -149,7 +151,7 @@ FASE C — AUTOMAZIONI E BUSINESS ✅
     - Integrazione Booking Wizard: date chiuse disabilitate
     - Integrazione Calendario: banner arancione su giorni chiusi
 
-FASE D — POLISH E DEPLOY 🔧
+FASE D — POLISH E DEPLOY 🔧 (18/19)
 
 [x] Personalizza Form (booking page branding)
     - Nuova pagina /dashboard/customize con preview live del BookingWizard
@@ -250,6 +252,18 @@ FASE D — POLISH E DEPLOY 🔧
     - CSP img-src: aggiunto https: per domini esterni
     - Prefetch: sidebar usa next/link (auto-prefetch di default)
     - Dettagli: Dev Barbieri/Performance/Ottimizzazioni.md
+
+[x] Sistema Referral
+    - Modello: referrer guadagna €50 credito Stripe, invitato riceve 20% sconto primo mese
+    - Database: tabella referrals + colonne referral_code/referred_by su businesses
+    - 2 migrazioni Supabase (referral_system + referral_trigger_update)
+    - Server actions: src/actions/referral.ts (getReferralInfo, getReferrals, validateReferralCode)
+    - Pagina /dashboard/referral: 3 KPI cards, codice copiabile, share WhatsApp, tabella referral con stati
+    - Sidebar: nuova sezione "Crescita" con voce "Referral" (icona Gift)
+    - Integrazione /register?ref=CODICE: badge invitato, passa codice nei metadata signUp
+    - Integrazione Stripe webhook: processReferralReward() su invoice.paid (€50 credito al referrer)
+    - Trigger SQL aggiornato: genera referral_code, salva referred_by, crea record referrals
+    - Piano completo: Dev Barbieri/Piano/Referral-System.md
 
 [ ] Monitoring
     - Sentry per error tracking

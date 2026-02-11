@@ -1,6 +1,6 @@
 "use client";
 
-import type { CalendarAppointment } from "@/actions/appointments";
+import type { CalendarAppointment } from "@/types";
 import { minutesToHeight, minutesToTop, timeToMinutes } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
 import { AppointmentCard } from "./appointment-card";

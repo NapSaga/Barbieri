@@ -1,8 +1,10 @@
 "use client";
 
+import { Gift } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { validateReferralCode } from "@/actions/referral";
 import { LogoIcon } from "@/components/shared/barberos-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +13,37 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [referralInfo, setReferralInfo] = useState<{
+    code: string;
+    businessName: string;
+  } | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  useEffect(() => {
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      validateReferralCode(refCode).then((result) => {
+        if (result.valid && result.businessName) {
+          setReferralInfo({ code: refCode, businessName: result.businessName });
+        }
+      });
+    }
+  }, [searchParams]);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
@@ -30,6 +56,7 @@ export default function RegisterPage() {
       options: {
         data: {
           business_name: businessName,
+          ...(referralInfo ? { referral_code: referralInfo.code } : {}),
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -55,6 +82,16 @@ export default function RegisterPage() {
             <p className="mt-1 text-sm text-muted-foreground">Crea il tuo account barberia</p>
           </div>
         </div>
+
+        {referralInfo && (
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+            <Gift className="h-4 w-4 text-emerald-600" />
+            <p className="text-sm text-emerald-700 dark:text-emerald-400">
+              Invitato da <span className="font-semibold">{referralInfo.businessName}</span> — 20%
+              di sconto sul primo mese!
+            </p>
+          </div>
+        )}
 
         <Card>
           <CardHeader className="pb-4">

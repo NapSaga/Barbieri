@@ -15,6 +15,7 @@ import {
 import { useState, useTransition } from "react";
 import { createService, deleteService, toggleService, updateService } from "@/actions/services";
 import { cn } from "@/lib/utils";
+import { ALLOWED_DURATIONS } from "@/types";
 
 interface Service {
   id: string;
@@ -319,17 +320,22 @@ function ServiceForm({
           <label htmlFor="service-duration" className="block text-sm font-medium text-foreground">
             Durata (min)
           </label>
-          <input
+          <select
             id="service-duration"
             name="duration_minutes"
-            type="number"
             required
-            min={5}
-            step={5}
-            defaultValue={defaultValues?.duration_minutes}
-            placeholder="30"
+            defaultValue={defaultValues?.duration_minutes ?? ""}
             className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
-          />
+          >
+            <option value="" disabled>
+              Seleziona
+            </option>
+            {ALLOWED_DURATIONS.map((d) => (
+              <option key={d} value={d}>
+                {d} min{d >= 60 ? ` (${d / 60}h${d % 60 ? ` ${d % 60}m` : ""})` : ""}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label htmlFor="service-price" className="block text-sm font-medium text-foreground">

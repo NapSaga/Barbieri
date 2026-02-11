@@ -27,3 +27,6 @@ export const STRIPE_PRICES: Record<string, string> = {
   essential: (process.env.STRIPE_PRICE_ESSENTIAL || "").trim(),
   professional: (process.env.STRIPE_PRICE_PROFESSIONAL || "").trim(),
 };
+
+// One-time setup fee price (shared across all plans)
+export const STRIPE_PRICE_SETUP = (process.env.STRIPE_PRICE_SETUP || "").trim();

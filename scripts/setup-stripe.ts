@@ -96,15 +96,76 @@ async function ensureRecurringPrice(config: (typeof PLAN_CONFIGS)[0]): Promise<s
   return price.id;
 }
 
+// ─── Setup Fee (one-time) ─────────────────────────────────────────
+
+const SETUP_FEE_CONFIG = {
+  envKey: "STRIPE_PRICE_SETUP",
+  productName: "Setup & Onboarding BarberOS",
+  productDescription:
+    "Configurazione completa: analisi barberia, setup servizi/staff/orari, import clienti, training personalizzato, 30 giorni supporto premium",
+  amountCents: 50000, // €500
+};
+
+async function ensureSetupProduct(): Promise<string> {
+  // Search for existing setup product by name
+  const products = await stripe.products.list({ limit: 100, active: true });
+  let product = products.data.find((p) => p.name === SETUP_FEE_CONFIG.productName);
+
+  if (!product) {
+    product = await stripe.products.create({
+      name: SETUP_FEE_CONFIG.productName,
+      description: SETUP_FEE_CONFIG.productDescription,
+      metadata: { type: "setup_fee" },
+    });
+    console.log(`✅ Prodotto setup creato: ${product.id}`);
+  } else {
+    console.log(`✅ Prodotto setup trovato: ${product.id} (${product.name})`);
+  }
+
+  // Check if a one-time price already exists
+  const existingPrices = await stripe.prices.list({
+    product: product.id,
+    active: true,
+    type: "one_time",
+    limit: 1,
+  });
+
+  if (existingPrices.data.length > 0) {
+    const price = existingPrices.data[0];
+    console.log(`   Prezzo one-time esistente: ${price.id} (€${price.unit_amount! / 100})`);
+    return price.id;
+  }
+
+  // Create one-time price
+  const price = await stripe.prices.create({
+    product: product.id,
+    unit_amount: SETUP_FEE_CONFIG.amountCents,
+    currency: "eur",
+    metadata: { type: "setup_fee" },
+  });
+  console.log(
+    `   Prezzo one-time creato: ${price.id} (€${SETUP_FEE_CONFIG.amountCents / 100})`,
+  );
+  return price.id;
+}
+
+// ─── Main ─────────────────────────────────────────────────────────
+
 async function main() {
   console.log("🔧 Setup Stripe per BarberOS...\n");
 
   const envUpdates: Record<string, string> = {};
 
+  // Recurring plan prices
   for (const config of PLAN_CONFIGS) {
     const priceId = await ensureRecurringPrice(config);
     envUpdates[config.envKey] = priceId;
   }
+
+  // One-time setup fee
+  console.log("");
+  const setupPriceId = await ensureSetupProduct();
+  envUpdates[SETUP_FEE_CONFIG.envKey] = setupPriceId;
 
   // Update .env.local
   try {

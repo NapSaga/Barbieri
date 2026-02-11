@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAppointmentsForDate, getStaffForCalendar } from "@/actions/appointments";
 import { getClosureDates } from "@/actions/closures";
+import { getWaitlistCountsByDate } from "@/actions/waitlist";
 import { CalendarView } from "@/components/calendar/calendar-view";
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,17 +37,19 @@ export default async function DashboardPage() {
 
   const today = toISODate(new Date());
 
-  const [appointments, staffMembers, servicesResult, closureDates] = await Promise.all([
-    getAppointmentsForDate(today),
-    getStaffForCalendar(),
-    supabase
-      .from("services")
-      .select("id, name, duration_minutes, price_cents")
-      .eq("business_id", business.id)
-      .eq("active", true)
-      .order("display_order", { ascending: true }),
-    getClosureDates(business.id),
-  ]);
+  const [appointments, staffMembers, servicesResult, closureDates, waitlistCounts] =
+    await Promise.all([
+      getAppointmentsForDate(today),
+      getStaffForCalendar(),
+      supabase
+        .from("services")
+        .select("id, name, duration_minutes, price_cents")
+        .eq("business_id", business.id)
+        .eq("active", true)
+        .order("display_order", { ascending: true }),
+      getClosureDates(business.id),
+      getWaitlistCountsByDate(),
+    ]);
 
   const services = servicesResult.data || [];
 
@@ -60,6 +63,7 @@ export default async function DashboardPage() {
       staffMembers={typedStaff}
       services={services}
       closureDates={closureDates}
+      waitlistCounts={waitlistCounts}
     />
   );
 }

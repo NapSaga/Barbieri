@@ -5,13 +5,23 @@ import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
 
+// ─── Allowed Durations (15-min increments) ───────────────────────────
+
+const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120] as const;
+
 // ─── Zod Schemas ─────────────────────────────────────────────────────
 
 const uuidSchema = z.string().uuid("ID non valido");
 
 const serviceFormSchema = z.object({
   name: z.string().min(1, "Nome servizio obbligatorio"),
-  duration_minutes: z.string().regex(/^\d+$/, "Durata non valida"),
+  duration_minutes: z
+    .string()
+    .regex(/^\d+$/, "Durata non valida")
+    .refine(
+      (v) => (ALLOWED_DURATIONS as readonly number[]).includes(Number(v)),
+      "Durata deve essere 15, 30, 45, 60, 75, 90, 105 o 120 minuti",
+    ),
   price: z.string().regex(/^\d+([.,]\d{1,2})?$/, "Prezzo non valido"),
   is_combo: z.enum(["true", "false"]).optional(),
   combo_service_ids: z.string().optional(),
@@ -93,6 +103,7 @@ export async function createService(formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard/services");
+  revalidatePath("/book", "layout");
   return { success: true };
 }
 
@@ -135,6 +146,7 @@ export async function updateService(serviceId: string, formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard/services");
+  revalidatePath("/book", "layout");
   return { success: true };
 }
 
@@ -152,6 +164,7 @@ export async function toggleService(serviceId: string, active: boolean) {
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard/services");
+  revalidatePath("/book", "layout");
   return { success: true };
 }
 
@@ -166,5 +179,6 @@ export async function deleteService(serviceId: string) {
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard/services");
+  revalidatePath("/book", "layout");
   return { success: true };
 }

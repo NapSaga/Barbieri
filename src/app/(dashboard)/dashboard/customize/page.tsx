@@ -60,7 +60,8 @@ export default async function CustomizePage() {
       getClosureDates(business.id),
     ]);
 
-  const staffServiceLinks = (staffServicesRaw || []).map((row) => ({
+  // biome-ignore lint/suspicious/noExplicitAny: Supabase join returns untyped rows
+  const staffServiceLinks = (staffServicesRaw || []).map((row: any) => ({
     staffId: row.staff_id,
     serviceId: row.service_id,
   }));

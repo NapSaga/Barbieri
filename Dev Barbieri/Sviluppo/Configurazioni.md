@@ -157,18 +157,19 @@ Biome config (biome.json):
 
 DATABASE — SCHEMA COMPLETO
 
-Enums (6):
+Enums (7):
 - appointment_status: booked, confirmed, completed, cancelled, no_show
 - appointment_source: online, walk_in, manual, waitlist
 - waitlist_status: waiting, notified, converted, expired
 - message_type: confirmation, confirm_request, confirm_reminder, pre_appointment, cancellation, review_request, reactivation, waitlist_notify
 - message_status: queued, sent, delivered, read, failed
 - subscription_status: active, past_due, cancelled, trialing, incomplete
+- referral_status: pending, converted, rewarded, expired
 
-Tabelle (11):
+Tabelle (12):
 
 1. businesses
-   - id (uuid PK), owner_id (uuid, auth.uid), name, slug (unique), address, phone, logo_url, google_review_link, opening_hours (jsonb), welcome_text (text), cover_image_url (text), font_preset (text), brand_colors (jsonb), timezone (default Europe/Rome), stripe_customer_id, subscription_status (default trialing), dormant_threshold_days (default 28), no_show_threshold (default 2), auto_complete_delay_minutes (int, default 20), created_at, updated_at
+   - id (uuid PK), owner_id (uuid, auth.uid), name, slug (unique), address, phone, logo_url, google_review_link, opening_hours (jsonb), welcome_text (text), cover_image_url (text), font_preset (text), brand_colors (jsonb), timezone (default Europe/Rome), stripe_customer_id, subscription_status (default trialing), dormant_threshold_days (default 28), no_show_threshold (default 2), auto_complete_delay_minutes (int, default 20), referral_code (text unique), referred_by (uuid FK → businesses.id), created_at, updated_at
 
 2. staff
    - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), name, photo_url, working_hours (jsonb), active (default true), sort_order (default 0), created_at, updated_at
@@ -212,6 +213,12 @@ Tabelle (11):
     - Unique index: business_closures_business_date_idx(business_id, date)
     - Index: business_closures_business_id_idx
 
+12. referrals
+    - id (uuid PK), referrer_business_id (FK → businesses ON DELETE CASCADE), referred_business_id (FK → businesses ON DELETE CASCADE), status (referral_status, default pending), reward_amount_cents (int, default 5000), stripe_credit_id (text), converted_at (timestamptz), rewarded_at (timestamptz), created_at
+    - Unique index: referrals_unique_pair(referrer_business_id, referred_business_id)
+    - Index: referrals_referrer_idx, referrals_referred_idx
+    - RLS: SELECT solo per referrer_business_id = get_user_business_id()
+
 ---
 
 RLS POLICIES
@@ -229,6 +236,9 @@ Funzioni DB:
 - get_user_business_id() — STABLE, SECURITY DEFINER, search_path = public
 - handle_new_user() — Trigger AFTER INSERT su auth.users, crea automaticamente una riga in businesses
 - auto_complete_appointments() — SECURITY DEFINER, search_path = ''. Segna confirmed → completed quando end_time + ritardo configurabile per business (auto_complete_delay_minutes, default 20 min) è passato (Europe/Rome). Aggiorna total_visits e last_visit_at del cliente.
+- on_auth_user_created() — Trigger AFTER INSERT su auth.users. Crea business con slug, referral_code (REF-NOME-XXXX). Se referral_code nei metadata: salva referred_by e crea record referrals con status 'pending'. SECURITY DEFINER, search_path = ''.
+- calculate_analytics_daily(target_date) — Calcola metriche giornaliere (fatturato, completati, cancellati, no-show, nuovi/ricorrenti clienti) per ogni business. UPSERT su analytics_daily. SECURITY DEFINER, search_path = 'public'.
+- recalc_analytics_on_appointment_change() — Trigger AFTER INSERT/UPDATE/DELETE su appointments. Ricalcola analytics_daily in tempo reale quando cambia status, data o servizio. SECURITY DEFINER, search_path = 'public'.
 
 Supabase Auth Security:
 - Leaked Password Protection: ENABLED (HaveIBeenPwned.org)
@@ -258,6 +268,9 @@ MIGRAZIONI APPLICATE
 17. auto_complete_appointments — Colonna auto_complete_delay_minutes (default 20) su businesses + funzione auto_complete_appointments() con ritardo per-business + pg_cron schedule */20 (auto-completa confermati dopo end_time + delay, aggiorna stats cliente)
 18. add_welcome_text — Colonne welcome_text, cover_image_url, font_preset su businesses per personalizzazione booking page
 19. auto_complete_appointments (locale) — Migrazione locale per auto-complete (già applicata via Supabase Dashboard)
+20. referral_system — Enum referral_status, colonne referral_code/referred_by su businesses, tabella referrals con RLS e indici, generazione codici per business esistenti
+21. referral_trigger_update — Trigger on_auth_user_created aggiornato per generare referral_code, salvare referred_by e creare record referrals
+22. analytics_realtime_trigger — Trigger trg_recalc_analytics su appointments (AFTER INSERT/UPDATE OF status,date,service_id/DELETE) → ricalcola analytics_daily in tempo reale. Cron analytics-daily-calc aggiornato per calcolare anche oggi (non solo ieri)
 
 ---
 

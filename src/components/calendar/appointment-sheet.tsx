@@ -8,13 +8,14 @@ import {
   MessageCircle,
   Phone,
   Scissors,
+  Undo2,
   User,
   X,
   XCircle,
 } from "lucide-react";
 import { useState, useTransition } from "react";
-import type { CalendarAppointment } from "@/actions/appointments";
-import { updateAppointmentStatus } from "@/actions/appointments";
+import type { CalendarAppointment } from "@/types";
+import { revertAppointmentStatus, updateAppointmentStatus } from "@/actions/appointments";
 import { formatPrice } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
 import { STATUS_LABELS, STATUS_STYLES } from "./appointment-card";
@@ -43,15 +44,36 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
     ? `${appointment.client.first_name}${appointment.client.last_name ? ` ${appointment.client.last_name}` : ""}`
     : "Cliente sconosciuto";
 
-  const canComplete = appointment.status === "booked" || appointment.status === "confirmed";
+  const today = new Date().toISOString().split("T")[0];
+  const isFuture = appointment.date > today;
+
+  const canComplete = (appointment.status === "booked" || appointment.status === "confirmed") && !isFuture;
   const canCancel = appointment.status === "booked" || appointment.status === "confirmed";
-  const canNoShow = appointment.status === "booked" || appointment.status === "confirmed";
+  const canNoShow = (appointment.status === "booked" || appointment.status === "confirmed") && !isFuture;
   const canConfirm = appointment.status === "booked";
+  const canRevert = appointment.status === "completed" || appointment.status === "no_show";
 
   function handleAction(status: "confirmed" | "completed" | "cancelled" | "no_show") {
     setError(null);
     startTransition(async () => {
       const result = await updateAppointmentStatus(appointment!.id, status);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        onUpdate();
+        onClose();
+      }
+    });
+  }
+
+  function handleRevert() {
+    if (appointment!.status !== "completed" && appointment!.status !== "no_show") return;
+    setError(null);
+    startTransition(async () => {
+      const result = await revertAppointmentStatus(
+        appointment!.id,
+        appointment!.status as "completed" | "no_show",
+      );
       if (result.error) {
         setError(result.error);
       } else {
@@ -182,7 +204,10 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                   <span className="text-emerald-300">Confermato via WhatsApp</span>
                 )}
                 {appointment.confirmationStatus === "auto_cancelled" && (
-                  <span className="text-red-400">Non confermato — cancellato automaticamente</span>
+                  <span className="text-red-400">
+                    Il cliente non ha confermato via WhatsApp entro il termine previsto —
+                    cancellato automaticamente
+                  </span>
                 )}
                 {appointment.confirmRequestSentAt &&
                   appointment.confirmationStatus === "pending" && (
@@ -207,7 +232,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
           )}
 
           {/* Actions */}
-          {(canConfirm || canComplete || canCancel || canNoShow) && (
+          {(canConfirm || canComplete || canCancel || canNoShow || canRevert) && (
             <div className="mt-4 grid grid-cols-2 gap-2">
               {canConfirm && (
                 <button
@@ -270,6 +295,22 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                     <XCircle className="h-4 w-4" />
                   )}
                   Cancella
+                </button>
+              )}
+
+              {canRevert && (
+                <button
+                  type="button"
+                  onClick={handleRevert}
+                  disabled={isPending}
+                  className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                >
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Undo2 className="h-4 w-4" />
+                  )}
+                  Ripristina a Confermato
                 </button>
               )}
             </div>

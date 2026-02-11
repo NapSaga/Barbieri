@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Crown,
   GripVertical,
   Loader2,
   Pencil,
@@ -14,6 +15,7 @@ import {
   Trash2,
   UserCog,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import {
@@ -70,12 +72,14 @@ interface StaffManagerProps {
   initialStaff: StaffMemberData[];
   services?: ServiceItem[];
   initialStaffServices?: StaffServiceLink[];
+  maxStaff?: number;
 }
 
 export function StaffManager({
   initialStaff,
   services = [],
   initialStaffServices = [],
+  maxStaff,
 }: StaffManagerProps) {
   const [staff, setStaff] = useState<StaffMemberData[]>(initialStaff);
   const [showForm, setShowForm] = useState(false);
@@ -85,6 +89,7 @@ export function StaffManager({
   const [staffServices, setStaffServices] = useState<StaffServiceLink[]>(initialStaffServices);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const dragItem = useRef<string | null>(null);
   const dragOverItem = useRef<string | null>(null);
@@ -164,13 +169,7 @@ export function StaffManager({
     });
   }
 
-  function handleDelete(staffId: string) {
-    if (
-      !confirm(
-        "Sei sicuro di voler eliminare questo barbiere? Tutti i suoi appuntamenti resteranno ma senza barbiere assegnato.",
-      )
-    )
-      return;
+  function confirmDelete(staffId: string) {
     startTransition(async () => {
       const result = await deleteStaffMember(staffId);
       if (result.error) {
@@ -178,6 +177,7 @@ export function StaffManager({
       } else {
         setStaff((prev) => prev.filter((s) => s.id !== staffId));
       }
+      setDeletingId(null);
     });
   }
 
@@ -198,12 +198,28 @@ export function StaffManager({
             setShowForm(true);
             setEditingId(null);
           }}
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          disabled={maxStaff !== undefined && staff.length >= maxStaff}
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
           Nuovo barbiere
         </button>
       </div>
+
+      {/* Plan limit banner */}
+      {maxStaff !== undefined && staff.length >= maxStaff && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg bg-amber-950/30 p-3">
+          <Crown className="h-5 w-5 shrink-0 text-amber-400" />
+          <div>
+            <p className="text-sm font-medium text-amber-200">
+              Limite di {maxStaff} barbieri raggiunto
+            </p>
+            <p className="text-xs text-amber-400">
+              Passa a un piano superiore per aggiungere più barbieri.
+            </p>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
@@ -380,7 +396,7 @@ export function StaffManager({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(member.id)}
+                    onClick={() => setDeletingId(member.id)}
                     disabled={isPending}
                     className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   >
@@ -388,6 +404,41 @@ export function StaffManager({
                   </button>
                 </div>
               </div>
+
+              {/* Delete confirmation */}
+              {deletingId === member.id && (
+                <div className="border-t border-border bg-destructive/5 px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        Eliminare {member.name}?
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Tutti i suoi appuntamenti resteranno ma senza barbiere assegnato.
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => confirmDelete(member.id)}
+                          disabled={isPending}
+                          className="flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+                        >
+                          {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                          Elimina
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingId(null)}
+                          className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
+                        >
+                          Annulla
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Services panel */}
               {expandedServices === member.id && services.length > 0 && (

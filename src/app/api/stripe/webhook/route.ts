@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { stripe } from "@/lib/stripe";
+import { STRIPE_PRICE_SETUP, STRIPE_PRICES, stripe } from "@/lib/stripe";
 import { mapStatus } from "@/lib/stripe-utils";
 
 // Use Supabase admin client to bypass RLS (same pattern as WhatsApp webhook)
@@ -22,17 +22,134 @@ function getWebhookSecret() {
   return process.env.STRIPE_WEBHOOK_SECRET!;
 }
 
-async function updateSubscriptionStatus(customerId: string, status: string) {
+function detectPlanFromSubscription(subscription: Stripe.Subscription): string | null {
+  const metaPlan = subscription.metadata?.plan;
+  if (metaPlan) return metaPlan;
+
+  const activePriceId = subscription.items.data[0]?.price?.id;
+  if (activePriceId) {
+    for (const [key, priceId] of Object.entries(STRIPE_PRICES)) {
+      if (priceId === activePriceId) return key;
+    }
+  }
+  return null;
+}
+
+async function updateSubscriptionStatus(
+  customerId: string,
+  status: string,
+  planId?: string | null,
+) {
+  // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
+  const updateData: any = {
+    subscription_status: mapStatus(status),
+    updated_at: new Date().toISOString(),
+  };
+  if (planId !== undefined) {
+    updateData.subscription_plan = planId;
+  }
+
   // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
   const { error } = await (getSupabaseAdmin().from("businesses") as any)
-    .update({
-      subscription_status: mapStatus(status),
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq("stripe_customer_id", customerId);
 
   if (error) {
     console.error("[Stripe Webhook] Error updating subscription status:", error);
+  }
+}
+
+async function processSetupFeePaid(customerId: string, invoice: Stripe.Invoice) {
+  if (!STRIPE_PRICE_SETUP) return;
+
+  // Check if this invoice contains the one-time setup fee line item
+  // biome-ignore lint/suspicious/noExplicitAny: Stripe API returns price on line items at runtime
+  const hasSetupFee = invoice.lines?.data?.some(
+    (line: any) => line.price?.id === STRIPE_PRICE_SETUP,
+  );
+  if (!hasSetupFee) return;
+
+  // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
+  const { error } = await (getSupabaseAdmin().from("businesses") as any)
+    .update({ setup_fee_paid: true, updated_at: new Date().toISOString() })
+    .eq("stripe_customer_id", customerId);
+
+  if (error) {
+    console.error("[Stripe Webhook] Error marking setup fee as paid:", error);
+  } else {
+    console.log(`[Stripe Webhook] Setup fee marked as paid for customer ${customerId}`);
+  }
+}
+
+async function processReferralReward(customerId: string, invoice: Stripe.Invoice) {
+  // Only process first real invoice (not trial period invoices with amount 0)
+  if (invoice.amount_paid <= 0) return;
+
+  const admin = getSupabaseAdmin();
+
+  // Find the business that just paid
+  // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
+  const { data: business } = await (admin.from("businesses") as any)
+    .select("id, referred_by")
+    .eq("stripe_customer_id", customerId)
+    .single();
+
+  if (!business?.referred_by) return;
+
+  // Check if there's a pending referral to reward
+  // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
+  const { data: referral } = await (admin.from("referrals") as any)
+    .select("id, status, reward_amount_cents")
+    .eq("referrer_business_id", business.referred_by)
+    .eq("referred_business_id", business.id)
+    .in("status", ["pending", "converted"])
+    .single();
+
+  if (!referral) return;
+
+  // Update to converted if still pending
+  if (referral.status === "pending") {
+    // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
+    await (admin.from("referrals") as any)
+      .update({ status: "converted", converted_at: new Date().toISOString() })
+      .eq("id", referral.id);
+  }
+
+  // Find referrer's Stripe customer ID to apply credit
+  // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
+  const { data: referrer } = await (admin.from("businesses") as any)
+    .select("stripe_customer_id")
+    .eq("id", business.referred_by)
+    .single();
+
+  if (!referrer?.stripe_customer_id) {
+    console.log("[Stripe Webhook] Referrer has no Stripe customer, skipping credit");
+    return;
+  }
+
+  try {
+    // Apply credit to referrer via Stripe Customer Balance (negative = credit)
+    const balanceTx = await stripe.customers.createBalanceTransaction(referrer.stripe_customer_id, {
+      amount: -referral.reward_amount_cents,
+      currency: "eur",
+      description: "Credito referral BarberOS",
+    });
+
+    // Mark referral as rewarded
+    // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
+    await (admin.from("referrals") as any)
+      .update({
+        status: "rewarded",
+        rewarded_at: new Date().toISOString(),
+        stripe_credit_id: balanceTx.id,
+      })
+      .eq("id", referral.id);
+
+    console.log(
+      `[Stripe Webhook] Referral reward applied: ${referral.reward_amount_cents} cents to ${referrer.stripe_customer_id}`,
+    );
+  } catch (err) {
+    console.error("[Stripe Webhook] Error applying referral credit:", err);
   }
 }
 
@@ -77,7 +194,8 @@ export async function POST(request: NextRequest) {
           typeof subscription.customer === "string"
             ? subscription.customer
             : subscription.customer.id;
-        await updateSubscriptionStatus(customerId, subscription.status);
+        const planId = detectPlanFromSubscription(subscription);
+        await updateSubscriptionStatus(customerId, subscription.status, planId);
         break;
       }
 
@@ -87,7 +205,7 @@ export async function POST(request: NextRequest) {
           typeof subscription.customer === "string"
             ? subscription.customer
             : subscription.customer.id;
-        await updateSubscriptionStatus(customerId, "cancelled");
+        await updateSubscriptionStatus(customerId, "cancelled", null);
         break;
       }
 
@@ -107,6 +225,8 @@ export async function POST(request: NextRequest) {
           typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
         if (customerId) {
           await updateSubscriptionStatus(customerId, "active");
+          await processSetupFeePaid(customerId, invoice);
+          await processReferralReward(customerId, invoice);
         }
         break;
       }

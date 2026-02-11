@@ -1,9 +1,10 @@
 "use client";
 
-import { AlertTriangle, Check, CreditCard, Crown, Loader2, Settings } from "lucide-react";
+import { AlertTriangle, Check, CreditCard, Crown, Loader2, Rocket, Settings } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { createCheckoutSession, type SubscriptionInfo } from "@/actions/billing";
+import type { SubscriptionInfo } from "@/types";
+import { createCheckoutSession } from "@/actions/billing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,8 +15,12 @@ const PLAN_ORDER: PlanId[] = ["essential", "professional", "enterprise"];
 
 export function ExpiredView({
   subscriptionInfo: _subscriptionInfo,
+  isNewUser = false,
+  showSetupFee = false,
 }: {
   subscriptionInfo: SubscriptionInfo | null;
+  isNewUser?: boolean;
+  showSetupFee?: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   const [pendingPlan, setPendingPlan] = useState<PlanId | null>(null);
@@ -32,14 +37,29 @@ export function ExpiredView({
     <div className="flex min-h-[80vh] flex-col items-center justify-center px-4">
       {/* Header */}
       <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-          <AlertTriangle className="h-8 w-8 text-destructive" />
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">Abbonamento non attivo</h1>
-        <p className="mt-2 max-w-md text-muted-foreground">
-          Il tuo abbonamento è scaduto o è stato cancellato. Scegli un piano per continuare a usare
-          BarberOS.
-        </p>
+        {isNewUser ? (
+          <>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Rocket className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Scegli il tuo piano</h1>
+            <p className="mt-2 max-w-md text-muted-foreground">
+              Benvenuto su BarberOS! Scegli il piano più adatto alla tua barberia per iniziare.
+              Hai {STRIPE_CONFIG.trialDays} giorni di prova gratuita.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Abbonamento non attivo</h1>
+            <p className="mt-2 max-w-md text-muted-foreground">
+              Il tuo abbonamento è scaduto o è stato cancellato. Scegli un piano per continuare a
+              usare BarberOS.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Plan cards */}
@@ -72,7 +92,7 @@ export function ExpiredView({
               </div>
               <p className="text-sm text-muted-foreground">{plan.description}</p>
 
-              <div className="mt-4 mb-5">
+              <div className="mt-4 mb-1">
                 {isEnterprise ? (
                   <span className="text-2xl font-bold text-foreground">Custom</span>
                 ) : (
@@ -82,6 +102,16 @@ export function ExpiredView({
                   </>
                 )}
               </div>
+
+              {!isEnterprise && showSetupFee && (
+                <p className="mb-4 text-xs text-muted-foreground">
+                  + {STRIPE_CONFIG.setupFeeLabel} setup una tantum
+                </p>
+              )}
+              {isEnterprise && (
+                <p className="mb-4 text-xs text-muted-foreground">Setup White Glove incluso</p>
+              )}
+              {!isEnterprise && !showSetupFee && <div className="mb-4" />}
 
               <ul className="mb-6 flex-1 space-y-2.5">
                 {plan.features.map((f) => (
@@ -109,7 +139,7 @@ export function ExpiredView({
                   ) : (
                     <CreditCard className="h-4 w-4" />
                   )}
-                  Abbonati
+                  {isNewUser ? "Inizia ora" : "Abbonati"}
                 </Button>
               )}
             </Card>

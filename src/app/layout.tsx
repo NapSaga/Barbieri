@@ -38,8 +38,12 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
         </ThemeProvider>
-        <Analytics />
-        <SpeedInsights />
+        {process.env.NODE_ENV === "production" && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </body>
     </html>
   );

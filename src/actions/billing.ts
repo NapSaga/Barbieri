@@ -3,7 +3,8 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
-import { STRIPE_PRICES, stripe } from "@/lib/stripe";
+import { getPlanLimitsForPlan } from "@/lib/plan-limits";
+import { STRIPE_PRICE_SETUP, STRIPE_PRICES, stripe } from "@/lib/stripe";
 import { PLANS, type PlanId, STRIPE_CONFIG } from "@/lib/stripe-plans";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,7 +24,7 @@ async function getAuthenticatedBusiness() {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("id, owner_id, name, stripe_customer_id, subscription_status")
+    .select("id, owner_id, name, stripe_customer_id, subscription_status, referred_by, setup_fee_paid")
     .eq("owner_id", user.id)
     .single();
 
@@ -73,16 +74,27 @@ export async function createCheckoutSession(planId: PlanId) {
 
   const customerId = await ensureStripeCustomer(supabase, business, user.email!);
 
+  // Auto-apply 20% referral discount for referred businesses
+  const isReferred = !!business.referred_by;
+
+  // Build line items: subscription + optional one-time setup fee
+  const lineItems: { price: string; quantity: number }[] = [
+    { price: priceId, quantity: 1 },
+  ];
+
+  // Add setup fee only if not already paid and price is configured
+  if (!business.setup_fee_paid && STRIPE_PRICE_SETUP) {
+    lineItems.push({ price: STRIPE_PRICE_SETUP, quantity: 1 });
+  }
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
-    allow_promotion_codes: true,
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
+    // allow_promotion_codes and discounts are mutually exclusive in Stripe
+    ...(isReferred
+      ? { discounts: [{ coupon: "REFERRAL_20_OFF" }] }
+      : { allow_promotion_codes: true }),
+    line_items: lineItems,
     subscription_data: {
       trial_period_days: STRIPE_CONFIG.trialDays,
       metadata: { business_id: business.id, plan: planId },
@@ -119,16 +131,7 @@ export async function createPortalSession() {
 
 // ─── Get Subscription Info ──────────────────────────────────────────
 
-export interface SubscriptionInfo {
-  status: string;
-  planId: PlanId | null;
-  planName: string | null;
-  currentPeriodEnd: string | null;
-  cancelAtPeriodEnd: boolean;
-  trialEnd: string | null;
-}
-
-export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
+export async function getSubscriptionInfo() {
   const { business } = await getAuthenticatedBusiness();
 
   if (!business.stripe_customer_id) {
@@ -194,5 +197,47 @@ export async function getSubscriptionInfo(): Promise<SubscriptionInfo | null> {
       cancelAtPeriodEnd: false,
       trialEnd: null,
     };
+  }
+}
+
+// ─── Get Plan Limits ─────────────────────────────────────────────────
+
+export async function getPlanLimits() {
+  const { business } = await getAuthenticatedBusiness();
+  const dbStatus = business.subscription_status || "trialing";
+
+  // If no Stripe customer, fall back to DB status (shouldn't happen with new flow)
+  if (!business.stripe_customer_id) {
+    return getPlanLimitsForPlan(null, dbStatus);
+  }
+
+  try {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: business.stripe_customer_id,
+      status: "all",
+      limit: 1,
+    });
+
+    const sub = subscriptions.data[0];
+    if (!sub) return getPlanLimitsForPlan(null, dbStatus);
+
+    const metaPlan = sub.metadata?.plan as PlanId | undefined;
+    const activePriceId = sub.items.data[0]?.price?.id;
+    let detectedPlan: PlanId | null = metaPlan || null;
+    if (!detectedPlan && activePriceId) {
+      for (const [key, priceId] of Object.entries(STRIPE_PRICES)) {
+        if (priceId === activePriceId) {
+          detectedPlan = key as PlanId;
+          break;
+        }
+      }
+    }
+
+    // Use Stripe sub status, but fall back to DB status if plan not detected
+    const effectiveStatus = sub.status === "trialing" ? "trialing" : sub.status;
+    return getPlanLimitsForPlan(detectedPlan, effectiveStatus);
+  } catch (err) {
+    console.error("❌ getPlanLimits Stripe error:", err);
+    return getPlanLimitsForPlan(null, dbStatus);
   }
 }
