@@ -177,7 +177,7 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
 
                   return (
                     <div
-                      key={i}
+                      key={`hour-${START_HOUR + i}`}
                       className={cn("relative", !working && "bg-muted/50")}
                       style={{ height: HOUR_HEIGHT }}
                     >

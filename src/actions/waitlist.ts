@@ -112,8 +112,7 @@ export async function addToWaitlist(input: {
   desiredEndTime: string;
 }) {
   const parsed = addToWaitlistSchema.safeParse(input);
-  if (!parsed.success)
-    return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
 
   const supabase = await createClient();
   const {

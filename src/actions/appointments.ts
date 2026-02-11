@@ -190,9 +190,10 @@ export async function getAppointmentsForWeek(
 
 // ─── Confirmation Status Enrichment ──────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function enrichWithConfirmationStatus(
+  // biome-ignore lint/suspicious/noExplicitAny: Supabase client type from caller
   supabase: any,
+  // biome-ignore lint/suspicious/noExplicitAny: raw Supabase query result
   rawAppointments: any[],
   businessId: string,
 ): Promise<CalendarAppointment[]> {

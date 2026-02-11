@@ -18,7 +18,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
  *   Method: POST
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Supabase admin client has no generated types
 type AdminClient = SupabaseClient<any, "public", any>;
 
 // Supabase admin client (bypassa RLS per operazioni webhook)

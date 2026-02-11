@@ -15,7 +15,6 @@ import {
   getAppointmentsForDate,
   getAppointmentsForWeek,
 } from "@/actions/appointments";
-import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -23,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { AppointmentSheet } from "./appointment-sheet";
 import { DayView } from "./day-view";
 import { WalkInDialog } from "./walk-in-dialog";
@@ -107,10 +107,7 @@ export function CalendarView({
   const [staffFilter, setStaffFilter] = useState<string>("all");
 
   const filteredStaff = useMemo(
-    () =>
-      staffFilter === "all"
-        ? staffMembers
-        : staffMembers.filter((s) => s.id === staffFilter),
+    () => (staffFilter === "all" ? staffMembers : staffMembers.filter((s) => s.id === staffFilter)),
     [staffFilter, staffMembers],
   );
 
@@ -238,34 +235,34 @@ export function CalendarView({
             </Select>
           )}
 
-        <div className="flex rounded-lg bg-muted p-0.5">
-          <button
-            type="button"
-            onClick={() => switchView("day")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              viewMode === "day"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <CalendarIcon className="h-4 w-4" />
-            Giorno
-          </button>
-          <button
-            type="button"
-            onClick={() => switchView("week")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              viewMode === "week"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <CalendarDays className="h-4 w-4" />
-            Settimana
-          </button>
-        </div>
+          <div className="flex rounded-lg bg-muted p-0.5">
+            <button
+              type="button"
+              onClick={() => switchView("day")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                viewMode === "day"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <CalendarIcon className="h-4 w-4" />
+              Giorno
+            </button>
+            <button
+              type="button"
+              onClick={() => switchView("week")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                viewMode === "week"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <CalendarDays className="h-4 w-4" />
+              Settimana
+            </button>
+          </div>
         </div>
       </div>
 

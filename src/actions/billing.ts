@@ -32,8 +32,8 @@ async function getAuthenticatedBusiness() {
   return { supabase, user, business };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function ensureStripeCustomer(
+  // biome-ignore lint/suspicious/noExplicitAny: Supabase client from getAuthenticatedBusiness
   supabase: any,
   business: { id: string; stripe_customer_id: string | null; name: string },
   userEmail: string,

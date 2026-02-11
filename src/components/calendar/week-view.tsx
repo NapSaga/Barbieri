@@ -43,7 +43,7 @@ const DAY_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 export function WeekView({
   weekStart,
   appointments,
-  staffMembers,
+  staffMembers: _staffMembers,
   onSelectAppointment,
 }: WeekViewProps) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));

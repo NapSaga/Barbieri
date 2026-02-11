@@ -10,11 +10,5 @@ export default async function WaitlistPage() {
     getServices(),
   ]);
 
-  return (
-    <WaitlistManager
-      initialEntries={entries}
-      clients={clients}
-      services={services}
-    />
-  );
+  return <WaitlistManager initialEntries={entries} clients={clients} services={services} />;
 }

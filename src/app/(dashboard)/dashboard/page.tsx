@@ -51,6 +51,7 @@ export default async function DashboardPage() {
   const services = servicesResult.data || [];
 
   return (
+    // biome-ignore lint/suspicious/noExplicitAny: Supabase query result shape matches CalendarView props
     <CalendarView
       initialDate={today}
       initialAppointments={appointments}

@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
-  MapPin,
   MessageCircle,
   Phone,
   Scissors,
@@ -64,7 +63,13 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+        role="button"
+        tabIndex={0}
+        onClick={onClose}
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
+      />
       <div className="relative z-10 w-full max-w-md animate-in slide-in-from-bottom-4 rounded-t-2xl bg-card border border-border shadow-xl sm:mx-4 sm:rounded-2xl">
         {/* Accent bar */}
         <div className={cn("h-1.5 w-full rounded-t-2xl", style.accent)} />

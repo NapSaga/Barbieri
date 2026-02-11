@@ -335,19 +335,21 @@ export function BookingWizard({
       {step === "staff" && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Scegli il barbiere</h2>
-          {(selectedService ? getStaffForService(selectedService.id) : staffMembers).map((member) => (
-            <button
-              type="button"
-              key={member.id}
-              onClick={() => handleSelectStaff(member)}
-              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-input hover:bg-accent"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
-                <User className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <span className="font-medium text-foreground">{member.name}</span>
-            </button>
-          ))}
+          {(selectedService ? getStaffForService(selectedService.id) : staffMembers).map(
+            (member) => (
+              <button
+                type="button"
+                key={member.id}
+                onClick={() => handleSelectStaff(member)}
+                className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-input hover:bg-accent"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <span className="font-medium text-foreground">{member.name}</span>
+              </button>
+            ),
+          )}
         </div>
       )}
 

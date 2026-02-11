@@ -76,9 +76,10 @@ export async function createService(formData: FormData) {
   const durationMinutes = parseInt(parsed.data.duration_minutes, 10);
   const priceCents = Math.round(parseFloat(parsed.data.price) * 100);
   const isCombo = parsed.data.is_combo === "true";
-  const comboServiceIds = isCombo && parsed.data.combo_service_ids
-    ? parsed.data.combo_service_ids.split(",").filter(Boolean)
-    : null;
+  const comboServiceIds =
+    isCombo && parsed.data.combo_service_ids
+      ? parsed.data.combo_service_ids.split(",").filter(Boolean)
+      : null;
 
   const { error } = await supabase.from("services").insert({
     business_id: business.id,
@@ -114,9 +115,10 @@ export async function updateService(serviceId: string, formData: FormData) {
   const durationMinutes = parseInt(parsed.data.duration_minutes, 10);
   const priceCents = Math.round(parseFloat(parsed.data.price) * 100);
   const isCombo = parsed.data.is_combo === "true";
-  const comboServiceIds = isCombo && parsed.data.combo_service_ids
-    ? parsed.data.combo_service_ids.split(",").filter(Boolean)
-    : null;
+  const comboServiceIds =
+    isCombo && parsed.data.combo_service_ids
+      ? parsed.data.combo_service_ids.split(",").filter(Boolean)
+      : null;
 
   const { error } = await supabase
     .from("services")

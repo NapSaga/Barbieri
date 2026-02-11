@@ -187,8 +187,7 @@ export async function getTopServices(period: "7d" | "30d" | "90d"): Promise<TopS
   // Aggregate by service name
   const map: Record<string, { count: number; revenue_cents: number }> = {};
   for (const row of data) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const svc = row.service as any;
+    const svc = row.service as unknown as { name: string; price_cents: number } | null;
     if (!svc?.name) continue;
     if (!map[svc.name]) map[svc.name] = { count: 0, revenue_cents: 0 };
     map[svc.name].count++;
