@@ -233,7 +233,7 @@ export function SettingsManager({
 // ─── Collapsible Section ────────────────────────────────────────────
 
 function SettingsSection({
-  id,
+  id: _id,
   icon,
   title,
   description,
@@ -337,8 +337,11 @@ function BusinessInfoForm({ business }: { business: BusinessData }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="block text-sm font-medium text-foreground">Nome barberia</label>
+          <label htmlFor="settings-name" className="block text-sm font-medium text-foreground">
+            Nome barberia
+          </label>
           <input
+            id="settings-name"
             name="name"
             required
             defaultValue={business.name}
@@ -346,8 +349,11 @@ function BusinessInfoForm({ business }: { business: BusinessData }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground">Telefono</label>
+          <label htmlFor="settings-phone" className="block text-sm font-medium text-foreground">
+            Telefono
+          </label>
           <input
+            id="settings-phone"
             name="phone"
             type="tel"
             defaultValue={business.phone || ""}
@@ -357,8 +363,11 @@ function BusinessInfoForm({ business }: { business: BusinessData }) {
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-foreground">Indirizzo</label>
+        <label htmlFor="settings-address" className="block text-sm font-medium text-foreground">
+          Indirizzo
+        </label>
         <input
+          id="settings-address"
           name="address"
           defaultValue={business.address || ""}
           placeholder="Via Roma 1, 20100 Milano"
@@ -366,8 +375,14 @@ function BusinessInfoForm({ business }: { business: BusinessData }) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-foreground">Link recensione Google</label>
+        <label
+          htmlFor="settings-google-review"
+          className="block text-sm font-medium text-foreground"
+        >
+          Link recensione Google
+        </label>
         <input
+          id="settings-google-review"
           name="google_review_link"
           type="url"
           defaultValue={business.google_review_link || ""}
@@ -734,13 +749,17 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="settings-dormant-days"
+          className="block text-sm font-medium text-foreground"
+        >
           Soglia cliente dormiente (giorni)
         </label>
         <p className="text-xs text-muted-foreground mb-1">
           Dopo quanti giorni senza prenotazione inviare il messaggio di riattivazione
         </p>
         <input
+          id="settings-dormant-days"
           type="number"
           min={7}
           max={90}
@@ -754,11 +773,17 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-foreground">Soglia no-show (numero)</label>
+        <label
+          htmlFor="settings-noshow-threshold"
+          className="block text-sm font-medium text-foreground"
+        >
+          Soglia no-show (numero)
+        </label>
         <p className="text-xs text-muted-foreground mb-1">
           Dopo quanti no-show il cliente viene flaggato come &quot;alto rischio&quot;
         </p>
         <input
+          id="settings-noshow-threshold"
           type="number"
           min={1}
           max={10}
@@ -936,8 +961,14 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
       {/* Add new closure */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-muted-foreground mb-1">Data</label>
+          <label
+            htmlFor="closure-date"
+            className="block text-xs font-medium text-muted-foreground mb-1"
+          >
+            Data
+          </label>
           <input
+            id="closure-date"
             type="date"
             value={newDate}
             min={today}
@@ -946,10 +977,14 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-medium text-muted-foreground mb-1">
+          <label
+            htmlFor="closure-reason"
+            className="block text-xs font-medium text-muted-foreground mb-1"
+          >
             Motivo (opzionale)
           </label>
           <input
+            id="closure-reason"
             type="text"
             value={newReason}
             onChange={(e) => setNewReason(e.target.value)}

@@ -421,7 +421,21 @@ Polish, deploy, sicurezza.
      - Schema aggiornato a v2.3.14
      - Regole downgrade a warn (non bloccanti CI): noLabelWithoutControl, noSvgWithoutTitle, noStaticElementInteractions, useKeyWithClickEvents, noArrayIndexKey, noExplicitAny, noUnusedFunctionParameters
      - CSS escluso da Biome (Tailwind v4 usa @theme/@custom-variant non supportati dal parser CSS di Biome)
-   - Risultato: pnpm typecheck ✅, pnpm lint ✅ (0 errori, 43 warning), pnpm build ✅ (17 route)
+   - Risultato iniziale: pnpm typecheck ✅, pnpm lint ✅ (0 errori, 43 warning), pnpm build ✅ (17 route)
+   - Dopo refactor lint/a11y (vedi punto 12): pnpm lint ✅ (0 errori, 0 warning)
+
+12. Refactor Lint / A11y / Formatting ✅
+   - Risolti tutti i 43 warning Biome rimasti dopo il setup CI
+   - 26 fix noLabelWithoutControl: aggiunto htmlFor+id a tutti i label/input in 6 componenti (walk-in-dialog, clients-manager, settings-manager, waitlist-manager, services-manager, staff-manager)
+   - 3 fix noStaticElementInteractions: backdrop overlay <div onClick> → <button> in appointment-sheet e walk-in-dialog; biome-ignore per drag handle in staff-manager
+   - 3 fix noUnusedImports: rimossi Calendar (clients-manager), PanelLeftOpen (sidebar), MapPin (appointment-sheet)
+   - 3 fix noUnusedFunctionParameters: prefisso _ su parametri inutilizzati in expired-view, week-view, settings-manager
+   - 6 fix noExplicitAny: biome-ignore comments con spiegazione su Supabase admin client e cast dinamici
+   - 1 fix noArrayIndexKey: key stabile basata sull'ora in day-view
+   - 1 fix useSemanticElements: <div role="button"> → <button> in appointment-sheet
+   - ~12 file riformattati per rispettare line width 100 char (ternari, function signatures, label multiline, import ordering)
+   - Configurazione biome.json NON modificata (regole restano warn, ma ora 0 warning nel codice)
+   - Risultato: pnpm lint ✅ (0 errori, 0 warning), pnpm typecheck ✅, pnpm build ✅, pnpm test ✅ (95/95)
 
 13. Da fare:
    - Acquisto dominio + DNS Cloudflare

@@ -2,7 +2,6 @@
 
 import {
   AlertTriangle,
-  Calendar,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -171,8 +170,14 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
           <form action={handleCreate} className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="block text-sm font-medium text-foreground">Nome *</label>
+                <label
+                  htmlFor="client-first-name"
+                  className="block text-sm font-medium text-foreground"
+                >
+                  Nome *
+                </label>
                 <input
+                  id="client-first-name"
                   name="first_name"
                   required
                   className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
@@ -180,16 +185,25 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground">Cognome</label>
+                <label
+                  htmlFor="client-last-name"
+                  className="block text-sm font-medium text-foreground"
+                >
+                  Cognome
+                </label>
                 <input
+                  id="client-last-name"
                   name="last_name"
                   className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Rossi"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground">Telefono *</label>
+                <label htmlFor="client-phone" className="block text-sm font-medium text-foreground">
+                  Telefono *
+                </label>
                 <input
+                  id="client-phone"
                   name="phone"
                   type="tel"
                   required
@@ -198,8 +212,11 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground">Email</label>
+                <label htmlFor="client-email" className="block text-sm font-medium text-foreground">
+                  Email
+                </label>
                 <input
+                  id="client-email"
                   name="email"
                   type="email"
                   className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
@@ -208,8 +225,11 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground">Note</label>
+              <label htmlFor="client-notes" className="block text-sm font-medium text-foreground">
+                Note
+              </label>
               <textarea
+                id="client-notes"
                 name="notes"
                 rows={2}
                 className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"

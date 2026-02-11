@@ -99,7 +99,13 @@ export function WalkInDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <button
+        type="button"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+        tabIndex={-1}
+        onClick={onClose}
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
+      />
       <div className="relative z-10 w-full max-w-md rounded-xl bg-card border border-border p-6 shadow-xl mx-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-foreground">Aggiungi Walk-in</h2>
@@ -112,8 +118,14 @@ export function WalkInDialog({
           {/* Client info */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-foreground">Nome cliente</label>
+              <label
+                htmlFor="walkin-client-name"
+                className="block text-sm font-medium text-foreground"
+              >
+                Nome cliente
+              </label>
               <input
+                id="walkin-client-name"
                 name="client_name"
                 required
                 className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
@@ -121,8 +133,14 @@ export function WalkInDialog({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground">Telefono</label>
+              <label
+                htmlFor="walkin-client-phone"
+                className="block text-sm font-medium text-foreground"
+              >
+                Telefono
+              </label>
               <input
+                id="walkin-client-phone"
                 name="client_phone"
                 type="tel"
                 required
@@ -134,8 +152,11 @@ export function WalkInDialog({
 
           {/* Service */}
           <div>
-            <label className="block text-sm font-medium text-foreground">Servizio</label>
+            <label htmlFor="walkin-service" className="block text-sm font-medium text-foreground">
+              Servizio
+            </label>
             <select
+              id="walkin-service"
               name="service_id"
               required
               value={selectedServiceId}
@@ -153,8 +174,11 @@ export function WalkInDialog({
 
           {/* Staff */}
           <div>
-            <label className="block text-sm font-medium text-foreground">Barbiere</label>
+            <label htmlFor="walkin-staff" className="block text-sm font-medium text-foreground">
+              Barbiere
+            </label>
             <select
+              id="walkin-staff"
               name="staff_id"
               required
               value={selectedStaffId}
@@ -173,8 +197,14 @@ export function WalkInDialog({
           {/* Time */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-foreground">Ora inizio</label>
+              <label
+                htmlFor="walkin-start-time"
+                className="block text-sm font-medium text-foreground"
+              >
+                Ora inizio
+              </label>
               <input
+                id="walkin-start-time"
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
@@ -183,8 +213,14 @@ export function WalkInDialog({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground">Ora fine</label>
+              <label
+                htmlFor="walkin-end-time"
+                className="block text-sm font-medium text-foreground"
+              >
+                Ora fine
+              </label>
               <input
+                id="walkin-end-time"
                 type="time"
                 value={endTime}
                 readOnly

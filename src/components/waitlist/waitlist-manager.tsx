@@ -534,7 +534,9 @@ function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWai
         <div className="space-y-4 px-5 py-4">
           {/* Client selection */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-foreground">Cliente</label>
+            <label htmlFor="waitlist-client" className="block text-sm font-medium text-foreground">
+              Cliente
+            </label>
             <div className="flex rounded-lg bg-muted p-0.5">
               <button
                 type="button"
@@ -652,8 +654,11 @@ function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWai
 
           {/* Service */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-foreground">Servizio</label>
+            <label htmlFor="waitlist-service" className="block text-sm font-medium text-foreground">
+              Servizio
+            </label>
             <select
+              id="waitlist-service"
               value={selectedServiceId || ""}
               onChange={(e) => setSelectedServiceId(e.target.value || null)}
               className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
@@ -670,8 +675,11 @@ function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWai
           {/* Date */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-foreground">Data desiderata</label>
+              <label htmlFor="waitlist-date" className="block text-sm font-medium text-foreground">
+                Data desiderata
+              </label>
               <input
+                id="waitlist-date"
                 type="date"
                 value={desiredDate}
                 onChange={(e) => setDesiredDate(e.target.value)}
@@ -680,11 +688,12 @@ function AddToWaitlistDialog({ clients, services, onClose, onSuccess }: AddToWai
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-foreground">
+              <label htmlFor="waitlist-time" className="block text-sm font-medium text-foreground">
                 Orario preferito
                 <span className="ml-1 text-xs font-normal text-muted-foreground">(opz.)</span>
               </label>
               <input
+                id="waitlist-time"
                 type="time"
                 value={desiredTime}
                 onChange={(e) => setDesiredTime(e.target.value)}

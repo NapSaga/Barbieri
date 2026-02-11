@@ -8,7 +8,6 @@ import {
   Menu,
   Moon,
   PanelLeftClose,
-  PanelLeftOpen,
   Scissors,
   Settings,
   Sun,

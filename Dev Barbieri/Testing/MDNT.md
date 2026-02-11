@@ -289,3 +289,88 @@ Funzioni pure senza dipendenze esterne: calcoli tempo, formato prezzo, rate limi
 - **Edge Functions / pg_cron** → eseguiti da Supabase, non testabili localmente
 
 I test manuali con AI (checklist 126 casi) restano la copertura principale per i flussi end-to-end. I test automatici Vitest sono un livello aggiuntivo che protegge le funzioni pure da regressioni.
+
+---
+
+## Refactor Lint / A11y / Formatting (11/02/2026 — sessione Windsurf Cascade)
+
+Dopo l'attivazione della CI, `pnpm lint` passava con 0 errori ma **43 warning** (regole downgrade a `warn` in biome.json). In questa sessione tutti i 43 warning sono stati risolti, portando il risultato a **0 errori, 0 warning**.
+
+### Categorie di fix
+
+#### 1. Accessibilita' (a11y) — `noLabelWithoutControl` (26 fix)
+
+Tutti i `<label>` senza associazione esplicita al campo input sono stati corretti aggiungendo `htmlFor` al label e `id` all'input corrispondente.
+
+| Componente | Label fixate |
+|------------|-------------|
+| `walk-in-dialog.tsx` | 6 (nome, telefono, servizio, barbiere, ora inizio, ora fine) |
+| `clients-manager.tsx` | 5 (nome, cognome, telefono, email, note) |
+| `settings-manager.tsx` | 7 (nome barberia, telefono, indirizzo, Google review, soglia dormiente, soglia no-show, data chiusura, motivo chiusura) |
+| `waitlist-manager.tsx` | 4 (cliente, servizio, data, orario) |
+| `services-manager.tsx` | 3 (nome, durata, prezzo) |
+| `staff-manager.tsx` | 1 (nome) |
+
+#### 2. Accessibilita' (a11y) — `noStaticElementInteractions` + `useKeyWithClickEvents` (3 fix)
+
+Backdrop overlay (div con `onClick` per chiudere modali) convertiti da `<div>` a `<button>` con `tabIndex={-1}` e `onKeyDown` per Escape:
+- `appointment-sheet.tsx` — backdrop overlay
+- `walk-in-dialog.tsx` — backdrop overlay
+
+Drag handle in `staff-manager.tsx` — `biome-ignore` comment perche' il `onMouseDown` su div e' necessario per il drag-and-drop HTML5 nativo (non esiste un elemento semantico equivalente).
+
+#### 3. Import inutilizzati — `noUnusedImports` (3 fix)
+
+- `clients-manager.tsx` — rimosso `Calendar` (lucide-react)
+- `sidebar.tsx` — rimosso `PanelLeftOpen` (lucide-react)
+- `appointment-sheet.tsx` — rimosso `MapPin` (lucide-react)
+
+#### 4. Parametri inutilizzati — `noUnusedFunctionParameters` (3 fix)
+
+- `expired-view.tsx` — `subscriptionInfo` → `_subscriptionInfo`
+- `week-view.tsx` — `staffMembers` → `_staffMembers`
+- `settings-manager.tsx` — `id` → `_id` (in `SettingsSection`)
+
+#### 5. `noExplicitAny` — biome-ignore comments (6 fix)
+
+Dove `any` e' necessario per il Supabase admin client (senza generated types) o per cast di risultati query dinamici, aggiunto `biome-ignore lint/suspicious/noExplicitAny` con spiegazione:
+- `analytics.ts` — `row.service as any` (join result)
+- `appointments.ts` — `supabase: any` e `rawAppointments: any[]` (enrichWithConfirmationStatus)
+- `billing.ts` — `supabase: any` (ensureStripeCustomer)
+- `dashboard/page.tsx` — `staffMembers as any` (estratto in variabile `typedStaff`)
+- `stripe/webhook/route.ts` — `as any` su admin client `.from().update()`
+- `whatsapp/webhook/route.ts` — `SupabaseClient<any, "public", any>` type alias
+
+#### 6. `noArrayIndexKey` (1 fix)
+
+- `day-view.tsx` — `key={i}` → `key={\`hour-${START_HOUR + i}\`}` (chiave stabile basata sull'ora)
+
+#### 7. `useSemanticElements` (1 fix)
+
+- `appointment-sheet.tsx` — `<div role="button">` → `<button>` per il backdrop
+
+#### 8. Formatting (biome formatter) (~12 file)
+
+Correzioni di formattazione per rispettare il line width di 100 caratteri:
+- Ternari wrappati su piu' righe (`services.ts` x2)
+- If-return su singola riga (`waitlist.ts`)
+- JSX return inline (`waitlist/page.tsx`)
+- `.map()` callback riformattato (`booking-wizard.tsx`)
+- Import ordering (`calendar-view.tsx`)
+- Function signature wrapping (`staff-manager.tsx`, `expired-view.tsx`)
+- Label multiline per rispettare 100 char (`walk-in-dialog.tsx`, `clients-manager.tsx`, `services-manager.tsx`, `settings-manager.tsx`, `waitlist-manager.tsx`)
+- onClick handler multiline (`waitlist-manager.tsx`)
+- `.update()` chain break (`stripe/webhook/route.ts`)
+
+### Risultato finale
+
+```
+pnpm lint → 0 errori, 0 warning (prima: 0 errori, 43 warning)
+pnpm typecheck → pass
+pnpm build → pass
+pnpm test → 95/95 pass
+```
+
+### Nota
+
+La configurazione `biome.json` NON e' stata modificata. Le regole restano a `warn`, ma ora tutti i warning sono stati risolti nel codice. Questo significa che nuovi warning introdotti in futuro verranno segnalati dalla CI.

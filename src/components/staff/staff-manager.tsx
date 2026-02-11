@@ -72,7 +72,11 @@ interface StaffManagerProps {
   initialStaffServices?: StaffServiceLink[];
 }
 
-export function StaffManager({ initialStaff, services = [], initialStaffServices = [] }: StaffManagerProps) {
+export function StaffManager({
+  initialStaff,
+  services = [],
+  initialStaffServices = [],
+}: StaffManagerProps) {
   const [staff, setStaff] = useState<StaffMemberData[]>(initialStaff);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -222,8 +226,11 @@ export function StaffManager({ initialStaff, services = [], initialStaffServices
           </div>
           <form action={handleCreate} className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-foreground">Nome</label>
+              <label htmlFor="staff-name" className="block text-sm font-medium text-foreground">
+                Nome
+              </label>
               <input
+                id="staff-name"
                 name="name"
                 required
                 className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
@@ -252,6 +259,7 @@ export function StaffManager({ initialStaff, services = [], initialStaffServices
       ) : (
         <div className="space-y-3">
           {staff.map((member) => (
+            // biome-ignore lint/a11y/noStaticElementInteractions: draggable div requires drag event handlers
             <div
               key={member.id}
               draggable
@@ -268,9 +276,12 @@ export function StaffManager({ initialStaff, services = [], initialStaffServices
               {/* Main row */}
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
+                  {/* biome-ignore lint/a11y/noStaticElementInteractions: drag handle requires onMouseDown on div */}
                   <div
                     className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
-                    onMouseDown={(e) => e.currentTarget.closest("[draggable]")?.setAttribute("draggable", "true")}
+                    onMouseDown={(e) =>
+                      e.currentTarget.closest("[draggable]")?.setAttribute("draggable", "true")
+                    }
                   >
                     <GripVertical className="h-5 w-5" />
                   </div>

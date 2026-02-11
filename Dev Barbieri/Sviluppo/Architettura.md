@@ -73,8 +73,10 @@ barberos-mvp/
     │   ├── services.ts           # getServices, createService, updateService,
     │   │                         # toggleService, deleteService
     │   ├── staff.ts              # getStaff, createStaffMember, updateStaffMember,
-    │   │                         # updateStaffWorkingHours, deleteStaffMember
-    │   └── waitlist.ts           # getWaitlistEntries, removeWaitlistEntry, expireOldEntries
+    │   │                         # updateStaffWorkingHours, deleteStaffMember,
+    │   │                         # reorderStaff, getStaffServices, updateStaffServices
+    │   └── waitlist.ts           # getWaitlistEntries, removeWaitlistEntry, expireOldEntries,
+    │                              # addToWaitlist
     │
     ├── components/               # Componenti React
     │   ├── booking/
@@ -122,16 +124,26 @@ barberos-mvp/
     ├── lib/
     │   ├── utils.ts              # Utility cn() per class names (clsx + tailwind-merge)
     │   ├── slots.ts              # Algoritmo calcolo slot disponibili (orari staff - appuntamenti - pausa)
+    │   ├── time-utils.ts         # Utility tempo condivise: addMinutesToTime, timeToMinutes,
+    │   │                         # minutesToTop, minutesToHeight, formatPrice (deduplicate da 4 file)
     │   ├── rate-limit.ts         # Rate limiter in-memory sliding window per API routes
     │   │                         # checkRateLimit(), getClientIp()
     │   ├── stripe.ts             # Stripe server client (lazy init + Proxy alias), re-export PLANS,
     │   │                         # STRIPE_PRICES server-only da env
     │   ├── stripe-plans.ts       # Definizione piani (Essential, Professional, Enterprise),
     │   │                         # prezzi, features, product IDs — importabile da client components
+    │   ├── stripe-utils.ts       # mapStatus() estratto da webhook Stripe (testabile senza side-effect)
     │   ├── whatsapp.ts           # WhatsApp dual-mode: Twilio live o mock console.log
     │   │                         # sendWhatsAppMessage(), renderTemplate(), isWhatsAppEnabled()
     │   ├── templates.ts          # Template messaggi WhatsApp: 8 tipi, DEFAULT_TEMPLATES,
     │   │                         # TEMPLATE_LABELS, TEMPLATE_DESCRIPTIONS, types condivisi
+    │   ├── __tests__/            # Unit test Vitest (95 test su funzioni pure)
+    │   │   ├── time-utils.test.ts    # 24 test: addMinutesToTime, timeToMinutes, formatPrice
+    │   │   ├── whatsapp.test.ts      # 8 test: renderTemplate
+    │   │   ├── rate-limit.test.ts    # 11 test: checkRateLimit, getClientIp
+    │   │   ├── slots.test.ts         # 11 test: getAvailableSlots
+    │   │   ├── stripe-utils.test.ts  # 11 test: mapStatus
+    │   │   └── validation.test.ts    # 30 test: Zod schemas
     │   └── supabase/
     │       ├── client.ts         # Supabase browser client (createBrowserClient)
     │       ├── server.ts         # Supabase server client (createServerClient con cookies)

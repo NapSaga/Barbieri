@@ -9,7 +9,7 @@ PANORAMICA FASI
 Fase A — Infrastruttura         ✅ COMPLETATA
 Fase B — Funzionalità core      ✅ COMPLETATA
 Fase C — Automazioni e business  ✅ COMPLETATA
-Fase D — Polish e deploy         🔧 IN CORSO (12/13 completati)
+Fase D — Polish e deploy         🔧 IN CORSO (13/14 completati)
 
 ---
 
@@ -228,13 +228,18 @@ FASE D — POLISH E DEPLOY 🔧
     - Nota: abilitare Leaked Password Protection dalla Supabase Dashboard
 
 [x] CI/CD GitHub Actions
-    - Workflow .github/workflows/ci.yml: typecheck → lint → build su ogni push/PR a main
+    - Workflow .github/workflows/ci.yml: typecheck → lint → test → build su ogni push/PR a main
     - pnpm 10 + Node.js 22, caching dipendenze, concurrency con cancel-in-progress
     - Fix 41 errori useButtonType (type="button" aggiunto su ~15 componenti)
     - Fix 7 errori useTemplate (string concat → template literal)
     - Fix 2 errori useOptionalChain
     - Configurazione Biome aggiornata: regole a11y non-critiche downgrade a warn, CSS escluso (Tailwind v4)
-    - pnpm typecheck ✅, pnpm lint ✅ (0 errori, 43 warning non bloccanti), pnpm build ✅
+    - pnpm typecheck ✅, pnpm lint ✅ (0 errori, 0 warning dopo refactor), pnpm test ✅, pnpm build ✅
+
+[x] Refactor Lint / A11y / Formatting
+    - Risolti tutti i 43 warning Biome: 26 noLabelWithoutControl (htmlFor+id), 3 noStaticElementInteractions (backdrop → button), 3 noUnusedImports, 3 noUnusedFunctionParameters, 6 noExplicitAny (biome-ignore), 1 noArrayIndexKey, 1 useSemanticElements
+    - ~12 file riformattati per line width 100 char
+    - biome.json invariato (regole restano warn, warning risolti nel codice)
 
 ---
 

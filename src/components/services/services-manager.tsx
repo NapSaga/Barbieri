@@ -303,8 +303,11 @@ function ServiceForm({
     <form action={handleSubmit} className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
-          <label className="block text-sm font-medium text-foreground">Nome</label>
+          <label htmlFor="service-name" className="block text-sm font-medium text-foreground">
+            Nome
+          </label>
           <input
+            id="service-name"
             name="name"
             required
             defaultValue={defaultValues?.name}
@@ -313,8 +316,11 @@ function ServiceForm({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground">Durata (min)</label>
+          <label htmlFor="service-duration" className="block text-sm font-medium text-foreground">
+            Durata (min)
+          </label>
           <input
+            id="service-duration"
             name="duration_minutes"
             type="number"
             required
@@ -326,8 +332,11 @@ function ServiceForm({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground">Prezzo (€)</label>
+          <label htmlFor="service-price" className="block text-sm font-medium text-foreground">
+            Prezzo (€)
+          </label>
           <input
+            id="service-price"
             name="price"
             type="number"
             required
