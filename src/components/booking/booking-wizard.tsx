@@ -46,6 +46,7 @@ interface BookingWizardProps {
   staffMembers: StaffMember[];
   staffServiceLinks?: StaffServiceLink[];
   closureDates?: string[];
+  previewMode?: boolean;
 }
 
 type Step = "service" | "staff" | "datetime" | "confirm";
@@ -104,6 +105,7 @@ export function BookingWizard({
   staffMembers,
   staffServiceLinks = [],
   closureDates = [],
+  previewMode = false,
 }: BookingWizardProps) {
   const [step, setStep] = useState<Step>("service");
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -120,7 +122,7 @@ export function BookingWizard({
   const [slotsLoading, setSlotsLoading] = useState(false);
 
   useEffect(() => {
-    if (!selectedDate || !selectedStaff) {
+    if (previewMode || !selectedDate || !selectedStaff) {
       setBookedSlots([]);
       return;
     }
@@ -135,11 +137,11 @@ export function BookingWizard({
     return () => {
       cancelled = true;
     };
-  }, [selectedDate, selectedStaff, business.id]);
+  }, [selectedDate, selectedStaff, business.id, previewMode]);
 
   const dates = Array.from({ length: DAYS_TO_SHOW }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() + i + 1);
+    d.setDate(d.getDate() + i);
     return d;
   });
 
@@ -215,6 +217,7 @@ export function BookingWizard({
   }
 
   async function handleConfirm() {
+    if (previewMode) return;
     if (!selectedService || !selectedStaff || !selectedDate || !selectedTime) return;
     if (!clientName.trim() || !clientPhone.trim()) {
       setError("Inserisci nome e numero di telefono");
@@ -509,7 +512,12 @@ export function BookingWizard({
             <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
           )}
 
-          <Button onClick={handleConfirm} disabled={loading} className="w-full" size="lg">
+          <Button
+            onClick={handleConfirm}
+            disabled={loading || previewMode}
+            className="w-full"
+            size="lg"
+          >
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

@@ -292,6 +292,12 @@ Cron job (reactivation):
   → find_dormant_clients() → clienti inattivi > soglia giorni
   → WhatsApp: "È passato un po'! Prenota qui"
 
+Cron job (auto-complete):
+  pg_cron */20 → SQL diretto (no Edge Function)
+  → auto_complete_appointments() → confirmed il cui end_time + ritardo per-business (default 20 min) è passato
+  → UPDATE status='completed', aggiorna total_visits e last_visit_at del cliente
+  → Ritardo configurabile da Dashboard > Impostazioni > Regole automatiche
+
 ---
 
 SUPABASE EDGE FUNCTIONS (Deno, deployate su Supabase Cloud)
@@ -317,21 +323,23 @@ PostgreSQL Extensions abilitate:
 - pg_cron v1.6.4 — Job scheduler (cron.schedule, cron.job)
 - pg_net v0.19.5 — Async HTTP da SQL (net.http_post per chiamare Edge Functions)
 
-6 SQL Helper Functions:
+7 SQL Helper Functions:
 - find_appointments_needing_confirm_request() — timing smart, SECURITY DEFINER
 - find_appointments_needing_confirm_reminder() — secondo avviso, SECURITY DEFINER
 - auto_cancel_unconfirmed() — UPDATE + RETURNING, SECURITY DEFINER
 - find_confirmed_needing_pre_reminder() — confermati ~2h prima, SECURITY DEFINER
 - find_review_appointments(hours_min, hours_max) — SECURITY DEFINER
 - find_dormant_clients(min_days_since_last_msg) — SECURITY DEFINER
+- auto_complete_appointments() — SQL diretto, ritardo per-business, SECURITY DEFINER
 
-6 pg_cron Schedules:
+7 pg_cron Schedules:
 - confirmation-request: */30 * * * * → pg_net → Edge Function
 - confirmation-reminder: */30 * * * * → pg_net → Edge Function
 - auto-cancel: */30 * * * * → pg_net → Edge Function
 - pre-appointment: */30 * * * * → pg_net → Edge Function
 - review-request: 15 * * * * → pg_net → Edge Function
 - reactivation: 0 10 * * * → pg_net → Edge Function
+- auto-complete-appointments: */20 * * * * → SQL diretto (no Edge Function)
 
 Timing smart conferma (in base a orario appuntamento):
 | Orario app. | 1ª richiesta | 2° reminder | Deadline cancellazione |
@@ -360,9 +368,9 @@ Codebase Next.js (locale):
 
 Supabase Cloud:
 - 6 Edge Functions attive (confirmation-request/reminder, auto-cancel, pre-appointment, review-request, reactivation)
-- 7 SQL helper/functions (6 conferma + calculate_analytics_daily)
-- 7 pg_cron schedules (6 conferma + analytics-daily-calc)
-- 16 migrazioni applicate
+- 8 SQL helper/functions (6 conferma + calculate_analytics_daily + auto_complete_appointments)
+- 8 pg_cron schedules (6 conferma + analytics-daily-calc + auto-complete-appointments)
+- 17 migrazioni applicate
 - 11 tabelle (10 originali + business_closures)
 
 Deploy:

@@ -258,6 +258,33 @@
 
 ---
 
+## 17. Personalizza Form
+
+| # | Test | Passi | Risultato atteso | Esito | Note |
+|---|------|-------|------------------|-------|------|
+| 17.1 | Pagina carica | Naviga a `/dashboard/customize` | Pagina carica senza errori, mostra controlli e preview | ⬜ | — |
+| 17.2 | Sidebar voce | Controlla sidebar | Voce "Personalizza" con icona Palette visibile nella sezione Gestione | ⬜ | — |
+| 17.3 | Cambio colore primario | Cambia colore primario con color picker | Preview aggiorna in tempo reale il colore dei bottoni e slot selezionato | ⬜ | — |
+| 17.4 | Cambio colore secondario | Cambia colore secondario con color picker | Preview aggiorna in tempo reale gli accenti | ⬜ | — |
+| 17.5 | Salvataggio | Cambia colori e clicca "Salva" | Toast "Personalizzazione salvata!", dati persistiti in DB (`brand_colors`) | ⬜ | — |
+| 17.6 | Booking page riflette colori | Dopo salvataggio, apri `/book/[slug]` | Pagina pubblica mostra i colori custom salvati | ⬜ | — |
+| 17.7 | Logo URL | Inserisci URL immagine valido nel campo Logo | Preview mostra logo nell'header, booking page pubblica mostra logo | ⬜ | — |
+| 17.8 | Reset default | Clicca bottone reset | Colori tornano ai default (#171717, #737373), logo rimosso | ⬜ | — |
+| 17.9 | Preview mode | Interagisci con il wizard nella preview | Wizard navigabile ma bottone "Conferma Prenotazione" disabilitato, nessuna chiamata server | ⬜ | — |
+| 17.10 | Link diretto | Controlla link prenotazione nella sezione controlli | URL `/book/[slug]` mostrato e cliccabile, apre in nuova tab | ⬜ | — |
+| 17.11 | Messaggio benvenuto | Inserisci testo nel campo "Messaggio di benvenuto" | Preview mostra testo sotto nome negozio, contatore caratteri funziona | ⬜ | — |
+| 17.12 | Benvenuto su booking page | Salva messaggio, apri `/book/[slug]` | Messaggio visibile sotto nome e indirizzo | ⬜ | — |
+| 17.13 | Limite 200 caratteri | Inserisci testo > 200 caratteri | Input tronca a 200, contatore mostra 200/200 | ⬜ | — |
+| 17.14 | Immagine copertina | Inserisci URL immagine nel campo copertina | Preview mostra hero image sopra header, booking page mostra banner | ⬜ | — |
+| 17.15 | Copertina URL invalido | Inserisci URL non valido e salva | Errore di validazione mostrato | ⬜ | — |
+| 17.16 | Preset font — Classico | Seleziona preset "Classico" | Preview heading cambia in font serif (Georgia) | ⬜ | — |
+| 17.17 | Preset font — Bold | Seleziona preset "Bold" | Preview heading cambia in font display (Impact) | ⬜ | — |
+| 17.18 | Preset font — Minimal | Seleziona preset "Minimal" | Preview heading cambia in font monospace | ⬜ | — |
+| 17.19 | Font su booking page | Salva preset font, apri `/book/[slug]` | Heading del negozio usa il font selezionato | ⬜ | — |
+| 17.20 | Reset completo | Clicca reset dopo aver modificato tutti i campi | Tutti i campi tornano ai default (colori, logo, testo, copertina, font moderno) | ⬜ | — |
+
+---
+
 ## Riepilogo Esecuzione
 
 | Sezione | Totale | ✅ Pass | ❌ Fail | ⏭️ Skip | Note |
@@ -278,7 +305,8 @@
 | 14. Analytics | 9 | 9 | 0 | 0 | Formattazione e delta corretti |
 | 15. Edge Functions | 7 | 0 | 0 | 7 | Richiedono deployment Supabase |
 | 16. Responsiveness | 6 | 6 | 0 | 0 | UI responsive e accessibile |
-| **TOTALE** | **126** | **114** | **0** | **12** | **90.5% pass rate** (escl. skip: 100%) |
+| 17. Personalizza Form | 20 | 0 | 0 | 0 | Colori, logo, testo benvenuto, copertina, font preset — da testare |
+| **TOTALE** | **146** | **114** | **0** | **12** | **78.1% pass rate** (escl. skip: 100% delle testate) |
 
 ---
 

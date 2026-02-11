@@ -7,6 +7,7 @@ import {
   LogOut,
   Menu,
   Moon,
+  Palette,
   PanelLeftClose,
   Scissors,
   Settings,
@@ -39,6 +40,7 @@ const navSections = [
       { name: "Servizi", href: "/dashboard/services", icon: Scissors },
       { name: "Staff", href: "/dashboard/staff", icon: UserCog },
       { name: "Lista d'attesa", href: "/dashboard/waitlist", icon: Clock },
+      { name: "Personalizza", href: "/dashboard/customize", icon: Palette },
     ],
   },
   {
@@ -85,7 +87,7 @@ export function DashboardSidebar() {
         href={item.href}
         onClick={onClick}
         className={cn(
-          "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          "group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
           isCollapsed && "justify-center px-0",
           isActive
             ? "bg-sidebar-accent text-sidebar-accent-foreground"
@@ -137,8 +139,8 @@ export function DashboardSidebar() {
         {/* Header: Logo + Collapse toggle */}
         <div
           className={cn(
-            "flex h-14 items-center border-b border-sidebar-border",
-            isCollapsed ? "justify-center px-2" : "justify-between px-4",
+            "flex h-16 items-center gap-2 border-b border-sidebar-border",
+            isCollapsed ? "justify-center px-2" : "px-3",
           )}
         >
           {isCollapsed ? (
@@ -149,7 +151,7 @@ export function DashboardSidebar() {
                   onClick={() => setCollapsed(false)}
                   className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                 >
-                  <LogoIcon size={32} />
+                  <LogoIcon />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right" sideOffset={8}>
@@ -158,15 +160,15 @@ export function DashboardSidebar() {
             </Tooltip>
           ) : (
             <>
-              <LogoFull />
+              <LogoFull className="flex-1 min-w-0" />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     onClick={() => setCollapsed(true)}
-                    className="rounded-md p-1.5 text-sidebar-foreground/30 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    className="shrink-0 rounded-md p-2 text-sidebar-foreground/30 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   >
-                    <PanelLeftClose className="h-4 w-4" />
+                    <PanelLeftClose className="h-5 w-5" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" sideOffset={4}>

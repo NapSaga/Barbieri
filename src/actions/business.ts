@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
+import { updateBrandSettingsSchema } from "@/lib/brand-settings";
 import { createClient } from "@/lib/supabase/server";
 import type { MessageTemplate, MessageTemplateType } from "@/lib/templates";
 
@@ -25,6 +26,7 @@ const openingHoursSchema = z.record(z.string(), dayHoursSchema);
 const updateThresholdsSchema = z.object({
   dormant_threshold_days: z.number().int().min(1, "Soglia giorni dormiente deve essere almeno 1"),
   no_show_threshold: z.number().int().min(1, "Soglia no-show deve essere almeno 1"),
+  auto_complete_delay_minutes: z.number().int().min(0, "Ritardo completamento deve essere almeno 0").max(60, "Ritardo completamento massimo 60 minuti"),
 });
 
 const messageTemplateTypeSchema = z.enum([
@@ -124,6 +126,7 @@ export async function updateBusinessOpeningHours(
 export async function updateBusinessThresholds(data: {
   dormant_threshold_days: number;
   no_show_threshold: number;
+  auto_complete_delay_minutes: number;
 }) {
   const parsed = updateThresholdsSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Soglie non valide" };
@@ -140,6 +143,7 @@ export async function updateBusinessThresholds(data: {
     .update({
       dormant_threshold_days: data.dormant_threshold_days,
       no_show_threshold: data.no_show_threshold,
+      auto_complete_delay_minutes: data.auto_complete_delay_minutes,
       updated_at: new Date().toISOString(),
     })
     .eq("owner_id", user.id);
@@ -147,6 +151,53 @@ export async function updateBusinessThresholds(data: {
   if (error) return { error: error.message };
 
   revalidatePath("/dashboard/settings");
+  return { success: true };
+}
+
+// ─── Brand Settings ─────────────────────────────────────────────────
+
+export async function updateBrandSettings(data: {
+  brandColors?: { primary: string; secondary: string };
+  logoUrl?: string;
+  welcomeText?: string;
+  coverImageUrl?: string;
+  fontPreset?: string;
+}) {
+  const parsed = updateBrandSettingsSchema.safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const updateData: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (data.brandColors !== undefined) {
+    updateData.brand_colors = data.brandColors;
+  }
+  if (data.logoUrl !== undefined) {
+    updateData.logo_url = data.logoUrl || null;
+  }
+  if (data.welcomeText !== undefined) {
+    updateData.welcome_text = data.welcomeText || null;
+  }
+  if (data.coverImageUrl !== undefined) {
+    updateData.cover_image_url = data.coverImageUrl || null;
+  }
+  if (data.fontPreset !== undefined) {
+    updateData.font_preset = data.fontPreset || null;
+  }
+
+  const { error } = await supabase.from("businesses").update(updateData).eq("owner_id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard/customize");
   return { success: true };
 }
 

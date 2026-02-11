@@ -80,12 +80,16 @@ export const businesses = pgTable("businesses", {
     jsonb("opening_hours").$type<
       Record<string, { open: string; close: string; closed: boolean }>
     >(),
+  welcomeText: text("welcome_text"),
+  coverImageUrl: text("cover_image_url"),
+  fontPreset: text("font_preset"),
   brandColors: jsonb("brand_colors").$type<{ primary: string; secondary: string }>(),
   timezone: text("timezone").default("Europe/Rome").notNull(),
   stripeCustomerId: text("stripe_customer_id"),
   subscriptionStatus: subscriptionStatusEnum("subscription_status").default("trialing"),
   dormantThresholdDays: integer("dormant_threshold_days").default(28),
   noShowThreshold: integer("no_show_threshold").default(2),
+  autoCompleteDelayMinutes: integer("auto_complete_delay_minutes").default(20),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

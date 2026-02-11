@@ -24,6 +24,6 @@ export { PLANS, type PlanDef, type PlanId, STRIPE_CONFIG } from "@/lib/stripe-pl
 
 // Server-only: price IDs from env (not available in client components)
 export const STRIPE_PRICES: Record<string, string> = {
-  essential: process.env.STRIPE_PRICE_ESSENTIAL || "",
-  professional: process.env.STRIPE_PRICE_PROFESSIONAL || "",
+  essential: (process.env.STRIPE_PRICE_ESSENTIAL || "").trim(),
+  professional: (process.env.STRIPE_PRICE_PROFESSIONAL || "").trim(),
 };

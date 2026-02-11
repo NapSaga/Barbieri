@@ -68,6 +68,7 @@ interface BusinessData {
   timezone: string;
   dormant_threshold_days: number | null;
   no_show_threshold: number | null;
+  auto_complete_delay_minutes: number | null;
 }
 
 interface SettingsManagerProps {
@@ -725,6 +726,7 @@ function GoogleReviewInfo({ business }: { business: BusinessData }) {
 function ThresholdsForm({ business }: { business: BusinessData }) {
   const [dormantDays, setDormantDays] = useState(business.dormant_threshold_days ?? 28);
   const [noShowThreshold, setNoShowThreshold] = useState(business.no_show_threshold ?? 2);
+  const [autoCompleteDelay, setAutoCompleteDelay] = useState(business.auto_complete_delay_minutes ?? 20);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -736,6 +738,7 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
       const result = await updateBusinessThresholds({
         dormant_threshold_days: dormantDays,
         no_show_threshold: noShowThreshold,
+        auto_complete_delay_minutes: autoCompleteDelay,
       });
       if (result.error) {
         setError(result.error);
@@ -790,6 +793,30 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
           value={noShowThreshold}
           onChange={(e) => {
             setNoShowThreshold(Number(e.target.value));
+            setSaved(false);
+          }}
+          className="mt-1 block w-32 rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="settings-auto-complete-delay"
+          className="block text-sm font-medium text-foreground"
+        >
+          Ritardo completamento automatico (minuti)
+        </label>
+        <p className="text-xs text-muted-foreground mb-1">
+          Minuti di attesa dopo la fine dell&apos;appuntamento prima di segnarlo come completato (per clienti in ritardo)
+        </p>
+        <input
+          id="settings-auto-complete-delay"
+          type="number"
+          min={0}
+          max={60}
+          value={autoCompleteDelay}
+          onChange={(e) => {
+            setAutoCompleteDelay(Number(e.target.value));
             setSaved(false);
           }}
           className="mt-1 block w-32 rounded-lg border border-input bg-muted px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"

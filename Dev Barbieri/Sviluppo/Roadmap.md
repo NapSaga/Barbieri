@@ -151,6 +151,22 @@ FASE C — AUTOMAZIONI E BUSINESS ✅
 
 FASE D — POLISH E DEPLOY 🔧
 
+[x] Personalizza Form (booking page branding)
+    - Nuova pagina /dashboard/customize con preview live del BookingWizard
+    - Sidebar: voce "Personalizza" con icona Palette nella sezione Gestione
+    - Color picker primario/secondario con conversione hex→oklch per CSS variables
+    - Logo URL con preview immagine
+    - Messaggio di benvenuto (welcome_text, max 200 char, contatore live)
+    - Immagine di copertina / banner (cover_image_url, hero image 16:9)
+    - 4 preset tipografici: Moderno, Classico, Bold, Minimal (font_preset, CSS variables --font-heading/--font-body)
+    - Server action updateBrandSettings (Zod validation + Supabase update)
+    - Booking page pubblica (/book/[slug]) applica brand_colors, logo_url, welcome_text, cover_image_url, font_preset
+    - BookingWizard: prop previewMode per disabilitare azioni nella preview
+    - 44 test Vitest (schema, hexToOklch, generateBrandCSSVariables, getFontPreset, generateFontCSSVariables)
+    - 20 test E2E nella checklist (sezione 17)
+    - Migrazione DB: welcome_text, cover_image_url, font_preset su businesses
+    - File: brand-settings.ts, form-customizer.tsx, customize/page.tsx, business.ts, sidebar.tsx, booking-wizard.tsx, book/[slug]/page.tsx, schema.ts
+
 [x] Deploy produzione
     - Vercel collegato (cartella .vercel presente)
     - Server Actions e API routes funzionanti su Vercel
@@ -264,6 +280,6 @@ DEBITO TECNICO NOTO
 - window.location.reload() usato dopo create/update in alcuni componenti (da sostituire con router.refresh())
 - settings-manager.tsx è 811 righe — potrebbe essere spezzato in sotto-componenti
 - Drag and drop per spostare appuntamenti nel calendario non implementato (previsto nella scheda tecnica)
-- Colori brand: campo brand_colors in DB ma non usato nella pagina booking
+- Colori brand: ✅ RISOLTO — Personalizza Form implementato con preview live e applicazione su booking page
 - Staff photo: campo photo_url in DB ma upload non implementato
 - Rate limiter in-memory: si resetta a ogni deploy/restart (sufficiente pre-launch)

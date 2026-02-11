@@ -220,6 +220,7 @@ Ogni tabella ha RLS abilitato. Struttura per ogni tabella:
 Funzioni DB:
 - get_user_business_id() — STABLE, SECURITY DEFINER, search_path = public
 - handle_new_user() — Trigger AFTER INSERT su auth.users, crea automaticamente una riga in businesses
+- auto_complete_appointments() — SECURITY DEFINER, search_path = ''. Segna confirmed → completed quando end_time + ritardo configurabile per business (auto_complete_delay_minutes, default 20 min) è passato (Europe/Rome). Aggiorna total_visits e last_visit_at del cliente.
 
 Supabase Auth Security:
 - Leaked Password Protection: ENABLED (HaveIBeenPwned.org)
@@ -246,6 +247,7 @@ MIGRAZIONI APPLICATE
 14. fix_search_path_calculate_analytics_daily — Fix search_path su calculate_analytics_daily
 15. security_perf_fixes — auth.uid() → (select auth.uid()) su businesses/business_closures, 7 indici FK, policy duplicate consolidate su services/staff/staff_services
 16. consolidate_permissive_policies — Consolidamento policy INSERT/SELECT duplicate su appointments/businesses/clients
+17. auto_complete_appointments — Colonna auto_complete_delay_minutes (default 20) su businesses + funzione auto_complete_appointments() con ritardo per-business + pg_cron schedule */20 (auto-completa confermati dopo end_time + delay, aggiorna stats cliente)
 
 ---
 
@@ -283,11 +285,12 @@ Sistema Conferma Intelligente (4 Edge Functions):
 | auto-cancel | */30 * * * * | Cancella non confermati alla deadline + notifica waitlist |
 | pre-appointment | */30 * * * * | "Ci vediamo!" ~2h prima (solo confermati) |
 
-Automazioni aggiuntive (2 Edge Functions):
+Automazioni aggiuntive (2 Edge Functions + 1 SQL diretto):
 | Nome | Schedule | Cosa fa |
 |------|----------|---------|
 | review-request | 15 * * * * (ogni ora :15) | Richiesta recensione Google post-completamento |
 | reactivation | 0 10 * * * (11:00 Roma) | Riattivazione clienti dormienti |
+| auto-complete-appointments | */20 * * * * | SQL diretto (no Edge Function): confirmed → completed dopo end_time + ritardo configurabile per business (default 20 min), aggiorna total_visits/last_visit_at |
 
 Timing smart conferma:
 | Orario appuntamento | 1ª richiesta | 2° reminder | Deadline auto-cancel |
