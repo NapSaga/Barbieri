@@ -1,6 +1,6 @@
 BARBEROS — ANALYTICS & MONITORAGGIO UTILIZZO APP
 
-Ultimo aggiornamento: 10 febbraio 2026
+Ultimo aggiornamento: 11 febbraio 2026
 
 ---
 
@@ -83,7 +83,7 @@ DATI DISPONIBILI SU HOBBY (dopo Step 1-3):
 CHECKLIST FASE 1:
   [x] pnpm add @vercel/analytics @vercel/speed-insights — FATTO 10 feb 2026
   [x] Aggiungere <Analytics /> e <SpeedInsights /> al layout.tsx — FATTO 10 feb 2026
-  [ ] Deploy su Vercel (git push)
+  [x] Deploy su Vercel (git push) — Vercel collegato e attivo
   [ ] Verificare dati nella Vercel Dashboard dopo primo visitatore
   [ ] Abilitare Speed Insights: Project → Speed Insights tab → Enable
 

@@ -30,12 +30,21 @@ export default async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Public routes that don't require authentication
-  const publicPaths = ["/", "/book", "/login", "/register", "/auth/callback", "/api/stripe"];
+  const publicPaths = [
+    "/",
+    "/book",
+    "/login",
+    "/register",
+    "/auth/callback",
+    "/api/stripe",
+    "/api/whatsapp",
+  ];
   const isPublicPath = publicPaths.some(
     (path) =>
       request.nextUrl.pathname === path ||
       request.nextUrl.pathname.startsWith("/book/") ||
-      request.nextUrl.pathname.startsWith("/api/stripe/"),
+      request.nextUrl.pathname.startsWith("/api/stripe/") ||
+      request.nextUrl.pathname.startsWith("/api/whatsapp/"),
   );
 
   if (!user && !isPublicPath) {
@@ -81,7 +90,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

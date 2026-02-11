@@ -1,26 +1,26 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import {
-  UserCog,
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  Loader2,
-  Clock,
-  ToggleLeft,
-  ToggleRight,
   ChevronDown,
   ChevronUp,
+  Clock,
+  Loader2,
+  Pencil,
+  Plus,
+  ToggleLeft,
+  ToggleRight,
+  Trash2,
+  UserCog,
+  X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, useTransition } from "react";
 import {
   createStaffMember,
+  deleteStaffMember,
   updateStaffMember,
   updateStaffWorkingHours,
-  deleteStaffMember,
 } from "@/actions/staff";
+import { cn } from "@/lib/utils";
 
 interface WorkingDay {
   start: string;
@@ -103,7 +103,12 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
   }
 
   function handleDelete(staffId: string) {
-    if (!confirm("Sei sicuro di voler eliminare questo barbiere? Tutti i suoi appuntamenti resteranno ma senza barbiere assegnato.")) return;
+    if (
+      !confirm(
+        "Sei sicuro di voler eliminare questo barbiere? Tutti i suoi appuntamenti resteranno ma senza barbiere assegnato.",
+      )
+    )
+      return;
     startTransition(async () => {
       const result = await deleteStaffMember(staffId);
       if (result.error) {
@@ -126,7 +131,10 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
           </span>
         </div>
         <button
-          onClick={() => { setShowForm(true); setEditingId(null); }}
+          onClick={() => {
+            setShowForm(true);
+            setEditingId(null);
+          }}
           className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
@@ -134,7 +142,11 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
         </button>
       </div>
 
-      {error && <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* Create form */}
       {showForm && (
@@ -231,9 +243,7 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
 
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() =>
-                      setExpandedHours(expandedHours === member.id ? null : member.id)
-                    }
+                    onClick={() => setExpandedHours(expandedHours === member.id ? null : member.id)}
                     className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
                   >
                     <Clock className="h-3.5 w-3.5" />
@@ -279,9 +289,7 @@ export function StaffManager({ initialStaff }: StaffManagerProps) {
                   workingHours={member.working_hours}
                   onSave={(hours) => {
                     setStaff((prev) =>
-                      prev.map((s) =>
-                        s.id === member.id ? { ...s, working_hours: hours } : s,
-                      ),
+                      prev.map((s) => (s.id === member.id ? { ...s, working_hours: hours } : s)),
                     );
                   }}
                 />
@@ -344,7 +352,9 @@ function WorkingHoursEditor({ staffId, workingHours, onSave }: WorkingHoursEdito
                 onChange={(e) => updateDay(day, "off", !e.target.checked)}
                 className="h-4 w-4 rounded border-input text-foreground focus:ring-ring"
               />
-              <span className="text-xs text-muted-foreground">{hours[day].off ? "Chiuso" : "Aperto"}</span>
+              <span className="text-xs text-muted-foreground">
+                {hours[day].off ? "Chiuso" : "Aperto"}
+              </span>
             </label>
             {!hours[day].off && (
               <>

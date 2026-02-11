@@ -1,26 +1,29 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
 import {
-  Clock,
-  Search,
-  Phone,
-  Trash2,
-  Loader2,
   Bell,
-  CheckCircle2,
-  XCircle,
-  Timer,
-  Scissors,
   CalendarClock,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Phone,
+  Scissors,
+  Search,
+  Timer,
+  Trash2,
+  XCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { removeWaitlistEntry, expireOldEntries } from "@/actions/waitlist";
+import { useMemo, useState, useTransition } from "react";
 import type { WaitlistEntry } from "@/actions/waitlist";
+import { expireOldEntries, removeWaitlistEntry } from "@/actions/waitlist";
+import { cn } from "@/lib/utils";
 
 type StatusFilter = "all" | "waiting" | "notified" | "converted" | "expired";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; dotColor: string; icon: typeof Clock }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; color: string; dotColor: string; icon: typeof Clock }
+> = {
   waiting: {
     label: "In attesa",
     color: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
@@ -202,11 +205,18 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
                   : "border-border bg-card hover:border-foreground/10",
               )}
             >
-              <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", config.color)}>
+              <div
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                  config.color,
+                )}
+              >
                 <StatusIcon className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-lg font-bold tabular-nums text-foreground">{counts[status]}</div>
+                <div className="text-lg font-bold tabular-nums text-foreground">
+                  {counts[status]}
+                </div>
                 <div className="text-[11px] text-muted-foreground">{FILTER_LABELS[status]}</div>
               </div>
             </button>
@@ -218,7 +228,8 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
       {statusFilter !== "all" && (
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
-            Filtro: <span className="font-medium text-foreground">{FILTER_LABELS[statusFilter]}</span>
+            Filtro:{" "}
+            <span className="font-medium text-foreground">{FILTER_LABELS[statusFilter]}</span>
           </span>
           <button
             onClick={() => setStatusFilter("all")}
@@ -236,7 +247,9 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
             <>
               <Search className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
               <p className="font-medium text-foreground">Nessun risultato</p>
-              <p className="mt-1 text-sm text-muted-foreground">Prova a cambiare i filtri di ricerca.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Prova a cambiare i filtri di ricerca.
+              </p>
             </>
           ) : (
             <>
@@ -270,12 +283,12 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
                 )}
               >
                 {/* Avatar */}
-                <div className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold shadow-sm",
-                  isExpired
-                    ? "bg-muted text-muted-foreground"
-                    : "bg-foreground text-background",
-                )}>
+                <div
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold shadow-sm",
+                    isExpired ? "bg-muted text-muted-foreground" : "bg-foreground text-background",
+                  )}
+                >
                   {clientName.charAt(0).toUpperCase()}
                 </div>
 
@@ -283,10 +296,12 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="truncate text-sm font-semibold text-foreground">{clientName}</h3>
-                    <span className={cn(
-                      "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                      config.color,
-                    )}>
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                        config.color,
+                      )}
+                    >
                       <StatusIcon className="h-3 w-3" />
                       {config.label}
                     </span>
@@ -295,15 +310,18 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
                     {/* Date & time */}
                     <span className="flex items-center gap-1 font-medium text-foreground">
                       <CalendarClock className="h-3 w-3 text-muted-foreground" />
-                      {formatDate(entry.desired_date)} · {formatTime(entry.desired_start_time)}–{formatTime(entry.desired_end_time)}
+                      {formatDate(entry.desired_date)} · {formatTime(entry.desired_start_time)}–
+                      {formatTime(entry.desired_end_time)}
                     </span>
                     {/* Relative date */}
-                    <span className={cn(
-                      "rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium",
-                      entry.desired_date >= new Date().toISOString().split("T")[0]
-                        ? "text-foreground"
-                        : "text-muted-foreground",
-                    )}>
+                    <span
+                      className={cn(
+                        "rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium",
+                        entry.desired_date >= new Date().toISOString().split("T")[0]
+                          ? "text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {formatRelativeDate(entry.desired_date)}
                     </span>
                     {/* Service */}
@@ -323,7 +341,13 @@ export function WaitlistManager({ initialEntries }: WaitlistManagerProps) {
                     {/* Notified timestamp */}
                     {entry.notified_at && (
                       <span className="text-violet-600 dark:text-violet-400">
-                        Notificato {new Date(entry.notified_at).toLocaleString("it-IT", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
+                        Notificato{" "}
+                        {new Date(entry.notified_at).toLocaleString("it-IT", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          day: "numeric",
+                          month: "short",
+                        })}
                       </span>
                     )}
                   </div>

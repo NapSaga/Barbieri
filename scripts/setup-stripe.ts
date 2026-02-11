@@ -2,12 +2,12 @@
  * Setup script to create recurring monthly prices on Stripe for all plans.
  * Run once: npx tsx scripts/setup-stripe.ts
  *
- * Requires STRIPE_SECRET_KEY in .env.local 
+ * Requires STRIPE_SECRET_KEY in .env.local
  */
 
-import Stripe from "stripe";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import Stripe from "stripe";
 
 const envPath = resolve(import.meta.dirname ?? __dirname, "../.env.local");
 
@@ -43,12 +43,24 @@ const stripe = new Stripe(secretKey);
 
 // Plan definitions matching lib/stripe.ts
 const PLAN_CONFIGS = [
-  { envKey: "STRIPE_PRICE_ESSENTIAL", productId: "prod_TwyoUI0JLvWcj3", name: "Essential", amountCents: 30000, plan: "essential" },
-  { envKey: "STRIPE_PRICE_PROFESSIONAL", productId: "prod_TwypWo5jLd3doz", name: "Professional", amountCents: 50000, plan: "professional" },
+  {
+    envKey: "STRIPE_PRICE_ESSENTIAL",
+    productId: "prod_TwyoUI0JLvWcj3",
+    name: "Essential",
+    amountCents: 30000,
+    plan: "essential",
+  },
+  {
+    envKey: "STRIPE_PRICE_PROFESSIONAL",
+    productId: "prod_TwypWo5jLd3doz",
+    name: "Professional",
+    amountCents: 50000,
+    plan: "professional",
+  },
   // Enterprise is custom — no automatic price
 ];
 
-async function ensureRecurringPrice(config: typeof PLAN_CONFIGS[0]): Promise<string> {
+async function ensureRecurringPrice(config: (typeof PLAN_CONFIGS)[0]): Promise<string> {
   // Check if product exists
   try {
     const product = await stripe.products.retrieve(config.productId);

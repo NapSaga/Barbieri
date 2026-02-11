@@ -1,12 +1,14 @@
 "use client";
 
+import { Loader2, X } from "lucide-react";
 import { useState, useTransition } from "react";
-import { X, Loader2 } from "lucide-react";
 import { addWalkIn } from "@/actions/appointments";
 
 interface StaffMember {
   id: string;
   name: string;
+  photo_url?: string | null;
+  working_hours?: Record<string, unknown> | null;
 }
 
 interface ServiceItem {
@@ -16,19 +18,29 @@ interface ServiceItem {
   price_cents: number;
 }
 
+interface ExistingAppointment {
+  start_time: string;
+  end_time: string;
+  status: string;
+  staff: { id: string; name?: string } | null;
+}
+
 interface WalkInDialogProps {
   open: boolean;
   onClose: () => void;
   date: string;
   staffMembers: StaffMember[];
   services: ServiceItem[];
+  appointments: ExistingAppointment[];
   onSuccess: () => void;
 }
 
 function addMinutesToTime(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);
   const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59);
-  const newH = Math.floor(total / 60).toString().padStart(2, "0");
+  const newH = Math.floor(total / 60)
+    .toString()
+    .padStart(2, "0");
   const newM = (total % 60).toString().padStart(2, "0");
   return `${newH}:${newM}`;
 }
@@ -43,6 +55,7 @@ export function WalkInDialog({
   date,
   staffMembers,
   services,
+  appointments,
   onSuccess,
 }: WalkInDialogProps) {
   const [isPending, startTransition] = useTransition();
@@ -55,12 +68,25 @@ export function WalkInDialog({
     return `${h}:${m}`;
   });
 
+  const [selectedStaffId, setSelectedStaffId] = useState("");
+
   if (!open) return null;
 
   const selectedService = services.find((s) => s.id === selectedServiceId);
   const endTime = selectedService
     ? addMinutesToTime(startTime, selectedService.duration_minutes)
     : startTime;
+
+  const hasConflict =
+    selectedStaffId &&
+    selectedService &&
+    appointments.some(
+      (a) =>
+        a.staff?.id === selectedStaffId &&
+        a.status !== "cancelled" &&
+        a.start_time.slice(0, 5) < endTime &&
+        a.end_time.slice(0, 5) > startTime,
+    );
 
   function handleSubmit(formData: FormData) {
     if (!selectedService) {
@@ -144,6 +170,8 @@ export function WalkInDialog({
             <select
               name="staff_id"
               required
+              value={selectedStaffId}
+              onChange={(e) => setSelectedStaffId(e.target.value)}
               className="mt-1 block w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="">Seleziona barbiere...</option>
@@ -178,7 +206,15 @@ export function WalkInDialog({
             </div>
           </div>
 
-          {error && <p className="rounded-lg bg-destructive/10 p-2 text-sm text-destructive">{error}</p>}
+          {hasConflict && (
+            <p className="rounded-lg bg-orange-950/30 border border-orange-800/50 p-2 text-sm text-orange-400">
+              Attenzione: il barbiere ha già un appuntamento in questo orario.
+            </p>
+          )}
+
+          {error && (
+            <p className="rounded-lg bg-destructive/10 p-2 text-sm text-destructive">{error}</p>
+          )}
 
           <button
             type="submit"

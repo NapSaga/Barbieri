@@ -1,29 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import {
-  AlertTriangle,
-  Check,
-  CreditCard,
-  Loader2,
-  Settings,
-  Crown,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { createCheckoutSession, type SubscriptionInfo } from "@/actions/billing";
-import { PLANS, STRIPE_CONFIG, type PlanId } from "@/lib/stripe-plans";
+import { AlertTriangle, Check, CreditCard, Crown, Loader2, Settings } from "lucide-react";
 import Link from "next/link";
+import { useState, useTransition } from "react";
+import { createCheckoutSession, type SubscriptionInfo } from "@/actions/billing";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { PLANS, type PlanId, STRIPE_CONFIG } from "@/lib/stripe-plans";
+import { cn } from "@/lib/utils";
 
 const PLAN_ORDER: PlanId[] = ["essential", "professional", "enterprise"];
 
-export function ExpiredView({
-  subscriptionInfo,
-}: {
-  subscriptionInfo: SubscriptionInfo | null;
-}) {
+export function ExpiredView({ subscriptionInfo }: { subscriptionInfo: SubscriptionInfo | null }) {
   const [isPending, startTransition] = useTransition();
   const [pendingPlan, setPendingPlan] = useState<PlanId | null>(null);
 
@@ -42,12 +31,10 @@ export function ExpiredView({
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
           <AlertTriangle className="h-8 w-8 text-destructive" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Abbonamento non attivo
-        </h1>
+        <h1 className="text-2xl font-bold text-foreground">Abbonamento non attivo</h1>
         <p className="mt-2 max-w-md text-muted-foreground">
-          Il tuo abbonamento è scaduto o è stato cancellato. Scegli un piano per
-          continuare a usare BarberOS.
+          Il tuo abbonamento è scaduto o è stato cancellato. Scegli un piano per continuare a usare
+          BarberOS.
         </p>
       </div>
 
@@ -63,15 +50,11 @@ export function ExpiredView({
               key={planId}
               className={cn(
                 "relative flex flex-col border-2 p-6 transition-shadow hover:shadow-md",
-                isHighlighted
-                  ? "border-primary shadow-lg"
-                  : "border-border",
+                isHighlighted ? "border-primary shadow-lg" : "border-border",
               )}
             >
               {isHighlighted && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  Consigliato
-                </Badge>
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Consigliato</Badge>
               )}
 
               <div className="mb-1 flex items-center gap-2">
@@ -87,14 +70,10 @@ export function ExpiredView({
 
               <div className="mt-4 mb-5">
                 {isEnterprise ? (
-                  <span className="text-2xl font-bold text-foreground">
-                    Custom
-                  </span>
+                  <span className="text-2xl font-bold text-foreground">Custom</span>
                 ) : (
                   <>
-                    <span className="text-3xl font-bold text-foreground">
-                      {plan.priceLabel}
-                    </span>
+                    <span className="text-3xl font-bold text-foreground">{plan.priceLabel}</span>
                     <span className="text-sm text-muted-foreground">/mese</span>
                   </>
                 )}
@@ -102,10 +81,7 @@ export function ExpiredView({
 
               <ul className="mb-6 flex-1 space-y-2.5">
                 {plan.features.map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-2 text-sm text-muted-foreground"
-                  >
+                  <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                     {f}
                   </li>
@@ -147,8 +123,8 @@ export function ExpiredView({
           Impostazioni
         </Link>
         <p>
-          Contratto 12 mesi. Garanzia risultati: se dopo 3 mesi non vedi un
-          ritorno almeno 2x, esci senza penali.
+          Contratto 12 mesi. Garanzia risultati: se dopo 3 mesi non vedi un ritorno almeno 2x, esci
+          senza penali.
         </p>
       </div>
     </div>

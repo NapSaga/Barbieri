@@ -1,12 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import type { CalendarAppointment } from "@/actions/appointments";
+import { cn } from "@/lib/utils";
 
-const STATUS_STYLES: Record<
-  string,
-  { accent: string; bg: string; text: string; muted: string }
-> = {
+const STATUS_STYLES: Record<string, { accent: string; bg: string; text: string; muted: string }> = {
   booked: {
     accent: "bg-violet-500",
     bg: "bg-violet-500/10 hover:bg-violet-500/15",
@@ -53,11 +50,7 @@ interface AppointmentCardProps {
   onClick?: () => void;
 }
 
-export function AppointmentCard({
-  appointment,
-  compact = false,
-  onClick,
-}: AppointmentCardProps) {
+export function AppointmentCard({ appointment, compact = false, onClick }: AppointmentCardProps) {
   const style = STATUS_STYLES[appointment.status] || STATUS_STYLES.booked;
   const clientName = appointment.client
     ? `${appointment.client.first_name}${appointment.client.last_name ? ` ${appointment.client.last_name}` : ""}`
@@ -78,7 +71,10 @@ export function AppointmentCard({
             {clientName}
           </span>
           {appointment.confirmationStatus === "pending" && (
-            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-amber-400" title="In attesa conferma" />
+            <span
+              className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-amber-400"
+              title="In attesa conferma"
+            />
           )}
         </div>
       </button>
@@ -100,7 +96,10 @@ export function AppointmentCard({
             {clientName}
           </span>
           {appointment.confirmationStatus === "pending" && (
-            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-amber-400" title="In attesa conferma" />
+            <span
+              className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-amber-400"
+              title="In attesa conferma"
+            />
           )}
         </div>
         <div className={cn("flex items-center gap-1.5 text-[11px] leading-none", style.muted)}>

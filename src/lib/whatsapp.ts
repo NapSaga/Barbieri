@@ -115,13 +115,9 @@ async function sendMock(message: WhatsAppMessage): Promise<WhatsAppResult> {
 
 // ─── Template Rendering ─────────────────────────────────────────────
 
-export function renderTemplate(
-  template: string,
-  variables: Record<string, string>,
-): string {
-  let rendered = template;
-  for (const [key, value] of Object.entries(variables)) {
-    rendered = rendered.replaceAll(`{{${key}}}`, value);
-  }
-  return rendered;
+export function renderTemplate(template: string, variables: Record<string, string>): string {
+  // Single-pass replacement prevents injection via variable values containing {{...}}
+  return template.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
+    Object.hasOwn(variables, key) ? variables[key] : match,
+  );
 }

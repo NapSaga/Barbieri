@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { BookingWizard } from "@/components/booking/booking-wizard";
 import { getClosureDates } from "@/actions/closures";
+import { BookingWizard } from "@/components/booking/booking-wizard";
+import { createClient } from "@/lib/supabase/server";
 
 interface BookingPageProps {
   params: Promise<{ slug: string }>;

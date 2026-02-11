@@ -1,14 +1,14 @@
-import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type {
-  businesses,
-  staff,
-  services,
-  clients,
+  analyticsDaily,
   appointments,
-  waitlist,
+  businesses,
+  clients,
   messages,
   messageTemplates,
-  analyticsDaily,
+  services,
+  staff,
+  waitlist,
 } from "@/db/schema";
 
 // Select types (read from DB)
@@ -47,10 +47,7 @@ export type MessageType =
 export type MessageStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 
 // Opening hours shape
-export type OpeningHours = Record<
-  string,
-  { open: string; close: string; closed: boolean }
->;
+export type OpeningHours = Record<string, { open: string; close: string; closed: boolean }>;
 
 // Working hours shape
 export type WorkingHours = Record<

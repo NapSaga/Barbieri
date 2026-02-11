@@ -1,8 +1,13 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod/v4";
+import { createClient } from "@/lib/supabase/server";
+
+// ─── Zod Schemas ─────────────────────────────────────────────────────
+
+const uuidSchema = z.string().uuid("ID non valido");
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -53,6 +58,9 @@ export async function getWaitlistEntries(): Promise<WaitlistEntry[]> {
 // ─── Remove Waitlist Entry ───────────────────────────────────────────
 
 export async function removeWaitlistEntry(entryId: string) {
+  const parsed = uuidSchema.safeParse(entryId);
+  if (!parsed.success) return { error: "ID lista d'attesa non valido" };
+
   const supabase = await createClient();
   const {
     data: { user },

@@ -1,8 +1,24 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod/v4";
+import { createClient } from "@/lib/supabase/server";
+
+// ─── Zod Schemas ─────────────────────────────────────────────────────
+
+const uuidSchema = z.string().uuid("ID non valido");
+
+const serviceFormSchema = z.object({
+  name: z.string().min(1, "Nome servizio obbligatorio"),
+  duration_minutes: z.string().regex(/^\d+$/, "Durata non valida"),
+  price: z.string().regex(/^\d+([.,]\d{1,2})?$/, "Prezzo non valido"),
+});
+
+const toggleServiceSchema = z.object({
+  serviceId: uuidSchema,
+  active: z.boolean(),
+});
 
 export async function getServices() {
   const supabase = await createClient();
@@ -30,6 +46,15 @@ export async function getServices() {
 }
 
 export async function createService(formData: FormData) {
+  const raw = {
+    name: (formData.get("name") as string) ?? "",
+    duration_minutes: (formData.get("duration_minutes") as string) ?? "",
+    price: (formData.get("price") as string) ?? "",
+  };
+  const parsed = serviceFormSchema.safeParse(raw);
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? "Dati servizio non validi" };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -45,9 +70,9 @@ export async function createService(formData: FormData) {
 
   if (!business) return { error: "Barberia non trovata" };
 
-  const name = formData.get("name") as string;
-  const durationMinutes = parseInt(formData.get("duration_minutes") as string, 10);
-  const priceCents = Math.round(parseFloat(formData.get("price") as string) * 100);
+  const name = parsed.data.name;
+  const durationMinutes = parseInt(parsed.data.duration_minutes, 10);
+  const priceCents = Math.round(parseFloat(parsed.data.price) * 100);
 
   const { error } = await supabase.from("services").insert({
     business_id: business.id,
@@ -63,11 +88,23 @@ export async function createService(formData: FormData) {
 }
 
 export async function updateService(serviceId: string, formData: FormData) {
+  const idParsed = uuidSchema.safeParse(serviceId);
+  if (!idParsed.success) return { error: "ID servizio non valido" };
+
+  const raw = {
+    name: (formData.get("name") as string) ?? "",
+    duration_minutes: (formData.get("duration_minutes") as string) ?? "",
+    price: (formData.get("price") as string) ?? "",
+  };
+  const parsed = serviceFormSchema.safeParse(raw);
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? "Dati servizio non validi" };
+
   const supabase = await createClient();
 
-  const name = formData.get("name") as string;
-  const durationMinutes = parseInt(formData.get("duration_minutes") as string, 10);
-  const priceCents = Math.round(parseFloat(formData.get("price") as string) * 100);
+  const name = parsed.data.name;
+  const durationMinutes = parseInt(parsed.data.duration_minutes, 10);
+  const priceCents = Math.round(parseFloat(parsed.data.price) * 100);
 
   const { error } = await supabase
     .from("services")
@@ -86,6 +123,9 @@ export async function updateService(serviceId: string, formData: FormData) {
 }
 
 export async function toggleService(serviceId: string, active: boolean) {
+  const parsed = toggleServiceSchema.safeParse({ serviceId, active });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -100,6 +140,9 @@ export async function toggleService(serviceId: string, active: boolean) {
 }
 
 export async function deleteService(serviceId: string) {
+  const parsed = uuidSchema.safeParse(serviceId);
+  if (!parsed.success) return { error: "ID servizio non valido" };
+
   const supabase = await createClient();
 
   const { error } = await supabase.from("services").delete().eq("id", serviceId);

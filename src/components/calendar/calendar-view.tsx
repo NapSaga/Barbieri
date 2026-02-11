@@ -1,24 +1,24 @@
 "use client";
 
-import { useState, useCallback, useTransition } from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
-  Plus,
   CalendarDays,
   Calendar as CalendarIcon,
   CalendarOff,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { DayView } from "./day-view";
-import { WeekView } from "./week-view";
-import { WalkInDialog } from "./walk-in-dialog";
-import { AppointmentSheet } from "./appointment-sheet";
+import { useCallback, useState, useTransition } from "react";
 import {
+  type CalendarAppointment,
   getAppointmentsForDate,
   getAppointmentsForWeek,
-  type CalendarAppointment,
 } from "@/actions/appointments";
+import { cn } from "@/lib/utils";
+import { AppointmentSheet } from "./appointment-sheet";
+import { DayView } from "./day-view";
+import { WalkInDialog } from "./walk-in-dialog";
+import { WeekView } from "./week-view";
 
 interface StaffMember {
   id: string;
@@ -97,22 +97,19 @@ export function CalendarView({
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<CalendarAppointment | null>(null);
 
-  const fetchAppointments = useCallback(
-    (date: Date, mode: ViewMode) => {
-      startTransition(async () => {
-        if (mode === "day") {
-          const data = await getAppointmentsForDate(toISODate(date));
-          setAppointments(data);
-        } else {
-          const monday = getMonday(date);
-          const sunday = addDays(monday, 6);
-          const data = await getAppointmentsForWeek(toISODate(monday), toISODate(sunday));
-          setAppointments(data);
-        }
-      });
-    },
-    [],
-  );
+  const fetchAppointments = useCallback((date: Date, mode: ViewMode) => {
+    startTransition(async () => {
+      if (mode === "day") {
+        const data = await getAppointmentsForDate(toISODate(date));
+        setAppointments(data);
+      } else {
+        const monday = getMonday(date);
+        const sunday = addDays(monday, 6);
+        const data = await getAppointmentsForWeek(toISODate(monday), toISODate(sunday));
+        setAppointments(data);
+      }
+    });
+  }, []);
 
   function navigate(direction: -1 | 1) {
     const days = viewMode === "day" ? 1 : 7;
@@ -179,9 +176,7 @@ export function CalendarView({
             onClick={goToToday}
             className={cn(
               "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-              isToday
-                ? "bg-primary text-primary-foreground"
-                : "text-foreground hover:bg-accent",
+              isToday ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent",
             )}
           >
             Oggi
@@ -228,7 +223,9 @@ export function CalendarView({
       {viewMode === "day" && closureDates.includes(toISODate(currentDate)) && (
         <div className="flex items-center gap-2.5 rounded-xl border border-orange-800/50 bg-orange-950/30 px-4 py-3 text-sm text-orange-400">
           <CalendarOff className="h-5 w-5 shrink-0 text-orange-400" />
-          <span className="font-medium">Chiusura straordinaria — la barberia è chiusa in questa data.</span>
+          <span className="font-medium">
+            Chiusura straordinaria — la barberia è chiusa in questa data.
+          </span>
         </div>
       )}
 
@@ -258,6 +255,7 @@ export function CalendarView({
         date={toISODate(currentDate)}
         staffMembers={staffMembers}
         services={services}
+        appointments={appointments}
         onSuccess={handleRefresh}
       />
 

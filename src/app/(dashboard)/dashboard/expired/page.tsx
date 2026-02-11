@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { ExpiredView } from "@/components/billing/expired-view";
 import { getSubscriptionInfo } from "@/actions/billing";
+import { ExpiredView } from "@/components/billing/expired-view";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function ExpiredPage() {
   const supabase = await createClient();

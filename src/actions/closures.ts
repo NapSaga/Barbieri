@@ -1,8 +1,21 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod/v4";
+import { createClient } from "@/lib/supabase/server";
+
+// ─── Zod Schemas ─────────────────────────────────────────────────────
+
+const uuidSchema = z.string().uuid("ID non valido");
+const dateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato data non valido (atteso YYYY-MM-DD)");
+
+const addClosureSchema = z.object({
+  date: dateSchema,
+  reason: z.string().optional(),
+});
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -42,6 +55,9 @@ export async function getClosures(): Promise<ClosureEntry[]> {
 // ─── Get Closure Dates (for booking) ─────────────────────────────────
 
 export async function getClosureDates(businessId: string): Promise<string[]> {
+  const parsed = uuidSchema.safeParse(businessId);
+  if (!parsed.success) return [];
+
   const supabase = await createClient();
 
   const today = new Date().toISOString().split("T")[0];
@@ -58,6 +74,10 @@ export async function getClosureDates(businessId: string): Promise<string[]> {
 // ─── Add Closure ─────────────────────────────────────────────────────
 
 export async function addClosure(date: string, reason?: string) {
+  const parsed = addClosureSchema.safeParse({ date, reason });
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? "Dati chiusura non validi" };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -90,6 +110,9 @@ export async function addClosure(date: string, reason?: string) {
 // ─── Remove Closure ──────────────────────────────────────────────────
 
 export async function removeClosure(closureId: string) {
+  const parsed = uuidSchema.safeParse(closureId);
+  if (!parsed.success) return { error: "ID chiusura non valido" };
+
   const supabase = await createClient();
   const {
     data: { user },

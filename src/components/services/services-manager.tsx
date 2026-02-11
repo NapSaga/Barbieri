@@ -1,24 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import {
-  Scissors,
-  Plus,
+  Clock,
+  Loader2,
   Pencil,
-  Trash2,
+  Plus,
+  Scissors,
   ToggleLeft,
   ToggleRight,
-  Clock,
+  Trash2,
   X,
-  Loader2,
 } from "lucide-react";
+import { useState, useTransition } from "react";
+import { createService, deleteService, toggleService, updateService } from "@/actions/services";
 import { cn } from "@/lib/utils";
-import {
-  createService,
-  updateService,
-  toggleService,
-  deleteService,
-} from "@/actions/services";
 
 interface Service {
   id: string;
@@ -117,7 +112,9 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+        <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
       )}
 
       {/* Create form */}
@@ -129,11 +126,7 @@ export function ServicesManager({ initialServices }: ServicesManagerProps) {
               <X className="h-4 w-4" />
             </button>
           </div>
-          <ServiceForm
-            onSubmit={handleCreate}
-            isPending={isPending}
-            submitLabel="Crea servizio"
-          />
+          <ServiceForm onSubmit={handleCreate} isPending={isPending} submitLabel="Crea servizio" />
         </div>
       )}
 

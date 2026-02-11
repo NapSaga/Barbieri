@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import type { CalendarAppointment } from "@/actions/appointments";
+import { cn } from "@/lib/utils";
 import { AppointmentCard } from "./appointment-card";
 
 interface StaffMember {
@@ -97,10 +97,7 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
         {/* Staff header */}
         <div className="sticky top-0 z-20 flex border-b border-border bg-card">
           {/* Gutter corner */}
-          <div
-            className="shrink-0 border-r border-border"
-            style={{ width: GUTTER_WIDTH }}
-          />
+          <div className="shrink-0 border-r border-border" style={{ width: GUTTER_WIDTH }} />
           {columns.map((col, idx) => {
             const colCount = hasStaff
               ? appointments.filter((a) => a.staff?.id === col.id).length
@@ -119,9 +116,7 @@ export function DayView({ date, appointments, staffMembers, onSelectAppointment 
                 <div
                   className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold shadow-sm",
-                    isDayOff
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-foreground text-background",
+                    isDayOff ? "bg-muted text-muted-foreground" : "bg-foreground text-background",
                   )}
                 >
                   {col.name.charAt(0).toUpperCase()}

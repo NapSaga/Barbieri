@@ -1,44 +1,37 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
-  Calendar,
-  Users,
-  Scissors,
-  UserCog,
   BarChart3,
-  Settings,
+  Calendar,
   Clock,
   LogOut,
   Menu,
-  X,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
-  Moon,
+  Scissors,
+  Settings,
   Sun,
+  UserCog,
+  Users,
+  X,
 } from "lucide-react";
-import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { LogoFull, LogoIcon } from "@/components/shared/barberos-logo";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { LogoIcon, LogoFull } from "@/components/shared/barberos-logo";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 const navSections = [
   {
     label: "Principale",
-    items: [
-      { name: "Calendario", href: "/dashboard", icon: Calendar },
-    ],
+    items: [{ name: "Calendario", href: "/dashboard", icon: Calendar }],
   },
   {
     label: "Gestione",
@@ -86,9 +79,7 @@ export function DashboardSidebar() {
     onClick?: () => void;
   }) {
     const isActive =
-      item.href === "/dashboard"
-        ? pathname === "/dashboard"
-        : pathname.startsWith(item.href);
+      item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
 
     const linkContent = (
       <Link

@@ -149,7 +149,7 @@ Gestione account: cambio password, email, dati fatturazione.
 
 STACK TECNOLOGICO
 
-Frontend: Next.js 16 con App Router e React Server Components. React 19 con React Compiler. Tailwind CSS v4. Componenti custom (shadcn/ui previsto ma non integrato). Turbopack come bundler di sviluppo. TypeScript strict mode. Lucide React per icone.
+Frontend: Next.js 16 con App Router e React Server Components. React 19 con React Compiler. Tailwind CSS v4 + tw-animate-css. shadcn/ui (17 componenti Radix-based integrati) + Lucide React per icone. Dark mode con next-themes. Motion (Framer Motion) per animazioni. Sonner per toast notifications. Turbopack come bundler di sviluppo. TypeScript strict mode.
 
 Backend: Supabase (PostgreSQL 17 + Auth + Row Level Security + Edge Functions Deno per logica serverless). Server Actions di Next.js per mutazioni autenticate. Supabase JS client per query runtime (beneficia di RLS automatico).
 
@@ -221,7 +221,7 @@ analytics_daily: id (uuid), business_id (fk), date (date), total_revenue_cents (
 
 business_closures: id (uuid), business_id (fk), date (date), reason (text nullable), created_at. Per gestione chiusure straordinarie (feste, ferie). Integrato nel booking wizard (date disabilitate) e nel calendario (banner arancione).
 
-Indici: appointments (business_id+date, staff_id+date), clients (business_id+phone, business_id), staff (business_id), services (business_id), messages (scheduled_for+status, business_id), analytics_daily (business_id+date), waitlist (business_id+desired_date), business_closures (business_id+date, business_id). RLS policy su ogni tabella filtrando per business_id dell'utente autenticato.
+Indici: appointments (business_id+date, staff_id+date, client_id, service_id), clients (business_id+phone, business_id), staff (business_id), services (business_id), staff_services (service_id), messages (scheduled_for+status, business_id, client_id, appointment_id), analytics_daily (business_id+date), waitlist (business_id+desired_date, client_id, service_id), business_closures (business_id+date, business_id). RLS policy su ogni tabella filtrando per business_id dell'utente autenticato. Security headers (CSP, HSTS, X-Frame-Options DENY) applicati via next.config.ts. Leaked Password Protection abilitata su Supabase Auth.
 
 ---
 

@@ -1,6 +1,6 @@
 BARBEROS MVP — CONFIGURAZIONI E INFRASTRUTTURA
 
-Ultimo aggiornamento: 10 febbraio 2026
+Ultimo aggiornamento: 11 febbraio 2026
 
 ---
 
@@ -68,16 +68,25 @@ Database e Auth:
 
 UI:
 - tailwindcss ^4
+- radix-ui ^1.4.3 (primitivi headless per shadcn/ui)
 - lucide-react ^0.563.0
 - class-variance-authority ^0.7.1
 - clsx ^2.1.1
 - tailwind-merge ^3.4.0
+- next-themes ^0.4.6 (dark mode)
+- motion ^12.34.0 (Framer Motion, animazioni)
+- sonner ^2.0.7 (toast notifications)
+- tw-animate-css ^1.4.0 (animazioni Tailwind)
 
 WhatsApp:
 - twilio ^5.12.1
 
 Pagamenti:
 - stripe 20.3.1
+
+Analytics:
+- @vercel/analytics ^1.6.1
+- @vercel/speed-insights ^1.3.1
 
 Utility:
 - date-fns ^4.1.0
@@ -170,12 +179,20 @@ RLS POLICIES
 Ogni tabella ha RLS abilitato. Struttura per ogni tabella:
 - SELECT/INSERT/UPDATE/DELETE filtrati per business_id dell'utente autenticato
 - Funzione helper: get_user_business_id() restituisce l'id della business dell'utente corrente
-- businesses, staff, services, staff_services: hanno anche policy SELECT pubbliche per il booking
-- clients, appointments: hanno policy INSERT pubbliche per il booking anonimo (ristrette a business_id validi)
+- businesses: SELECT pubblica per booking + owner check con (select auth.uid()) per INSERT/UPDATE/DELETE
+- staff, services, staff_services: SELECT pubblica unica (policy owner-only rimossa perché ridondante)
+- clients: INSERT unica consolidata (business_id IN SELECT id FROM businesses) per owner + booking anonimo
+- appointments: SELECT pubblica per slot checking, INSERT unica consolidata per owner + booking anonimo
+- auth.uid() wrappato in (select auth.uid()) su businesses e business_closures per evitare re-evaluation per riga (fix auth_rls_initplan)
 
 Funzioni DB:
 - get_user_business_id() — STABLE, SECURITY DEFINER, search_path = public
 - handle_new_user() — Trigger AFTER INSERT su auth.users, crea automaticamente una riga in businesses
+
+Supabase Auth Security:
+- Leaked Password Protection: ENABLED (HaveIBeenPwned.org)
+- Minimum password length: 8 caratteri
+- Secure email change: abilitato
 
 ---
 
@@ -194,6 +211,9 @@ MIGRAZIONI APPLICATE
 11. analytics_daily_function — Funzione SQL calculate_analytics_daily(target_date) con UPSERT per calcolo metriche giornaliere
 12. analytics_daily_cron — pg_cron schedule analytics-daily-calc alle 02:05 UTC (03:05 Roma), calcola giorno precedente
 13. business_closures_table — Tabella business_closures (id, business_id, date, reason) con RLS + policy owner
+14. fix_search_path_calculate_analytics_daily — Fix search_path su calculate_analytics_daily
+15. security_perf_fixes — auth.uid() → (select auth.uid()) su businesses/business_closures, 7 indici FK, policy duplicate consolidate su services/staff/staff_services
+16. consolidate_permissive_policies — Consolidamento policy INSERT/SELECT duplicate su appointments/businesses/clients
 
 ---
 
@@ -281,4 +301,13 @@ SERVIZI ESTERNI
 - Stripe: integrazione completata (stripe@20.3.1, API 2026-01-28.clover). 3 piani: Essential €300/mese (prod_TwyoUI0JLvWcj3, price_1Sz4yuK75hVrlrva5iqHgE52), Professional €500/mese (prod_TwypWo5jLd3doz, price_1Sz4yvK75hVrlrvaemSc8lLf), Enterprise custom (prod_TwyphvT1F82GrB). Trial 30gg. Webhook su /api/stripe/webhook (da configurare con dominio). Customer Portal per self-service. Setup script: npx tsx scripts/setup-stripe.ts.
 - Vercel: deploy collegato. Da configurare dominio personalizzato.
 - Sentry: non configurato (monitoring errori).
-- Vercel Analytics: non configurato.
+- Vercel Analytics: @vercel/analytics ^1.6.1 + @vercel/speed-insights ^1.3.1 integrati in layout.tsx.
+
+Security Headers (next.config.ts):
+- Content-Security-Policy: self + Supabase (*.supabase.co) + Stripe (js.stripe.com, *.stripe.com) + Vercel Analytics (*.vercel-insights.com, *.vercel-analytics.com). frame-ancestors 'none', object-src 'none'.
+- X-Frame-Options: DENY
+- X-Content-Type-Options: nosniff
+- Referrer-Policy: strict-origin-when-cross-origin
+- Permissions-Policy: camera=(), microphone=(), geolocation=()
+- Strict-Transport-Security: max-age=31536000; includeSubDomains
+- Applicati a tutte le route via headers() con source "/(.*)".

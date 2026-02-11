@@ -1,56 +1,52 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import {
-  Settings,
-  Store,
-  Clock,
-  MessageSquare,
-  Star,
-  Shield,
-  Loader2,
+  AlertCircle,
+  AlertTriangle,
+  CalendarOff,
   Check,
+  CheckCircle,
   ChevronDown,
   ChevronUp,
-  Info,
-  ToggleLeft,
-  ToggleRight,
-  Smartphone,
-  CheckCircle,
-  AlertCircle,
-  ExternalLink,
-  CalendarOff,
-  Trash2,
-  Plus,
+  Clock,
   CreditCard,
   Crown,
-  AlertTriangle,
+  ExternalLink,
+  Info,
+  Loader2,
+  MessageSquare,
+  Plus,
+  Settings,
+  Shield,
+  Smartphone,
+  Star,
+  Store,
+  ToggleLeft,
+  ToggleRight,
+  Trash2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, useTransition } from "react";
+import {
+  createCheckoutSession,
+  createPortalSession,
+  type SubscriptionInfo,
+} from "@/actions/billing";
 import {
   updateBusinessInfo,
   updateBusinessOpeningHours,
   updateBusinessThresholds,
   upsertMessageTemplate,
 } from "@/actions/business";
+import { addClosure, type ClosureEntry, removeClosure } from "@/actions/closures";
+import { PLANS, type PlanId, STRIPE_CONFIG } from "@/lib/stripe-plans";
 import {
   DEFAULT_TEMPLATES,
-  TEMPLATE_LABELS,
-  TEMPLATE_DESCRIPTIONS,
   type MessageTemplate,
   type MessageTemplateType,
+  TEMPLATE_DESCRIPTIONS,
+  TEMPLATE_LABELS,
 } from "@/lib/templates";
-import {
-  addClosure,
-  removeClosure,
-  type ClosureEntry,
-} from "@/actions/closures";
-import {
-  createCheckoutSession,
-  createPortalSession,
-  type SubscriptionInfo,
-} from "@/actions/billing";
-import { PLANS, STRIPE_CONFIG, type PlanId } from "@/lib/stripe-plans";
+import { cn } from "@/lib/utils";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -119,7 +115,13 @@ const TEMPLATE_VARIABLES: Record<string, string> = {
 
 // ─── Main Component ─────────────────────────────────────────────────
 
-export function SettingsManager({ business, initialTemplates, whatsappEnabled, initialClosures = [], subscriptionInfo }: SettingsManagerProps) {
+export function SettingsManager({
+  business,
+  initialTemplates,
+  whatsappEnabled,
+  initialClosures = [],
+  subscriptionInfo,
+}: SettingsManagerProps) {
   const [openSection, setOpenSection] = useState<string | null>("info");
 
   function toggleSection(section: string) {
@@ -160,7 +162,9 @@ export function SettingsManager({ business, initialTemplates, whatsappEnabled, i
           id="whatsapp"
           icon={<Smartphone className="h-5 w-5" />}
           title="WhatsApp"
-          description={whatsappEnabled ? "Connesso via Twilio" : "Non configurato — messaggi in modalità test"}
+          description={
+            whatsappEnabled ? "Connesso via Twilio" : "Non configurato — messaggi in modalità test"
+          }
           isOpen={openSection === "whatsapp"}
           onToggle={() => toggleSection("whatsapp")}
         >
@@ -377,10 +381,14 @@ function BusinessInfoForm({ business }: { business: BusinessData }) {
 
       <div className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
         <span className="font-medium">Slug prenotazione:</span>{" "}
-        <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">/book/{business.slug}</code>
+        <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">
+          /book/{business.slug}
+        </code>
       </div>
 
-      {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+      )}
 
       <SaveButton isPending={isPending} saved={saved} />
     </form>
@@ -389,11 +397,7 @@ function BusinessInfoForm({ business }: { business: BusinessData }) {
 
 // ─── Opening Hours Form ─────────────────────────────────────────────
 
-function OpeningHoursForm({
-  openingHours,
-}: {
-  openingHours: Record<string, OpeningDay> | null;
-}) {
+function OpeningHoursForm({ openingHours }: { openingHours: Record<string, OpeningDay> | null }) {
   const defaultHours: Record<string, OpeningDay> = {};
   for (const day of DAY_ORDER) {
     defaultHours[day] = openingHours?.[day] || {
@@ -470,11 +474,15 @@ function OpeningHoursForm({
 
       <div className="mt-3 rounded-lg bg-amber-950/30 px-3 py-2 text-xs text-amber-300">
         <Info className="mr-1 inline h-3.5 w-3.5" />
-        Questi orari determinano gli slot disponibili nella pagina di prenotazione pubblica.
-        Gli orari dei singoli barbieri sono configurabili dalla sezione Staff.
+        Questi orari determinano gli slot disponibili nella pagina di prenotazione pubblica. Gli
+        orari dei singoli barbieri sono configurabili dalla sezione Staff.
       </div>
 
-      {error && <div className="mt-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="mt-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="mt-4">
         <SaveButton isPending={isPending} saved={saved} label="Salva orari" />
@@ -485,11 +493,7 @@ function OpeningHoursForm({
 
 // ─── Message Templates Form ─────────────────────────────────────────
 
-function MessageTemplatesForm({
-  initialTemplates,
-}: {
-  initialTemplates: MessageTemplate[];
-}) {
+function MessageTemplatesForm({ initialTemplates }: { initialTemplates: MessageTemplate[] }) {
   const [editingType, setEditingType] = useState<MessageTemplateType | null>(null);
   const [templates, setTemplates] = useState<MessageTemplate[]>(initialTemplates);
 
@@ -528,7 +532,9 @@ function MessageTemplatesForm({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{TEMPLATE_DESCRIPTIONS[type]}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {TEMPLATE_DESCRIPTIONS[type]}
+                </p>
               </div>
               <button
                 type="button"
@@ -641,7 +647,11 @@ function TemplateEditor({
         </button>
       </div>
 
-      {error && <div className="mt-2 rounded-lg bg-destructive/10 p-2 text-xs text-destructive">{error}</div>}
+      {error && (
+        <div className="mt-2 rounded-lg bg-destructive/10 p-2 text-xs text-destructive">
+          {error}
+        </div>
+      )}
     </div>
   );
 }
@@ -744,9 +754,7 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-foreground">
-          Soglia no-show (numero)
-        </label>
+        <label className="block text-sm font-medium text-foreground">Soglia no-show (numero)</label>
         <p className="text-xs text-muted-foreground mb-1">
           Dopo quanti no-show il cliente viene flaggato come &quot;alto rischio&quot;
         </p>
@@ -763,7 +771,9 @@ function ThresholdsForm({ business }: { business: BusinessData }) {
         />
       </div>
 
-      {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+      )}
 
       <SaveButton isPending={isPending} saved={saved} />
     </form>
@@ -779,19 +789,22 @@ function WhatsAppStatusSection({ enabled }: { enabled: boolean }) {
         <div className="flex items-center gap-2 rounded-lg bg-emerald-950/30 p-3 text-sm text-emerald-300">
           <CheckCircle className="h-4 w-4 shrink-0" />
           <div>
-            <span className="font-medium">WhatsApp attivo</span> — I messaggi vengono inviati ai clienti tramite Twilio.
+            <span className="font-medium">WhatsApp attivo</span> — I messaggi vengono inviati ai
+            clienti tramite Twilio.
           </div>
         </div>
 
         <div className="text-sm text-muted-foreground space-y-2">
           <p>
-            I messaggi automatici (conferma, reminder, recensioni, riattivazione) sono attivi
-            e verranno inviati ai clienti secondo i template configurati nella sezione
-            &quot;Messaggi WhatsApp&quot;.
+            I messaggi automatici (conferma, reminder, recensioni, riattivazione) sono attivi e
+            verranno inviati ai clienti secondo i template configurati nella sezione &quot;Messaggi
+            WhatsApp&quot;.
           </p>
           <p>
-            I clienti possono rispondere <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">ANNULLA</code> per
-            cancellare un appuntamento, o <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">SI</code> per
+            I clienti possono rispondere{" "}
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">ANNULLA</code> per
+            cancellare un appuntamento, o{" "}
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">SI</code> per
             confermare dalla lista d&apos;attesa.
           </p>
         </div>
@@ -809,7 +822,8 @@ function WhatsAppStatusSection({ enabled }: { enabled: boolean }) {
       <div className="flex items-center gap-2 rounded-lg bg-amber-950/30 p-3 text-sm text-amber-300">
         <AlertCircle className="h-4 w-4 shrink-0" />
         <div>
-          <span className="font-medium">Modalità test</span> — I messaggi vengono solo registrati nel log, non inviati ai clienti.
+          <span className="font-medium">Modalità test</span> — I messaggi vengono solo registrati
+          nel log, non inviati ai clienti.
         </div>
       </div>
 
@@ -826,7 +840,12 @@ function WhatsAppStatusSection({ enabled }: { enabled: boolean }) {
         <ol className="list-decimal list-inside space-y-1.5">
           <li>
             Crea account su{" "}
-            <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline inline-flex items-center gap-0.5">
+            <a
+              href="https://www.twilio.com/try-twilio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:underline inline-flex items-center gap-0.5"
+            >
               twilio.com <ExternalLink className="h-3 w-3" />
             </a>
           </li>
@@ -874,10 +893,17 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
       if (result.error) {
         setError(result.error);
       } else {
-        setClosures((prev) => [
-          ...prev,
-          { id: crypto.randomUUID(), date: newDate, reason: newReason || null, created_at: new Date().toISOString() },
-        ].sort((a, b) => a.date.localeCompare(b.date)));
+        setClosures((prev) =>
+          [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              date: newDate,
+              reason: newReason || null,
+              created_at: new Date().toISOString(),
+            },
+          ].sort((a, b) => a.date.localeCompare(b.date)),
+        );
         setNewDate("");
         setNewReason("");
       }
@@ -897,7 +923,12 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
 
   function formatDate(dateStr: string): string {
     const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+    return d.toLocaleDateString("it-IT", {
+      weekday: "short",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   }
 
   return (
@@ -915,7 +946,9 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-medium text-muted-foreground mb-1">Motivo (opzionale)</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">
+            Motivo (opzionale)
+          </label>
           <input
             type="text"
             value={newReason}
@@ -939,19 +972,30 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
       {/* Future closures */}
       {futureClosures.length > 0 ? (
         <div className="space-y-1.5">
-          <h4 className="text-xs font-semibold uppercase text-muted-foreground">Prossime chiusure</h4>
+          <h4 className="text-xs font-semibold uppercase text-muted-foreground">
+            Prossime chiusure
+          </h4>
           {futureClosures.map((c) => (
-            <div key={c.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+            <div
+              key={c.id}
+              className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+            >
               <div>
                 <span className="text-sm font-medium text-foreground">{formatDate(c.date)}</span>
-                {c.reason && <span className="ml-2 text-xs text-muted-foreground">— {c.reason}</span>}
+                {c.reason && (
+                  <span className="ml-2 text-xs text-muted-foreground">— {c.reason}</span>
+                )}
               </div>
               <button
                 onClick={() => handleRemove(c.id)}
                 disabled={deletingId === c.id}
                 className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
               >
-                {deletingId === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                {deletingId === c.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
               </button>
             </div>
           ))}
@@ -963,7 +1007,9 @@ function ClosuresForm({ initialClosures }: { initialClosures: ClosureEntry[] }) 
       {/* Past closures (collapsed) */}
       {pastClosures.length > 0 && (
         <details className="text-xs text-muted-foreground">
-          <summary className="cursor-pointer hover:text-foreground">{pastClosures.length} chiusure passate</summary>
+          <summary className="cursor-pointer hover:text-foreground">
+            {pastClosures.length} chiusure passate
+          </summary>
           <div className="mt-2 space-y-1">
             {pastClosures.map((c) => (
               <div key={c.id} className="flex items-center gap-2 text-muted-foreground">
@@ -1057,7 +1103,13 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
             statusMeta.color === "gray" && "bg-muted text-muted-foreground",
           )}
         >
-          {isActive ? <Crown className="h-5 w-5" /> : isCancelled ? <AlertTriangle className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
+          {isActive ? (
+            <Crown className="h-5 w-5" />
+          ) : isCancelled ? (
+            <AlertTriangle className="h-5 w-5" />
+          ) : (
+            <CreditCard className="h-5 w-5" />
+          )}
         </div>
         <div>
           <h4
@@ -1083,9 +1135,13 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
               statusMeta.color === "gray" && "text-muted-foreground",
             )}
           >
-            {isTrialing && info?.trialEnd && `La prova gratuita scade il ${formatBillingDate(info.trialEnd)}`}
+            {isTrialing &&
+              info?.trialEnd &&
+              `La prova gratuita scade il ${formatBillingDate(info.trialEnd)}`}
             {isTrialing && !info?.trialEnd && `${STRIPE_CONFIG.trialDays} giorni di prova gratuita`}
-            {isActive && info?.currentPeriodEnd && `Prossimo rinnovo: ${formatBillingDate(info.currentPeriodEnd)}`}
+            {isActive &&
+              info?.currentPeriodEnd &&
+              `Prossimo rinnovo: ${formatBillingDate(info.currentPeriodEnd)}`}
             {isActive && info?.cancelAtPeriodEnd && ` (si disattiva alla scadenza)`}
             {isPastDue && "Aggiorna il metodo di pagamento per continuare a usare BarberOS"}
             {isCancelled && "Il tuo abbonamento è stato cancellato"}
@@ -1101,7 +1157,11 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
           disabled={isPending}
           className="flex items-center gap-2 rounded-lg border border-input bg-secondary px-5 py-2.5 text-sm font-semibold text-foreground shadow-sm hover:bg-accent disabled:opacity-50"
         >
-          {isPending && !pendingPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+          {isPending && !pendingPlan ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ExternalLink className="h-4 w-4" />
+          )}
           Gestisci abbonamento
         </button>
       )}
@@ -1195,14 +1255,15 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
       {isTrialing && (
         <div className="rounded-lg bg-secondary px-3 py-2 text-xs text-foreground">
           <Info className="mr-1 inline h-3.5 w-3.5" />
-          Durante la prova gratuita di {STRIPE_CONFIG.trialDays} giorni puoi usare tutte le funzionalità.
-          Al termine, scegli un piano per continuare.
+          Durante la prova gratuita di {STRIPE_CONFIG.trialDays} giorni puoi usare tutte le
+          funzionalità. Al termine, scegli un piano per continuare.
         </div>
       )}
 
       {/* Contratto info */}
       <p className="text-xs text-muted-foreground">
-        Contratto 12 mesi. Garanzia risultati: se dopo 3 mesi non vedi un ritorno almeno 2x, esci senza penali.
+        Contratto 12 mesi. Garanzia risultati: se dopo 3 mesi non vedi un ritorno almeno 2x, esci
+        senza penali.
       </p>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import type { CalendarAppointment } from "@/actions/appointments";
+import { cn } from "@/lib/utils";
 import { AppointmentCard } from "./appointment-card";
 
 interface StaffMember {
@@ -78,9 +78,7 @@ export function WeekView({
               <div
                 className={cn(
                   "mx-auto mt-1 flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-colors",
-                  isToday(day)
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-foreground",
+                  isToday(day) ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground",
                 )}
               >
                 {day.getDate()}

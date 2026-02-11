@@ -1,9 +1,102 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { sendWhatsAppMessage, renderTemplate } from "@/lib/whatsapp";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod/v4";
+import { createClient } from "@/lib/supabase/server";
+import { renderTemplate, sendWhatsAppMessage } from "@/lib/whatsapp";
+
+// ─── Conflict Helpers ────────────────────────────────────────────────
+
+interface BookedSlot {
+  startTime: string;
+  endTime: string;
+}
+
+async function hasConflict(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  businessId: string,
+  staffId: string,
+  date: string,
+  startTime: string,
+  endTime: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("appointments")
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("staff_id", staffId)
+    .eq("date", date)
+    .neq("status", "cancelled")
+    .lt("start_time", endTime)
+    .gt("end_time", startTime)
+    .limit(1);
+
+  return (data?.length ?? 0) > 0;
+}
+
+/**
+ * Public: fetch booked time ranges for a staff member on a date.
+ * Used by the booking wizard to filter out unavailable slots.
+ */
+export async function getStaffBookedSlots(
+  businessId: string,
+  staffId: string,
+  date: string,
+): Promise<BookedSlot[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("appointments")
+    .select("start_time, end_time")
+    .eq("business_id", businessId)
+    .eq("staff_id", staffId)
+    .eq("date", date)
+    .neq("status", "cancelled")
+    .order("start_time", { ascending: true });
+
+  return (data || []).map((a) => ({
+    startTime: a.start_time.slice(0, 5),
+    endTime: a.end_time.slice(0, 5),
+  }));
+}
+
+// ─── Zod Schemas ─────────────────────────────────────────────────────
+
+const dateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato data non valido (atteso YYYY-MM-DD)");
+const timeSchema = z
+  .string()
+  .regex(/^\d{2}:\d{2}(:\d{2})?$/, "Formato orario non valido (atteso HH:MM)");
+const uuidSchema = z.string().uuid("ID non valido");
+
+const walkInSchema = z.object({
+  client_name: z.string().min(1, "Nome cliente obbligatorio"),
+  client_phone: z.string().min(1, "Telefono cliente obbligatorio"),
+  staff_id: uuidSchema,
+  service_id: uuidSchema,
+  date: dateSchema,
+  start_time: timeSchema,
+  end_time: timeSchema,
+});
+
+const bookAppointmentSchema = z.object({
+  businessId: uuidSchema,
+  staffId: uuidSchema,
+  serviceId: uuidSchema,
+  date: dateSchema,
+  startTime: timeSchema,
+  endTime: timeSchema,
+  clientFirstName: z.string().min(1, "Nome cliente obbligatorio"),
+  clientLastName: z.string().optional(),
+  clientPhone: z.string().min(1, "Telefono cliente obbligatorio"),
+});
+
+const updateStatusSchema = z.object({
+  appointmentId: uuidSchema,
+  status: z.enum(["confirmed", "completed", "cancelled", "no_show"]),
+});
 
 // ─── Calendar Data Fetching ──────────────────────────────────────────
 
@@ -24,8 +117,13 @@ export interface CalendarAppointment {
 }
 
 export async function getAppointmentsForDate(date: string): Promise<CalendarAppointment[]> {
+  const parsed = dateSchema.safeParse(date);
+  if (!parsed.success) return [];
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: business } = await supabase
@@ -55,8 +153,15 @@ export async function getAppointmentsForWeek(
   startDate: string,
   endDate: string,
 ): Promise<CalendarAppointment[]> {
+  const parsed = z
+    .object({ startDate: dateSchema, endDate: dateSchema })
+    .safeParse({ startDate, endDate });
+  if (!parsed.success) return [];
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: business } = await supabase
@@ -134,7 +239,9 @@ async function enrichWithConfirmationStatus(
 
 export async function getStaffForCalendar() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: business } = await supabase
@@ -157,7 +264,9 @@ export async function getStaffForCalendar() {
 
 export async function addWalkIn(formData: FormData) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: business } = await supabase
@@ -168,13 +277,27 @@ export async function addWalkIn(formData: FormData) {
 
   if (!business) return { error: "Barberia non trovata" };
 
-  const clientName = formData.get("client_name") as string;
-  const clientPhone = formData.get("client_phone") as string;
-  const staffId = formData.get("staff_id") as string;
-  const serviceId = formData.get("service_id") as string;
-  const date = formData.get("date") as string;
-  const startTime = formData.get("start_time") as string;
-  const endTime = formData.get("end_time") as string;
+  const raw = {
+    client_name: formData.get("client_name") as string,
+    client_phone: formData.get("client_phone") as string,
+    staff_id: formData.get("staff_id") as string,
+    service_id: formData.get("service_id") as string,
+    date: formData.get("date") as string,
+    start_time: formData.get("start_time") as string,
+    end_time: formData.get("end_time") as string,
+  };
+  const parsed = walkInSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
+  const {
+    client_name: clientName,
+    client_phone: clientPhone,
+    staff_id: staffId,
+    service_id: serviceId,
+    date,
+    start_time: startTime,
+    end_time: endTime,
+  } = parsed.data;
 
   // Find or create client
   let clientId: string;
@@ -202,6 +325,12 @@ export async function addWalkIn(formData: FormData) {
       return { error: clientError?.message || "Errore creazione cliente" };
     }
     clientId = newClient.id;
+  }
+
+  // Server-side conflict check
+  const conflict = await hasConflict(supabase, business.id, staffId, date, startTime, endTime);
+  if (conflict) {
+    return { error: "Conflitto: il barbiere ha già un appuntamento in questo orario." };
   }
 
   const { error } = await supabase.from("appointments").insert({
@@ -235,6 +364,10 @@ interface BookAppointmentInput {
 }
 
 export async function bookAppointment(input: BookAppointmentInput) {
+  const parsed = bookAppointmentSchema.safeParse(input);
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? "Dati prenotazione non validi" };
+
   const supabase = await createClient();
 
   // Find or create client
@@ -265,6 +398,19 @@ export async function bookAppointment(input: BookAppointmentInput) {
       return { error: clientError?.message || "Errore nella creazione del cliente" };
     }
     clientId = newClient.id;
+  }
+
+  // Server-side conflict check
+  const conflict = await hasConflict(
+    supabase,
+    input.businessId,
+    input.staffId,
+    input.date,
+    input.startTime,
+    input.endTime,
+  );
+  if (conflict) {
+    return { error: "Questo orario non è più disponibile. Scegli un altro slot." };
   }
 
   // Create appointment
@@ -340,6 +486,9 @@ export async function updateAppointmentStatus(
   appointmentId: string,
   status: "confirmed" | "completed" | "cancelled" | "no_show",
 ) {
+  const parsed = updateStatusSchema.safeParse({ appointmentId, status });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
   const supabase = await createClient();
 
   const updateData: Record<string, unknown> = {
@@ -351,55 +500,119 @@ export async function updateAppointmentStatus(
     updateData.cancelled_at = new Date().toISOString();
   }
 
-  const { error } = await supabase
+  // Fetch full appointment data before update (needed for cancellation waitlist notification)
+  const { data: appointmentData } = await supabase
     .from("appointments")
-    .update(updateData)
-    .eq("id", appointmentId);
+    .select("client_id, business_id, date, start_time, service_id")
+    .eq("id", appointmentId)
+    .single();
+
+  const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
 
   if (error) {
     return { error: error.message };
   }
 
-  // If no-show, increment client no_show_count
-  if (status === "no_show") {
-    const { data: appointment } = await supabase
-      .from("appointments")
-      .select("client_id")
-      .eq("id", appointmentId)
-      .single();
+  // If cancelled, notify waitlist entries for the freed slot
+  if (status === "cancelled" && appointmentData) {
+    await notifyWaitlistOnCancel(supabase, {
+      business_id: appointmentData.business_id,
+      date: appointmentData.date,
+      start_time: appointmentData.start_time,
+      service_id: appointmentData.service_id,
+    });
+  }
 
-    if (appointment?.client_id) {
-      await supabase.rpc("increment_no_show", { client_uuid: appointment.client_id });
-    }
+  // If no-show, increment client no_show_count
+  if (status === "no_show" && appointmentData?.client_id) {
+    await supabase.rpc("increment_no_show", { client_uuid: appointmentData.client_id });
   }
 
   // If completed, increment total_visits and update last_visit_at
-  if (status === "completed") {
-    const { data: appointment } = await supabase
-      .from("appointments")
-      .select("client_id")
-      .eq("id", appointmentId)
+  if (status === "completed" && appointmentData?.client_id) {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("total_visits")
+      .eq("id", appointmentData.client_id)
       .single();
 
-    if (appointment?.client_id) {
-      const { data: client } = await supabase
-        .from("clients")
-        .select("total_visits")
-        .eq("id", appointment.client_id)
-        .single();
-
-      await supabase
-        .from("clients")
-        .update({
-          total_visits: (client?.total_visits || 0) + 1,
-          last_visit_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", appointment.client_id);
-    }
+    await supabase
+      .from("clients")
+      .update({
+        total_visits: (client?.total_visits || 0) + 1,
+        last_visit_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", appointmentData.client_id);
   }
 
   revalidatePath("/dashboard");
 
   return { success: true };
+}
+
+// ─── Waitlist Notification on Calendar Cancellation ─────────────────
+
+async function notifyWaitlistOnCancel(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  cancelledAppointment: {
+    business_id: string;
+    date: string;
+    start_time: string;
+    service_id: string;
+  },
+) {
+  const { data: waitlistEntries } = await supabase
+    .from("waitlist")
+    .select("id, client_id, service_id, desired_date, desired_start_time, desired_end_time")
+    .eq("business_id", cancelledAppointment.business_id)
+    .eq("desired_date", cancelledAppointment.date)
+    .eq("status", "waiting")
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (!waitlistEntries || waitlistEntries.length === 0) return;
+
+  const entry = waitlistEntries[0];
+
+  await supabase
+    .from("waitlist")
+    .update({ status: "notified", notified_at: new Date().toISOString() })
+    .eq("id", entry.id);
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("first_name, phone")
+    .eq("id", entry.client_id)
+    .single();
+
+  const { data: service } = await supabase
+    .from("services")
+    .select("name")
+    .eq("id", entry.service_id)
+    .single();
+
+  if (client?.phone) {
+    const { sendWhatsAppMessage, renderTemplate } = await import("@/lib/whatsapp");
+    const { DEFAULT_TEMPLATES } = await import("@/lib/templates");
+
+    await sendWhatsAppMessage({
+      to: client.phone,
+      body: renderTemplate(DEFAULT_TEMPLATES.waitlist_notify, {
+        client_name: client.first_name,
+        date: cancelledAppointment.date,
+        time: cancelledAppointment.start_time,
+        service_name: service?.name || "servizio",
+      }),
+    });
+
+    await supabase.from("messages").insert({
+      business_id: cancelledAppointment.business_id,
+      client_id: entry.client_id,
+      type: "waitlist_notify",
+      status: "sent",
+      scheduled_for: new Date().toISOString(),
+      sent_at: new Date().toISOString(),
+    });
+  }
 }

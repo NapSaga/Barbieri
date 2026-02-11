@@ -1,6 +1,8 @@
+import { relations } from "drizzle-orm";
 import {
   boolean,
   date,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -10,9 +12,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  index,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 
 // ─── Enums ───────────────────────────────────────────────────────────
 
@@ -76,7 +76,10 @@ export const businesses = pgTable("businesses", {
   phone: text("phone"),
   logoUrl: text("logo_url"),
   googleReviewLink: text("google_review_link"),
-  openingHours: jsonb("opening_hours").$type<Record<string, { open: string; close: string; closed: boolean }>>(),
+  openingHours:
+    jsonb("opening_hours").$type<
+      Record<string, { open: string; close: string; closed: boolean }>
+    >(),
   brandColors: jsonb("brand_colors").$type<{ primary: string; secondary: string }>(),
   timezone: text("timezone").default("Europe/Rome").notNull(),
   stripeCustomerId: text("stripe_customer_id"),
@@ -96,17 +99,19 @@ export const staff = pgTable(
       .notNull(),
     name: text("name").notNull(),
     photoUrl: text("photo_url"),
-    workingHours: jsonb("working_hours").$type<
-      Record<string, { start: string; end: string; breakStart?: string; breakEnd?: string; off: boolean }>
-    >(),
+    workingHours:
+      jsonb("working_hours").$type<
+        Record<
+          string,
+          { start: string; end: string; breakStart?: string; breakEnd?: string; off: boolean }
+        >
+      >(),
     active: boolean("active").default(true).notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [
-    index("staff_business_id_idx").on(table.businessId),
-  ],
+  (table) => [index("staff_business_id_idx").on(table.businessId)],
 );
 
 export const services = pgTable(
@@ -126,9 +131,7 @@ export const services = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [
-    index("services_business_id_idx").on(table.businessId),
-  ],
+  (table) => [index("services_business_id_idx").on(table.businessId)],
 );
 
 export const staffServices = pgTable(
@@ -141,9 +144,7 @@ export const staffServices = pgTable(
       .references(() => services.id, { onDelete: "cascade" })
       .notNull(),
   },
-  (table) => [
-    uniqueIndex("staff_services_pk").on(table.staffId, table.serviceId),
-  ],
+  (table) => [uniqueIndex("staff_services_pk").on(table.staffId, table.serviceId)],
 );
 
 export const clients = pgTable(
@@ -178,12 +179,9 @@ export const appointments = pgTable(
     businessId: uuid("business_id")
       .references(() => businesses.id, { onDelete: "cascade" })
       .notNull(),
-    clientId: uuid("client_id")
-      .references(() => clients.id, { onDelete: "set null" }),
-    staffId: uuid("staff_id")
-      .references(() => staff.id, { onDelete: "set null" }),
-    serviceId: uuid("service_id")
-      .references(() => services.id, { onDelete: "set null" }),
+    clientId: uuid("client_id").references(() => clients.id, { onDelete: "set null" }),
+    staffId: uuid("staff_id").references(() => staff.id, { onDelete: "set null" }),
+    serviceId: uuid("service_id").references(() => services.id, { onDelete: "set null" }),
     date: date("date").notNull(),
     startTime: time("start_time").notNull(),
     endTime: time("end_time").notNull(),
@@ -209,8 +207,7 @@ export const waitlist = pgTable(
     clientId: uuid("client_id")
       .references(() => clients.id, { onDelete: "cascade" })
       .notNull(),
-    serviceId: uuid("service_id")
-      .references(() => services.id, { onDelete: "set null" }),
+    serviceId: uuid("service_id").references(() => services.id, { onDelete: "set null" }),
     desiredDate: date("desired_date").notNull(),
     desiredStartTime: time("desired_start_time").notNull(),
     desiredEndTime: time("desired_end_time").notNull(),
@@ -218,9 +215,7 @@ export const waitlist = pgTable(
     notifiedAt: timestamp("notified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [
-    index("waitlist_business_date_idx").on(table.businessId, table.desiredDate),
-  ],
+  (table) => [index("waitlist_business_date_idx").on(table.businessId, table.desiredDate)],
 );
 
 export const messages = pgTable(
@@ -230,10 +225,10 @@ export const messages = pgTable(
     businessId: uuid("business_id")
       .references(() => businesses.id, { onDelete: "cascade" })
       .notNull(),
-    clientId: uuid("client_id")
-      .references(() => clients.id, { onDelete: "set null" }),
-    appointmentId: uuid("appointment_id")
-      .references(() => appointments.id, { onDelete: "set null" }),
+    clientId: uuid("client_id").references(() => clients.id, { onDelete: "set null" }),
+    appointmentId: uuid("appointment_id").references(() => appointments.id, {
+      onDelete: "set null",
+    }),
     type: messageTypeEnum("type").notNull(),
     whatsappMessageId: text("whatsapp_message_id"),
     status: messageStatusEnum("status").default("queued").notNull(),
@@ -260,9 +255,7 @@ export const messageTemplates = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [
-    uniqueIndex("message_templates_business_type_idx").on(table.businessId, table.type),
-  ],
+  (table) => [uniqueIndex("message_templates_business_type_idx").on(table.businessId, table.type)],
 );
 
 export const analyticsDaily = pgTable(
@@ -281,9 +274,7 @@ export const analyticsDaily = pgTable(
     returningClients: integer("returning_clients").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [
-    uniqueIndex("analytics_daily_business_date_idx").on(table.businessId, table.date),
-  ],
+  (table) => [uniqueIndex("analytics_daily_business_date_idx").on(table.businessId, table.date)],
 );
 
 export const businessClosures = pgTable(

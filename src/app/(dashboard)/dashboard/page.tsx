@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { getAppointmentsForDate, getStaffForCalendar } from "@/actions/appointments";
-import { CalendarView } from "@/components/calendar/calendar-view";
 import { getClosureDates } from "@/actions/closures";
+import { CalendarView } from "@/components/calendar/calendar-view";
+import { createClient } from "@/lib/supabase/server";
 
 function toISODate(date: Date): string {
   const y = date.getFullYear();

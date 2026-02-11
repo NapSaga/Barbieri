@@ -1,7 +1,15 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { z } from "zod/v4";
+import { createClient } from "@/lib/supabase/server";
+
+// ─── Zod Schemas ─────────────────────────────────────────────────────
+
+const dateStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato data non valido (atteso YYYY-MM-DD)");
+const periodSchema = z.enum(["7d", "30d", "90d"]);
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -64,6 +72,11 @@ export async function getAnalyticsDaily(
   startDate: string,
   endDate: string,
 ): Promise<AnalyticsDayRow[]> {
+  const parsed = z
+    .object({ startDate: dateStringSchema, endDate: dateStringSchema })
+    .safeParse({ startDate, endDate });
+  if (!parsed.success) return [];
+
   const { supabase, businessId } = await getBusinessId();
   if (!businessId) return [];
 
@@ -82,9 +95,21 @@ export async function getAnalyticsDaily(
 
 // ─── Get Summary with Delta ──────────────────────────────────────────
 
-export async function getAnalyticsSummary(
-  period: "7d" | "30d" | "90d",
-): Promise<AnalyticsSummary> {
+export async function getAnalyticsSummary(period: "7d" | "30d" | "90d"): Promise<AnalyticsSummary> {
+  const parsed = periodSchema.safeParse(period);
+  if (!parsed.success)
+    return {
+      totalRevenue: 0,
+      totalAppointments: 0,
+      noShowRate: 0,
+      newClients: 0,
+      returningClients: 0,
+      revenueDelta: null,
+      appointmentsDelta: null,
+      noShowDelta: null,
+      newClientsDelta: null,
+    };
+
   const days = period === "7d" ? 7 : period === "30d" ? 30 : 90;
   const today = new Date().toISOString().split("T")[0];
   const startDate = subtractDays(today, days);
@@ -137,9 +162,10 @@ export async function getAnalyticsSummary(
 
 // ─── Top Services ────────────────────────────────────────────────────
 
-export async function getTopServices(
-  period: "7d" | "30d" | "90d",
-): Promise<TopService[]> {
+export async function getTopServices(period: "7d" | "30d" | "90d"): Promise<TopService[]> {
+  const parsed = periodSchema.safeParse(period);
+  if (!parsed.success) return [];
+
   const { supabase, businessId } = await getBusinessId();
   if (!businessId) return [];
 

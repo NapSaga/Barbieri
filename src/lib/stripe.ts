@@ -20,7 +20,7 @@ export const stripe = new Proxy({} as Stripe, {
 });
 
 // Re-export plan definitions for server-side convenience
-export { PLANS, STRIPE_CONFIG, type PlanId, type PlanDef } from "@/lib/stripe-plans";
+export { PLANS, type PlanDef, type PlanId, STRIPE_CONFIG } from "@/lib/stripe-plans";
 
 // Server-only: price IDs from env (not available in client components)
 export const STRIPE_PRICES: Record<string, string> = {

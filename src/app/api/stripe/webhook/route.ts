@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
 import { createClient } from "@supabase/supabase-js";
+import { type NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { stripe } from "@/lib/stripe";
 
 // Use Supabase admin client to bypass RLS (same pattern as WhatsApp webhook)
 // Lazy-initialized to avoid build-time crash when env vars aren't set
@@ -37,8 +38,7 @@ function mapStatus(stripeStatus: string): string {
 }
 
 async function updateSubscriptionStatus(customerId: string, status: string) {
-  const { error } = await (getSupabaseAdmin()
-    .from("businesses") as any)
+  const { error } = await (getSupabaseAdmin().from("businesses") as any)
     .update({
       subscription_status: mapStatus(status),
       updated_at: new Date().toISOString(),
@@ -51,6 +51,21 @@ async function updateSubscriptionStatus(customerId: string, status: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const { allowed, resetAt } = checkRateLimit(ip);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((resetAt - Date.now()) / 1000)),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
+
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
 
@@ -72,27 +87,28 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
-        const customerId = typeof subscription.customer === "string"
-          ? subscription.customer
-          : subscription.customer.id;
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer.id;
         await updateSubscriptionStatus(customerId, subscription.status);
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        const customerId = typeof subscription.customer === "string"
-          ? subscription.customer
-          : subscription.customer.id;
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer.id;
         await updateSubscriptionStatus(customerId, "cancelled");
         break;
       }
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        const customerId = typeof invoice.customer === "string"
-          ? invoice.customer
-          : invoice.customer?.id;
+        const customerId =
+          typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
         if (customerId) {
           await updateSubscriptionStatus(customerId, "past_due");
         }
@@ -101,9 +117,8 @@ export async function POST(request: NextRequest) {
 
       case "invoice.paid": {
         const invoice = event.data.object as Stripe.Invoice;
-        const customerId = typeof invoice.customer === "string"
-          ? invoice.customer
-          : invoice.customer?.id;
+        const customerId =
+          typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
         if (customerId) {
           await updateSubscriptionStatus(customerId, "active");
         }

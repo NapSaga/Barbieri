@@ -1,6 +1,6 @@
 BARBEROS MVP — ARCHITETTURA E STRUTTURA CODICE
 
-Ultimo aggiornamento: 10 febbraio 2026
+Ultimo aggiornamento: 11 febbraio 2026
 
 ---
 
@@ -12,7 +12,7 @@ barberos-mvp/
 ├── .gitignore
 ├── biome.json                    # Configurazione Biome (linter + formatter)
 ├── drizzle.config.ts             # Configurazione Drizzle ORM
-├── next.config.ts                # Configurazione Next.js (React Compiler abilitato)
+├── next.config.ts                # Configurazione Next.js (React Compiler + security headers)
 ├── package.json                  # Dipendenze e scripts
 ├── postcss.config.mjs            # PostCSS con Tailwind
 ├── tsconfig.json                 # TypeScript strict mode
@@ -57,11 +57,12 @@ barberos-mvp/
     │   └── book/
     │       └── [slug]/page.tsx   # BOOKING PUBBLICO — wizard prenotazione
     │
-    ├── actions/                  # Server Actions (mutazioni server-side)
+    ├── actions/                  # Server Actions (mutazioni server-side, validazione Zod in entrata)
     │   ├── analytics.ts          # getAnalyticsSummary, getAnalyticsDaily, getTopServices
-    │   ├── appointments.ts       # getAppointmentsForDate, getAppointmentsForWeek,
+    │   ├── appointments.ts       # getStaffBookedSlots (public, conflict detection),
+    │   │                         # getAppointmentsForDate, getAppointmentsForWeek,
     │   │                         # getStaffForCalendar, addWalkIn, bookAppointment,
-    │   │                         # updateAppointmentStatus
+    │   │                         # updateAppointmentStatus, hasConflict (internal)
     │   ├── billing.ts            # createCheckoutSession(planId), createPortalSession, getSubscriptionInfo
     │   ├── business.ts           # getCurrentBusiness, updateBusinessInfo,
     │   │                         # updateBusinessOpeningHours, updateBusinessThresholds,
@@ -111,7 +112,8 @@ barberos-mvp/
     │   │   └── waitlist-manager.tsx # Gestione waitlist: filtri stato, ricerca, badge colorati, rimozione, bulk-expire
     │   │
     │   └── shared/
-    │       └── sidebar.tsx        # Sidebar navigazione dashboard (mobile + desktop)
+    │       ├── sidebar.tsx        # Sidebar navigazione dashboard (mobile + desktop)
+    │       └── barberos-logo.tsx  # Logo SVG custom (LogoIcon + LogoFull)
     │
     ├── db/
     │   ├── schema.ts             # Schema Drizzle ORM completo (10 tabelle, 6 enums, relazioni)
@@ -120,6 +122,8 @@ barberos-mvp/
     ├── lib/
     │   ├── utils.ts              # Utility cn() per class names (clsx + tailwind-merge)
     │   ├── slots.ts              # Algoritmo calcolo slot disponibili (orari staff - appuntamenti - pausa)
+    │   ├── rate-limit.ts         # Rate limiter in-memory sliding window per API routes
+    │   │                         # checkRateLimit(), getClientIp()
     │   ├── stripe.ts             # Stripe server client (lazy init + Proxy alias), re-export PLANS,
     │   │                         # STRIPE_PRICES server-only da env
     │   ├── stripe-plans.ts       # Definizione piani (Essential, Professional, Enterprise),
@@ -164,18 +168,40 @@ PATTERN ARCHITETTURALI
    - Pagina Server Component → Manager Client Component → Sub-components
    - Esempio: StaffPage (server) → StaffManager (client) → WorkingHoursEditor (client)
 
+6. Validazione Input con Zod
+   - Ogni Server Action che accetta parametri utente valida con Zod 4.3.6 (import da "zod/v4")
+   - Pattern: schema.safeParse(input) come prima riga, PRIMA di qualsiasi query Supabase
+   - Errori restituiti come { error: "messaggio in italiano" } — nessuna eccezione lanciata
+   - Tipi validati: UUID, date YYYY-MM-DD, orari HH:MM, enum, stringhe min(1), numeri int/float, record, array
+   - Per FormData: estrazione valori → oggetto raw → safeParse → destructuring dati validati
+   - Funzioni getter senza parametri utente (getClients, getStaff, ecc.) non necessitano validazione
+
+7. Security Hardening (next.config.ts)
+   - Content-Security-Policy: default-src 'self', script-src con Stripe.js + Vercel, connect-src con Supabase + Stripe + Vercel Analytics, frame-ancestors 'none', object-src 'none'
+   - X-Frame-Options: DENY, X-Content-Type-Options: nosniff
+   - Referrer-Policy: strict-origin-when-cross-origin
+   - Permissions-Policy: camera=(), microphone=(), geolocation=()
+   - Strict-Transport-Security: max-age=31536000; includeSubDomains
+   - Webhook routes (/api/stripe/webhook, /api/whatsapp/webhook): nessun CORS aperto, solo POST con verifica firma crittografica
+   - RLS policies ottimizzate: auth.uid() wrappato in (select auth.uid()) per evitare re-evaluation per riga
+   - Leaked Password Protection abilitata su Supabase Auth
+
 ---
 
 FLUSSI DATI PRINCIPALI
 
 Prenotazione online:
   Browser /book/[slug] → Server Component (fetch business + services + staff)
-  → BookingWizard (client) → bookAppointment Server Action
+  → BookingWizard (client) → useEffect: getStaffBookedSlots(businessId, staffId, date)
+  → Slot filtrati: generateTimeSlots() meno slot in conflitto con appuntamenti esistenti
+  → bookAppointment Server Action → hasConflict() check (reject se overlap)
   → Supabase: find/create client + create appointment + send WhatsApp mock + create message record
   → revalidatePath("/dashboard")
 
 Walk-in:
-  Dashboard → WalkInDialog (client) → addWalkIn Server Action
+  Dashboard → WalkInDialog (client, riceve appointments dal calendario)
+  → Client-side: warning arancione se orario selezionato confligge con appuntamento esistente
+  → addWalkIn Server Action → hasConflict() check (reject se overlap)
   → Supabase: find/create client + create appointment (status: confirmed, source: walk_in)
   → revalidatePath("/dashboard")
 
@@ -309,19 +335,22 @@ CONTEGGIO FILE
 Codebase Next.js (locale):
 - 9 Server Actions (analytics, appointments, billing, business, clients, closures, services, staff, waitlist)
 - 18 route/pagine (incluso layout, callback, booking, expired, 2 webhook)
-- 16 componenti React (6 calendar, 1 analytics, 1 billing, 1 booking, 1 clients, 1 services, 1 settings, 1 staff, 1 waitlist, 1 shared)
-- 9 file lib/utility (utils, slots, stripe, stripe-plans, whatsapp, templates, 3 supabase clients)
+- 17 componenti UI shadcn/ui (avatar, badge, button, card, dialog, dropdown-menu, input, label, popover, select, separator, sheet, skeleton, sonner, table, tabs, tooltip)
+- 11 componenti feature (6 calendar, 1 analytics, 1 billing, 1 booking, 1 clients, 1 services, 1 settings, 1 staff, 1 waitlist)
+- 2 componenti shared (sidebar, barberos-logo)
+- 10 file lib/utility (utils, slots, rate-limit, stripe, stripe-plans, whatsapp, templates, 3 supabase clients)
 - 2 file database (schema, index)
 - 1 file types
 - 1 file proxy (proxy.ts — auth + subscription gating)
+- 1 config shadcn (components.json)
 - 1 script setup (scripts/setup-stripe.ts)
-- Totale: ~52 file TypeScript/TSX
+- Totale: ~72 file TypeScript/TSX
 
 Supabase Cloud:
 - 6 Edge Functions attive (confirmation-request/reminder, auto-cancel, pre-appointment, review-request, reactivation)
 - 7 SQL helper/functions (6 conferma + calculate_analytics_daily)
 - 7 pg_cron schedules (6 conferma + analytics-daily-calc)
-- 13 migrazioni applicate
+- 16 migrazioni applicate
 - 11 tabelle (10 originali + business_closures)
 
 Deploy:

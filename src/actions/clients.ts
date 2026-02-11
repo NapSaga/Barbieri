@@ -1,8 +1,31 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod/v4";
+import { createClient } from "@/lib/supabase/server";
+
+// ─── Zod Schemas ─────────────────────────────────────────────────────
+
+const uuidSchema = z.string().uuid("ID non valido");
+
+const createClientSchema = z.object({
+  first_name: z.string().min(1, "Nome obbligatorio"),
+  last_name: z.string(),
+  phone: z.string().min(1, "Telefono obbligatorio"),
+  email: z.string(),
+  notes: z.string(),
+});
+
+const updateTagsSchema = z.object({
+  clientId: uuidSchema,
+  tags: z.array(z.string()),
+});
+
+const updateNotesSchema = z.object({
+  clientId: uuidSchema,
+  notes: z.string(),
+});
 
 export async function getClients() {
   const supabase = await createClient();
@@ -45,11 +68,18 @@ export async function createNewClient(formData: FormData) {
 
   if (!business) return { error: "Barberia non trovata" };
 
-  const firstName = formData.get("first_name") as string;
-  const lastName = formData.get("last_name") as string;
-  const phone = formData.get("phone") as string;
-  const email = formData.get("email") as string;
-  const notes = formData.get("notes") as string;
+  const raw = {
+    first_name: (formData.get("first_name") as string) ?? "",
+    last_name: (formData.get("last_name") as string) ?? "",
+    phone: (formData.get("phone") as string) ?? "",
+    email: (formData.get("email") as string) ?? "",
+    notes: (formData.get("notes") as string) ?? "",
+  };
+  const parsed = createClientSchema.safeParse(raw);
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? "Dati cliente non validi" };
+
+  const { first_name: firstName, last_name: lastName, phone, email, notes } = parsed.data;
 
   const { error } = await supabase.from("clients").insert({
     business_id: business.id,
@@ -72,6 +102,9 @@ export async function createNewClient(formData: FormData) {
 }
 
 export async function updateClientTags(clientId: string, tags: string[]) {
+  const parsed = updateTagsSchema.safeParse({ clientId, tags });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -86,6 +119,9 @@ export async function updateClientTags(clientId: string, tags: string[]) {
 }
 
 export async function updateClientNotes(clientId: string, notes: string) {
+  const parsed = updateNotesSchema.safeParse({ clientId, notes });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
   const supabase = await createClient();
 
   const { error } = await supabase

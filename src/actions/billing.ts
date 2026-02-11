@@ -1,10 +1,15 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { stripe, STRIPE_PRICES } from "@/lib/stripe";
-import { STRIPE_CONFIG, PLANS, type PlanId } from "@/lib/stripe-plans";
-import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { z } from "zod/v4";
+import { STRIPE_PRICES, stripe } from "@/lib/stripe";
+import { PLANS, type PlanId, STRIPE_CONFIG } from "@/lib/stripe-plans";
+import { createClient } from "@/lib/supabase/server";
+
+// ─── Zod Schemas ─────────────────────────────────────────────────────
+
+const planIdSchema = z.enum(["essential", "professional", "enterprise"]);
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -52,6 +57,9 @@ async function ensureStripeCustomer(
 // ─── Create Checkout Session ────────────────────────────────────────
 
 export async function createCheckoutSession(planId: PlanId) {
+  const parsed = planIdSchema.safeParse(planId);
+  if (!parsed.success) return { error: "Piano non valido" };
+
   const plan = PLANS[planId];
   const priceId = STRIPE_PRICES[planId];
   if (!plan || !priceId) {
@@ -60,7 +68,8 @@ export async function createCheckoutSession(planId: PlanId) {
 
   const { supabase, user, business } = await getAuthenticatedBusiness();
   const headersList = await headers();
-  const origin = headersList.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const origin =
+    headersList.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const customerId = await ensureStripeCustomer(supabase, business, user.email!);
 
@@ -92,7 +101,8 @@ export async function createCheckoutSession(planId: PlanId) {
 export async function createPortalSession() {
   const { business } = await getAuthenticatedBusiness();
   const headersList = await headers();
-  const origin = headersList.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const origin =
+    headersList.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   if (!business.stripe_customer_id) {
     return { error: "Nessun abbonamento attivo" };

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { type NextRequest, NextResponse } from "next/server";
 import twilio from "twilio";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 /**
  * Webhook endpoint per messaggi WhatsApp in ingresso da Twilio.
@@ -51,6 +52,15 @@ function validateTwilioRequest(req: NextRequest, body: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req.headers);
+  const { allowed, resetAt } = checkRateLimit(ip);
+  if (!allowed) {
+    return new NextResponse("Too many requests", {
+      status: 429,
+      headers: { "Retry-After": String(Math.ceil((resetAt - Date.now()) / 1000)) },
+    });
+  }
+
   const body = await req.text();
   const params = new URLSearchParams(body);
 
@@ -91,10 +101,10 @@ export async function POST(req: NextRequest) {
     console.error("❌ Webhook error:", error);
   }
 
-  return new NextResponse(
-    '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
-    { status: 200, headers: { "Content-Type": "text/xml" } },
-  );
+  return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+    status: 200,
+    headers: { "Content-Type": "text/xml" },
+  });
 }
 
 // ─── Helper: trova cliente per telefono ──────────────────────────────
@@ -175,7 +185,9 @@ async function handleConfirm(supabase: AdminClient, phone: string, phoneWithPlus
       sent_at: new Date().toISOString(),
     });
 
-    console.log(`✅ CONFERMA: appuntamento ${appointment.id} confermato per ${client.first_name} (${phone})`);
+    console.log(
+      `✅ CONFERMA: appuntamento ${appointment.id} confermato per ${client.first_name} (${phone})`,
+    );
 
     // Auto-tag: se il cliente ha ≥3 conferme, aggiungi tag "Affidabile"
     await autoTagClient(supabase, client.id, "confirm");
@@ -184,7 +196,11 @@ async function handleConfirm(supabase: AdminClient, phone: string, phoneWithPlus
 
 // ─── Auto-tag logic ─────────────────────────────────────────────────
 
-async function autoTagClient(supabase: AdminClient, clientId: string, event: "confirm" | "auto_cancel") {
+async function autoTagClient(
+  supabase: AdminClient,
+  clientId: string,
+  event: "confirm" | "auto_cancel",
+) {
   const { data: clientData } = await supabase
     .from("clients")
     .select("tags")
@@ -259,7 +275,12 @@ async function handleReschedule(supabase: AdminClient, phone: string, phoneWithP
 
 // ─── Messaggio non riconosciuto ─────────────────────────────────────
 
-async function handleUnknown(supabase: AdminClient, phone: string, phoneWithPlus: string, originalMessage: string) {
+async function handleUnknown(
+  supabase: AdminClient,
+  phone: string,
+  phoneWithPlus: string,
+  originalMessage: string,
+) {
   const clients = await findClientByPhone(supabase, phone, phoneWithPlus);
 
   console.log(`ℹ️ Messaggio non riconosciuto da ${phone}: "${originalMessage}"`);
@@ -323,7 +344,9 @@ async function handleCancel(supabase: AdminClient, phone: string, phoneWithPlus:
       sent_at: new Date().toISOString(),
     });
 
-    console.log(`✅ CANCELLA: appuntamento ${appointment.id} cancellato per ${client.first_name} (${phone})`);
+    console.log(
+      `✅ CANCELLA: appuntamento ${appointment.id} cancellato per ${client.first_name} (${phone})`,
+    );
 
     await autoTagClient(supabase, client.id, "auto_cancel");
     await notifyWaitlist(supabase, appointment);
@@ -383,10 +406,7 @@ async function handleWaitlistConfirm(supabase: AdminClient, phone: string, phone
       continue;
     }
 
-    await supabase
-      .from("waitlist")
-      .update({ status: "converted" })
-      .eq("id", entry.id);
+    await supabase.from("waitlist").update({ status: "converted" }).eq("id", entry.id);
 
     console.log(`✅ SI: waitlist ${entry.id} convertita per ${client.first_name} (${phone})`);
   }
@@ -396,7 +416,12 @@ async function handleWaitlistConfirm(supabase: AdminClient, phone: string, phone
 
 async function notifyWaitlist(
   supabase: AdminClient,
-  cancelledAppointment: { business_id: string; date: string; start_time: string; service_id: string },
+  cancelledAppointment: {
+    business_id: string;
+    date: string;
+    start_time: string;
+    service_id: string;
+  },
 ) {
   const { data: waitlistEntries } = await supabase
     .from("waitlist")

@@ -4,7 +4,7 @@
  * existing appointments, and service duration.
  */
 
-import { addMinutes, format, parse, isAfter, isBefore, isEqual } from "date-fns";
+import { addMinutes, format, isAfter, isBefore, isEqual, parse } from "date-fns";
 
 export interface TimeSlot {
   start: string; // HH:mm
@@ -68,10 +68,7 @@ export function getAvailableSlots(
 
     // Check if slot overlaps with break
     const overlapsBreak =
-      breakStart &&
-      breakEnd &&
-      isBefore(current, breakEnd) &&
-      isAfter(slotEnd, breakStart);
+      breakStart && breakEnd && isBefore(current, breakEnd) && isAfter(slotEnd, breakStart);
 
     // Check if slot overlaps with any existing appointment
     const overlapsAppointment = staffAppointments.some(

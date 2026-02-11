@@ -1,30 +1,22 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
 import {
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Users,
-  Calendar,
   AlertTriangle,
+  BarChart3,
+  Calendar,
   Euro,
   Loader2,
   Scissors,
-  UserPlus,
+  TrendingDown,
+  TrendingUp,
   UserCheck,
+  UserPlus,
+  Users,
 } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import type { AnalyticsDayRow, AnalyticsSummary, TopService } from "@/actions/analytics";
+import { getAnalyticsDaily, getAnalyticsSummary, getTopServices } from "@/actions/analytics";
 import { cn } from "@/lib/utils";
-import {
-  getAnalyticsSummary,
-  getAnalyticsDaily,
-  getTopServices,
-} from "@/actions/analytics";
-import type {
-  AnalyticsSummary,
-  AnalyticsDayRow,
-  TopService,
-} from "@/actions/analytics";
 
 type Period = "7d" | "30d" | "90d";
 
@@ -89,7 +81,12 @@ export function AnalyticsDashboard({
   }, [period]);
 
   const maxRevenue = Math.max(...daily.map((d) => d.total_revenue_cents), 1);
-  const maxAppts = Math.max(...daily.map((d) => d.appointments_completed + d.appointments_cancelled + d.appointments_no_show), 1);
+  const maxAppts = Math.max(
+    ...daily.map(
+      (d) => d.appointments_completed + d.appointments_cancelled + d.appointments_no_show,
+    ),
+    1,
+  );
 
   return (
     <div className="space-y-6">
@@ -180,8 +177,12 @@ export function AnalyticsDashboard({
                   >
                     {/* Tooltip */}
                     <div className="pointer-events-none absolute -top-1 left-1/2 z-10 hidden -translate-x-1/2 -translate-y-full rounded-lg border border-border bg-card px-3 py-2 text-[11px] shadow-lg group-hover:block">
-                      <div className="font-bold text-foreground">{formatCurrency(d.total_revenue_cents)}</div>
-                      <div className="text-muted-foreground">{d.appointments_completed} completati</div>
+                      <div className="font-bold text-foreground">
+                        {formatCurrency(d.total_revenue_cents)}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {d.appointments_completed} completati
+                      </div>
                       <div className="mt-0.5 text-[10px] text-muted-foreground/60">{label}</div>
                     </div>
                     <div
@@ -207,9 +208,18 @@ export function AnalyticsDashboard({
             <span className="text-sm font-semibold text-foreground">Appuntamenti giornalieri</span>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-emerald-500" />Completati</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-red-400" />Cancellati</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-amber-400" />No-show</span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-emerald-500" />
+              Completati
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-red-400" />
+              Cancellati
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-amber-400" />
+              No-show
+            </span>
           </div>
         </div>
         <div className="p-5">
@@ -218,7 +228,8 @@ export function AnalyticsDashboard({
           ) : (
             <div className="flex items-end gap-[2px]" style={{ height: 160 }}>
               {daily.map((d) => {
-                const total = d.appointments_completed + d.appointments_cancelled + d.appointments_no_show;
+                const total =
+                  d.appointments_completed + d.appointments_cancelled + d.appointments_no_show;
                 const completedH = Math.max((d.appointments_completed / maxAppts) * 120, 0);
                 const noShowH = Math.max((d.appointments_no_show / maxAppts) * 120, 0);
                 const cancelledH = Math.max((d.appointments_cancelled / maxAppts) * 120, 0);
@@ -236,13 +247,22 @@ export function AnalyticsDashboard({
                     </div>
                     <div className="flex w-full flex-col items-stretch">
                       {noShowH > 0 && (
-                        <div className="w-full rounded-t-sm bg-amber-400" style={{ height: noShowH, minWidth: 3 }} />
+                        <div
+                          className="w-full rounded-t-sm bg-amber-400"
+                          style={{ height: noShowH, minWidth: 3 }}
+                        />
                       )}
                       {cancelledH > 0 && (
-                        <div className={cn("w-full bg-red-400", noShowH === 0 && "rounded-t-sm")} style={{ height: cancelledH, minWidth: 3 }} />
+                        <div
+                          className={cn("w-full bg-red-400", noShowH === 0 && "rounded-t-sm")}
+                          style={{ height: cancelledH, minWidth: 3 }}
+                        />
                       )}
                       <div
-                        className={cn("w-full bg-emerald-500", noShowH === 0 && cancelledH === 0 && "rounded-t-sm")}
+                        className={cn(
+                          "w-full bg-emerald-500",
+                          noShowH === 0 && cancelledH === 0 && "rounded-t-sm",
+                        )}
                         style={{ height: Math.max(completedH, total > 0 ? 2 : 0), minWidth: 3 }}
                       />
                     </div>
@@ -264,7 +284,9 @@ export function AnalyticsDashboard({
           </div>
           <div className="p-5">
             {topServices.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">Nessun dato per il periodo selezionato</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nessun dato per il periodo selezionato
+              </p>
             ) : (
               <div className="space-y-4">
                 {topServices.map((s, i) => {
@@ -344,15 +366,26 @@ export function AnalyticsDashboard({
                 <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-violet-500" />
-                    Nuovi ({summary.newClients + summary.returningClients > 0
-                      ? Math.round((summary.newClients / (summary.newClients + summary.returningClients)) * 100)
-                      : 0}%)
+                    Nuovi (
+                    {summary.newClients + summary.returningClients > 0
+                      ? Math.round(
+                          (summary.newClients / (summary.newClients + summary.returningClients)) *
+                            100,
+                        )
+                      : 0}
+                    %)
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    Ricorrenti ({summary.newClients + summary.returningClients > 0
-                      ? Math.round((summary.returningClients / (summary.newClients + summary.returningClients)) * 100)
-                      : 0}%)
+                    Ricorrenti (
+                    {summary.newClients + summary.returningClients > 0
+                      ? Math.round(
+                          (summary.returningClients /
+                            (summary.newClients + summary.returningClients)) *
+                            100,
+                        )
+                      : 0}
+                    %)
                   </span>
                 </div>
               </>

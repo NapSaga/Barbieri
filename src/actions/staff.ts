@@ -1,8 +1,42 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod/v4";
+import { createClient } from "@/lib/supabase/server";
+
+// ─── Zod Schemas ─────────────────────────────────────────────────────
+
+const uuidSchema = z.string().uuid("ID non valido");
+
+const createStaffSchema = z.object({
+  name: z.string().min(1, "Nome membro staff obbligatorio"),
+});
+
+const updateStaffSchema = z.object({
+  staffId: uuidSchema,
+  name: z.string().min(1, "Nome membro staff obbligatorio"),
+  active: z.enum(["true", "false"]),
+});
+
+const workingHoursDaySchema = z.object({
+  start: z.string().regex(/^\d{2}:\d{2}$/, "Formato orario non valido"),
+  end: z.string().regex(/^\d{2}:\d{2}$/, "Formato orario non valido"),
+  breakStart: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Formato orario pausa non valido")
+    .optional(),
+  breakEnd: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Formato orario pausa non valido")
+    .optional(),
+  off: z.boolean(),
+});
+
+const updateWorkingHoursSchema = z.object({
+  staffId: uuidSchema,
+  workingHours: z.record(z.string(), workingHoursDaySchema),
+});
 
 export async function getStaff() {
   const supabase = await createClient();
@@ -40,6 +74,10 @@ const DEFAULT_WORKING_HOURS = {
 };
 
 export async function createStaffMember(formData: FormData) {
+  const raw = { name: (formData.get("name") as string) ?? "" };
+  const parsed = createStaffSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati staff non validi" };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -55,7 +93,7 @@ export async function createStaffMember(formData: FormData) {
 
   if (!business) return { error: "Barberia non trovata" };
 
-  const name = formData.get("name") as string;
+  const name = parsed.data.name;
 
   const { error } = await supabase.from("staff").insert({
     business_id: business.id,
@@ -70,10 +108,18 @@ export async function createStaffMember(formData: FormData) {
 }
 
 export async function updateStaffMember(staffId: string, formData: FormData) {
+  const raw = {
+    staffId,
+    name: (formData.get("name") as string) ?? "",
+    active: (formData.get("active") as string) ?? "false",
+  };
+  const parsed = updateStaffSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati staff non validi" };
+
   const supabase = await createClient();
 
-  const name = formData.get("name") as string;
-  const active = formData.get("active") === "true";
+  const name = parsed.data.name;
+  const active = parsed.data.active === "true";
 
   const { error } = await supabase
     .from("staff")
@@ -88,8 +134,15 @@ export async function updateStaffMember(staffId: string, formData: FormData) {
 
 export async function updateStaffWorkingHours(
   staffId: string,
-  workingHours: Record<string, { start: string; end: string; breakStart?: string; breakEnd?: string; off: boolean }>,
+  workingHours: Record<
+    string,
+    { start: string; end: string; breakStart?: string; breakEnd?: string; off: boolean }
+  >,
 ) {
+  const parsed = updateWorkingHoursSchema.safeParse({ staffId, workingHours });
+  if (!parsed.success)
+    return { error: parsed.error.issues[0]?.message ?? "Orari di lavoro non validi" };
+
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -104,6 +157,9 @@ export async function updateStaffWorkingHours(
 }
 
 export async function deleteStaffMember(staffId: string) {
+  const parsed = uuidSchema.safeParse(staffId);
+  if (!parsed.success) return { error: "ID staff non valido" };
+
   const supabase = await createClient();
 
   const { error } = await supabase.from("staff").delete().eq("id", staffId);

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Check, ChevronLeft, Clock, Scissors, User, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { bookAppointment } from "@/actions/appointments";
+import { Check, ChevronLeft, Clock, Loader2, Scissors, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { bookAppointment, getStaffBookedSlots } from "@/actions/appointments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface Service {
   id: string;
@@ -108,17 +108,43 @@ function generateTimeSlots(
   return slots;
 }
 
-export function BookingWizard({ business, services, staffMembers, closureDates = [] }: BookingWizardProps) {
+export function BookingWizard({
+  business,
+  services,
+  staffMembers,
+  closureDates = [],
+}: BookingWizardProps) {
   const [step, setStep] = useState<Step>("service");
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [clientName, setClientName] = useState("");
+  const [clientLastName, setClientLastName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bookedSlots, setBookedSlots] = useState<{ startTime: string; endTime: string }[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedDate || !selectedStaff) {
+      setBookedSlots([]);
+      return;
+    }
+    let cancelled = false;
+    setSlotsLoading(true);
+    getStaffBookedSlots(business.id, selectedStaff.id, toISODate(selectedDate)).then((slots) => {
+      if (!cancelled) {
+        setBookedSlots(slots);
+        setSlotsLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDate, selectedStaff, business.id]);
 
   const dates = Array.from({ length: DAYS_TO_SHOW }, (_, i) => {
     const d = new Date();
@@ -137,13 +163,18 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
 
     if (!schedule || schedule.off) return [];
 
-    return generateTimeSlots(
+    const allSlots = generateTimeSlots(
       schedule.start,
       schedule.end,
       duration,
       schedule.breakStart,
       schedule.breakEnd,
     );
+
+    return allSlots.filter((slotStart) => {
+      const slotEnd = addMinutesToTime(slotStart, duration);
+      return !bookedSlots.some((appt) => slotStart < appt.endTime && slotEnd > appt.startTime);
+    });
   }
 
   function handleSelectService(service: Service) {
@@ -200,6 +231,7 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
       startTime: selectedTime,
       endTime,
       clientFirstName: clientName.trim(),
+      clientLastName: clientLastName.trim() || undefined,
       clientPhone: clientPhone.trim(),
     });
 
@@ -241,7 +273,11 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
             key={s}
             className={cn(
               "h-2 w-8 rounded-full transition-colors",
-              step === s ? "bg-primary" : i < ["service", "staff", "datetime", "confirm"].indexOf(step) ? "bg-muted-foreground" : "bg-secondary",
+              step === s
+                ? "bg-primary"
+                : i < ["service", "staff", "datetime", "confirm"].indexOf(step)
+                  ? "bg-muted-foreground"
+                  : "bg-secondary",
             )}
           />
         ))}
@@ -355,8 +391,14 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
           {selectedDate && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-foreground">Orari disponibili</h3>
-              {availableSlots.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nessun orario disponibile per questa data.</p>
+              {slotsLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : availableSlots.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nessun orario disponibile per questa data.
+                </p>
               ) : (
                 <div className="grid grid-cols-4 gap-2">
                   {availableSlots.map((time) => (
@@ -415,16 +457,28 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
 
           {/* Client info */}
           <div className="space-y-3">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nome</Label>
-              <Input
-                id="name"
-                type="text"
-                required
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                placeholder="Il tuo nome"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  required
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Mario"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="lastName">Cognome</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={clientLastName}
+                  onChange={(e) => setClientLastName(e.target.value)}
+                  placeholder="Rossi"
+                />
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="phone">Numero di telefono</Label>
@@ -439,14 +493,11 @@ export function BookingWizard({ business, services, staffMembers, closureDates =
             </div>
           </div>
 
-          {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+          {error && (
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+          )}
 
-          <Button
-            onClick={handleConfirm}
-            disabled={loading}
-            className="w-full"
-            size="lg"
-          >
+          <Button onClick={handleConfirm} disabled={loading} className="w-full" size="lg">
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

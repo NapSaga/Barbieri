@@ -1,23 +1,23 @@
 "use client";
 
-import { useTransition, useState } from "react";
 import {
-  X,
-  Phone,
-  Clock,
-  User,
-  Scissors,
-  CheckCircle2,
-  XCircle,
   AlertTriangle,
+  CheckCircle2,
+  Clock,
   Loader2,
   MapPin,
   MessageCircle,
+  Phone,
+  Scissors,
+  User,
+  X,
+  XCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { updateAppointmentStatus } from "@/actions/appointments";
+import { useState, useTransition } from "react";
 import type { CalendarAppointment } from "@/actions/appointments";
-import { STATUS_STYLES, STATUS_LABELS } from "./appointment-card";
+import { updateAppointmentStatus } from "@/actions/appointments";
+import { cn } from "@/lib/utils";
+import { STATUS_LABELS, STATUS_STYLES } from "./appointment-card";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -67,10 +67,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md animate-in slide-in-from-bottom-4 rounded-t-2xl bg-card border border-border shadow-xl sm:mx-4 sm:rounded-2xl">
         {/* Accent bar */}
         <div className={cn("h-1.5 w-full rounded-t-2xl", style.accent)} />
@@ -80,7 +77,12 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
           <div className="mb-4 flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2.5">
-                <div className={cn("flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white", style.accent)}>
+                <div
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white",
+                    style.accent,
+                  )}
+                >
                   {clientName.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -161,12 +163,14 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
           {/* Confirmation status */}
           {appointment.confirmationStatus && appointment.confirmationStatus !== "none" && (
             <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-border px-3 py-2.5 text-sm">
-              <MessageCircle className={cn(
-                "h-4 w-4 shrink-0",
-                appointment.confirmationStatus === "pending" && "text-amber-400",
-                appointment.confirmationStatus === "confirmed" && "text-emerald-400",
-                appointment.confirmationStatus === "auto_cancelled" && "text-red-400",
-              )} />
+              <MessageCircle
+                className={cn(
+                  "h-4 w-4 shrink-0",
+                  appointment.confirmationStatus === "pending" && "text-amber-400",
+                  appointment.confirmationStatus === "confirmed" && "text-emerald-400",
+                  appointment.confirmationStatus === "auto_cancelled" && "text-red-400",
+                )}
+              />
               <div>
                 {appointment.confirmationStatus === "pending" && (
                   <span className="text-amber-300">In attesa di conferma WhatsApp</span>
@@ -177,17 +181,26 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                 {appointment.confirmationStatus === "auto_cancelled" && (
                   <span className="text-red-400">Non confermato — cancellato automaticamente</span>
                 )}
-                {appointment.confirmRequestSentAt && appointment.confirmationStatus === "pending" && (
-                  <span className="ml-1.5 text-xs text-muted-foreground">
-                    · inviato {new Date(appointment.confirmRequestSentAt).toLocaleString("it-IT", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
-                  </span>
-                )}
+                {appointment.confirmRequestSentAt &&
+                  appointment.confirmationStatus === "pending" && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">
+                      · inviato{" "}
+                      {new Date(appointment.confirmRequestSentAt).toLocaleString("it-IT", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </span>
+                  )}
               </div>
             </div>
           )}
 
           {error && (
-            <p className="mt-3 rounded-lg bg-destructive/10 p-2.5 text-sm text-destructive">{error}</p>
+            <p className="mt-3 rounded-lg bg-destructive/10 p-2.5 text-sm text-destructive">
+              {error}
+            </p>
           )}
 
           {/* Actions */}
@@ -195,44 +208,64 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
             <div className="mt-4 grid grid-cols-2 gap-2">
               {canConfirm && (
                 <button
+                  type="button"
                   onClick={() => handleAction("confirmed")}
                   disabled={isPending}
                   className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:opacity-50"
                 >
-                  {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
                   Conferma
                 </button>
               )}
 
               {canComplete && (
                 <button
+                  type="button"
                   onClick={() => handleAction("completed")}
                   disabled={isPending}
                   className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
                   Completato
                 </button>
               )}
 
               {canNoShow && (
                 <button
+                  type="button"
                   onClick={() => handleAction("no_show")}
                   disabled={isPending}
                   className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-700/50 bg-amber-950/30 px-3 py-2.5 text-sm font-semibold text-amber-300 transition-colors hover:bg-amber-950/50 disabled:opacity-50"
                 >
-                  {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4" />
+                  )}
                   No-show
                 </button>
               )}
 
               {canCancel && (
                 <button
+                  type="button"
                   onClick={() => handleAction("cancelled")}
                   disabled={isPending}
                   className="flex items-center justify-center gap-1.5 rounded-xl border border-red-700/50 bg-red-950/30 px-3 py-2.5 text-sm font-semibold text-red-400 transition-colors hover:bg-red-950/50 disabled:opacity-50"
                 >
-                  {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <XCircle className="h-4 w-4" />
+                  )}
                   Cancella
                 </button>
               )}

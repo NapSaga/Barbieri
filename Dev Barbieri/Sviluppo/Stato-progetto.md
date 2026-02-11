@@ -1,6 +1,6 @@
 BARBEROS MVP — STATO DEL PROGETTO
 
-Ultimo aggiornamento: 10 febbraio 2026
+Ultimo aggiornamento: 11 febbraio 2026
 
 ---
 
@@ -44,6 +44,7 @@ Infrastruttura, database, autenticazione, layout base.
    - Mobile: hamburger menu con overlay
    - Desktop: sidebar fissa 256px
    - Logout con invalidazione sessione
+   - Logo SVG custom (src/components/shared/barberos-logo.tsx)
 
 ---
 
@@ -313,14 +314,92 @@ Polish, deploy, sicurezza.
    - Pagina /dashboard/expired con ExpiredView component (info piano + link settings)
    - Settings e expired page esenti dal gating (per permettere riattivazione)
 
-3. Da fare:
+3. Validazione Zod su Server Actions ✅
+   - Zod 4.3.6 (import da "zod/v4") aggiunto a tutti e 9 i moduli in src/actions/
+   - Schema Zod per ogni input utente: UUID, date (YYYY-MM-DD), orari (HH:MM), enum, stringhe obbligatorie, numeri, record, array
+   - z.safeParse() come prima riga di ogni action, PRIMA di qualsiasi query Supabase
+   - In caso di errore: return { error: "messaggio in italiano" } — nessuna eccezione lanciata
+   - Funzioni getter senza parametri utente (getClients, getStaff, ecc.) non modificate
+   - FormData: estrazione valori → validazione Zod → destructuring dati validati
+   - Logica di business invariata, solo validazione in entrata aggiunta
+   - typecheck (tsc --noEmit) e lint (biome check) passano senza errori
+
+4. Prevenzione Doppie Prenotazioni ✅
+   - Server action getStaffBookedSlots(): query pubblica (no auth) che restituisce gli slot occupati per staff+data
+   - Booking wizard: useEffect fetcha slot occupati quando staff/data cambiano → generateTimeSlots filtra slot in conflitto
+   - Walk-in dialog: riceve appointments dal calendario → warning arancione se orario selezionato confligge
+   - Server-side conflict check in bookAppointment(): query overlap prima di INSERT, rifiuta con errore "Questo orario non è più disponibile"
+   - Server-side conflict check in addWalkIn(): stessa logica, rifiuta con errore "Conflitto: il barbiere ha già un appuntamento in questo orario"
+   - Difesa a 3 livelli: (1) slot nascosti nel wizard, (2) warning visivo nel walk-in, (3) reject server-side per race condition
+   - hasConflict() usa query SQL con .lt("start_time", endTime).gt("end_time", startTime) per overlap detection
+
+5. UI Polish: shadcn/ui + Dark Mode ✅
+   - shadcn/ui integrato con 17 componenti Radix-based (button, card, dialog, dropdown-menu, input, label, popover, select, separator, sheet, skeleton, sonner, table, tabs, tooltip, avatar, badge)
+   - Dark mode con next-themes ^0.4.6: ThemeProvider in layout.tsx, defaultTheme="dark"
+   - Sonner ^2.0.7 per toast notifications
+   - Motion (Framer Motion) ^12.34.0 per animazioni
+   - tw-animate-css ^1.4.0 per animazioni Tailwind
+   - radix-ui ^1.4.3 come primitivi UI headless
+   - components.json configurato per shadcn/ui CLI
+
+6. Vercel Analytics ✅
+   - @vercel/analytics ^1.6.1 + @vercel/speed-insights ^1.3.1 installati
+   - <Analytics /> e <SpeedInsights /> in layout.tsx
+   - Page views e Core Web Vitals raccolti automaticamente
+
+7. Rate Limiting ✅
+   - src/lib/rate-limit.ts: rate limiter in-memory per API routes
+   - Sliding window con cleanup automatico ogni 5 minuti
+   - checkRateLimit(ip, maxRequests, windowMs) + getClientIp(headers)
+   - Usato per protezione webhook da abuso
+
+8. Test Manuali E2E ✅
+   - Checklist strutturata creata: Dev Barbieri/Testing/test-checklist.md
+   - 126 test cases in 16 sezioni (Auth, Onboarding, Booking, Conferma Smart, Calendario, Walk-in, Cancellazione, No-Show, Waitlist, CRM, Billing, Subscription Gating, Settings, Analytics, Edge Functions, Responsiveness)
+   - Tabella riepilogo pass/fail + bug log con severità
+
+9. Esecuzione Test E2E ✅
+   - Risultati: 108 ✅ Pass, 6 ❌ Fail, 12 ⏭️ Skip
+   - Pass rate: 85.7% totale, 94.7% escludendo test che richiedono Supabase/Twilio live
+   - 9 bug identificati (1 critico, 3 medi, 5 bassi)
+   - 4 bug fixati immediatamente:
+     a) CRITICO: webhook WhatsApp bloccato dal proxy (mancava /api/whatsapp nei path pubblici)
+     b) MEDIO: cancellazione da calendario non notificava la waitlist
+     c) BASSO: campo cognome mancante nel booking wizard
+     d) BASSO: bottoni azione appointment sheet senza type="button"
+   - 5 bug documentati per roadmap (feature gap, non regressioni):
+     - UI servizi combo non implementata (schema pronto)
+     - UI associazione staff-servizi mancante
+     - UI aggiunta manuale waitlist mancante
+     - Riordino staff (sort_order) non esposto in UI
+     - Filtro staff nel calendario non implementato
+   - typecheck + build verificati dopo i fix
+
+9. Sicurezza Pre-Lancio ✅
+   - Security headers in next.config.ts:
+     - Content-Security-Policy: self + Supabase + Stripe.js + Vercel Analytics, frame-ancestors 'none', object-src 'none'
+     - X-Frame-Options: DENY
+     - X-Content-Type-Options: nosniff
+     - Referrer-Policy: strict-origin-when-cross-origin
+     - Permissions-Policy: camera=(), microphone=(), geolocation=()
+     - Strict-Transport-Security: max-age=31536000; includeSubDomains
+   - CORS webhook: verificato che /api/stripe/webhook e /api/whatsapp/webhook non espongono Access-Control-Allow-Origin: *. Solo POST con verifica firma (Stripe signature / Twilio x-twilio-signature)
+   - Audit RLS Supabase (security): 1 WARN "Leaked Password Protection Disabled" — richiede abilitazione dalla Supabase Dashboard (Authentication → Settings → Password Security)
+   - Audit RLS Supabase (performance): tutti i WARN risolti:
+     - auth_rls_initplan: auth.uid() wrappato in (select auth.uid()) su businesses e business_closures
+     - unindexed_foreign_keys: 7 indici FK aggiunti (appointments.client_id, appointments.service_id, messages.appointment_id, messages.client_id, staff_services.service_id, waitlist.client_id, waitlist.service_id)
+     - multiple_permissive_policies: consolidate policy SELECT/INSERT duplicate su services, staff, staff_services, appointments, businesses, clients
+   - WhatsApp sanitizzazione: renderTemplate() in src/lib/whatsapp.ts usa solo regex {{key}} → string replace (single-pass). Nessun contesto HTML/SQL. Sicuro
+   - typecheck (tsc --noEmit): passa senza errori
+
+10. Da fare:
    - Acquisto dominio + DNS Cloudflare
    - Configurare webhook Stripe live (richiede URL pubblica)
    - Aggiornare NEXT_PUBLIC_APP_URL con dominio produzione
-   - Test flussi end-to-end (prenotazione → conferma → completamento → review)
    - PWA con Serwist (service worker, manifest, installabilità)
    - Performance optimization (bundle size, lazy loading, prefetch)
-   - Audit sicurezza (rate limiting, CSP headers, CORS, sanitizzazione input)
+   - Abilitare Leaked Password Protection dalla Supabase Dashboard
+   - Implementare feature gap identificati dai test E2E (vedi Roadmap.md)
 
 ---
 
@@ -328,7 +407,10 @@ BOOKING PUBBLICO — FUNZIONANTE
 
 Pagina /book/[slug] completamente funzionante:
 - Wizard multi-step: Servizio → Barbiere → Data/Ora → Conferma
-- Calcolo slot disponibili basato su orari staff e durata servizio
+- Calcolo slot disponibili basato su orari staff, durata servizio e appuntamenti esistenti (conflict-aware)
+- useEffect fetcha slot occupati via getStaffBookedSlots() al cambio staff/data
+- Slot in conflitto con appuntamenti non cancellati vengono rimossi automaticamente
+- Server-side conflict check in bookAppointment() previene race condition
 - Creazione automatica client se non esiste (lookup per telefono)
 - Creazione appuntamento con status "booked" e source "online"
 - Messaggio WhatsApp di conferma (mock o reale in base a configurazione Twilio)
@@ -347,4 +429,10 @@ NOTE TECNICHE
 - Webhook WhatsApp usa Supabase admin client (service role key) per bypassare RLS nelle operazioni server-to-server.
 - Template messaggi: default italiani hardcoded in lib/templates.ts, personalizzabili dal barbiere via UI e salvati su DB (message_templates).
 - Stripe: getStripe() con lazy init + Proxy per alias. stripe-plans.ts separato (importabile da client components). STRIPE_PRICES server-only da env.
+- Validazione Zod: tutti i 9 moduli Server Actions usano zod/v4 con safeParse() per validare input utente prima di qualsiasi query DB. Errori restituiti come { error: "messaggio italiano" }, mai eccezioni.
 - Deploy: Vercel per frontend/server actions/API routes. Supabase Cloud per DB/auth/edge functions/pg_cron (già attivo).
+- shadcn/ui: 17 componenti Radix-based integrati in src/components/ui/. CLI configurato con components.json.
+- Dark mode: next-themes con ThemeProvider, defaultTheme="dark", attribute="class".
+- Rate limiting: in-memory sliding window in src/lib/rate-limit.ts, usato per protezione webhook.
+- Logo custom: SVG component in src/components/shared/barberos-logo.tsx.
+- Test E2E: checklist manuale strutturata con 126 test cases in Dev Barbieri/Testing/test-checklist.md.

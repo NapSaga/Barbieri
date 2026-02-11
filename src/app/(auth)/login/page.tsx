@@ -1,20 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { LogoIcon } from "@/components/shared/barberos-logo";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -72,21 +66,15 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-3">
           <LogoIcon size={48} />
           <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Barberos
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Accedi alla tua dashboard
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Barberos</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Accedi alla tua dashboard</p>
           </div>
         </div>
 
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Accedi</CardTitle>
-            <CardDescription>
-              Inserisci le tue credenziali per continuare
-            </CardDescription>
+            <CardDescription>Inserisci le tue credenziali per continuare</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -138,10 +126,7 @@ export default function LoginPage() {
 
               <p className="text-center text-sm text-muted-foreground">
                 Non hai un account?{" "}
-                <Link
-                  href="/register"
-                  className="font-semibold text-primary hover:text-primary/80"
-                >
+                <Link href="/register" className="font-semibold text-primary hover:text-primary/80">
                   Registrati
                 </Link>
               </p>

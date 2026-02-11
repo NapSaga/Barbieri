@@ -7,16 +7,18 @@ Costruito su Next.js 16, React 19, Tailwind CSS v4, con approccio utility-first.
 
 ---
 
-## Stack Design Raccomandato
+## Stack Design — INTEGRATO
 
-| Layer | Libreria | Versione | Ruolo |
+| Layer | Libreria | Versione | Stato |
 |-------|----------|----------|-------|
-| **Primitivi UI** | Radix UI | latest | Componenti headless accessibili (Dialog, Dropdown, Tooltip, Popover) |
-| **Componenti** | shadcn/ui | latest (Tailwind v4) | Componenti pre-stilizzati, copy-paste, personalizzabili |
-| **Animazioni** | Motion (Framer Motion) | latest | Micro-interazioni, transizioni pagina, layout animations |
-| **Charts** | Recharts | v3.3+ | Grafici analytics dashboard (Line, Bar, Area, Composed) |
-| **Icone** | Lucide React | v0.563+ | gia' in uso, 1500+ icone coerenti |
-| **Utility** | clsx + tailwind-merge | attuali | gia' in uso via `cn()` |
+| **Primitivi UI** | Radix UI | ^1.4.3 | ✅ Integrato via shadcn/ui |
+| **Componenti** | shadcn/ui | 17 componenti | ✅ Integrato (Tailwind v4 + components.json) |
+| **Dark Mode** | next-themes | ^0.4.6 | ✅ Integrato (defaultTheme="dark") |
+| **Animazioni** | Motion (Framer Motion) | ^12.34.0 | ✅ Integrato |
+| **Toast** | Sonner | ^2.0.7 | ✅ Integrato |
+| **Charts** | Recharts | previsto | ⏳ Da integrare per analytics |
+| **Icone** | Lucide React | ^0.563.0 | ✅ Integrato |
+| **Utility** | clsx + tailwind-merge | attuali | ✅ Integrato via `cn()` |
 
 ---
 
@@ -48,7 +50,9 @@ Costruito su Next.js 16, React 19, Tailwind CSS v4, con approccio utility-first.
 
 ```
 src/components/
-├── ui/                    # shadcn/ui components (Radix-based)
+├── ui/                    # shadcn/ui components (Radix-based) — 17 componenti
+│   ├── avatar.tsx
+│   ├── badge.tsx
 │   ├── button.tsx
 │   ├── card.tsx
 │   ├── dialog.tsx
@@ -57,25 +61,24 @@ src/components/
 │   ├── label.tsx
 │   ├── popover.tsx
 │   ├── select.tsx
+│   ├── separator.tsx
 │   ├── sheet.tsx
 │   ├── skeleton.tsx
+│   ├── sonner.tsx          # Toast via Sonner
 │   ├── table.tsx
 │   ├── tabs.tsx
-│   ├── toast.tsx
 │   └── tooltip.tsx
 ├── shared/                # Componenti condivisi (layout)
-│   ├── sidebar.tsx        # gia' esistente
-│   ├── page-header.tsx
-│   └── empty-state.tsx
-├── calendar/              # Feature: calendario
+│   ├── sidebar.tsx
+│   └── barberos-logo.tsx  # Logo SVG custom
+├── calendar/              # Feature: calendario (6 componenti)
 ├── booking/               # Feature: prenotazioni
+├── billing/               # Feature: abbonamento scaduto
 ├── clients/               # Feature: CRM
 ├── services/              # Feature: servizi
 ├── staff/                 # Feature: staff
-├── analytics/             # Feature: grafici
-│   ├── revenue-chart.tsx
-│   ├── appointments-chart.tsx
-│   └── stats-card.tsx
+├── analytics/             # Feature: analytics dashboard
+├── waitlist/              # Feature: lista d'attesa
 └── settings/              # Feature: impostazioni
 ```
 

@@ -1,22 +1,22 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
 import {
-  Users,
-  Plus,
-  Search,
-  Phone,
+  AlertTriangle,
   Calendar,
-  Tag,
-  StickyNote,
-  X,
-  Loader2,
   ChevronDown,
   ChevronUp,
-  AlertTriangle,
+  Loader2,
+  Phone,
+  Plus,
+  Search,
+  StickyNote,
+  Tag,
+  Users,
+  X,
 } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { createNewClient, updateClientNotes, updateClientTags } from "@/actions/clients";
 import { cn } from "@/lib/utils";
-import { createNewClient, updateClientTags, updateClientNotes } from "@/actions/clients";
 
 interface ClientData {
   id: string;
@@ -31,7 +31,14 @@ interface ClientData {
   last_visit_at: string | null;
 }
 
-const TAG_OPTIONS = ["VIP", "Nuovo", "Affidabile", "Non conferma", "Problematico", "Alto rischio no-show"];
+const TAG_OPTIONS = [
+  "VIP",
+  "Nuovo",
+  "Affidabile",
+  "Non conferma",
+  "Problematico",
+  "Alto rischio no-show",
+];
 
 const TAG_COLORS: Record<string, string> = {
   VIP: "bg-yellow-500/20 text-yellow-300",
@@ -95,9 +102,7 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
       ? currentTags.filter((t) => t !== tag)
       : [...currentTags, tag];
 
-    setClients((prev) =>
-      prev.map((c) => (c.id === clientId ? { ...c, tags: newTags } : c)),
-    );
+    setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, tags: newTags } : c)));
 
     startTransition(async () => {
       await updateClientTags(clientId, newTags);
@@ -105,9 +110,7 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
   }
 
   function handleSaveNotes(clientId: string, notes: string) {
-    setClients((prev) =>
-      prev.map((c) => (c.id === clientId ? { ...c, notes } : c)),
-    );
+    setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, notes } : c)));
     startTransition(async () => {
       await updateClientNotes(clientId, notes);
     });
@@ -145,7 +148,11 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
         </div>
       </div>
 
-      {error && <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* Create form */}
       {showForm && (
@@ -228,7 +235,9 @@ export function ClientsManager({ initialClients }: ClientsManagerProps) {
             <>
               <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Nessun cliente</p>
-              <p className="mt-1 text-sm">I clienti verranno creati automaticamente alle prenotazioni.</p>
+              <p className="mt-1 text-sm">
+                I clienti verranno creati automaticamente alle prenotazioni.
+              </p>
             </>
           )}
         </div>
@@ -344,13 +353,20 @@ function ClientDetail({ client, onToggleTag, onSaveNotes }: ClientDetailProps) {
           <div className="text-xs text-muted-foreground">Visite totali</div>
         </div>
         <div className="rounded-lg bg-muted p-3 text-center">
-          <div className={cn("text-lg font-bold", client.no_show_count > 0 ? "text-orange-400" : "text-foreground")}>
+          <div
+            className={cn(
+              "text-lg font-bold",
+              client.no_show_count > 0 ? "text-orange-400" : "text-foreground",
+            )}
+          >
             {client.no_show_count}
           </div>
           <div className="text-xs text-muted-foreground">No-show</div>
         </div>
         <div className="rounded-lg bg-muted p-3 text-center">
-          <div className="text-sm font-bold text-foreground">{formatDate(client.last_visit_at)}</div>
+          <div className="text-sm font-bold text-foreground">
+            {formatDate(client.last_visit_at)}
+          </div>
           <div className="text-xs text-muted-foreground">Ultima visita</div>
         </div>
         <div className="rounded-lg bg-muted p-3 text-center">

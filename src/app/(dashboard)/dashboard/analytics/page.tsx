@@ -1,4 +1,4 @@
-import { getAnalyticsSummary, getAnalyticsDaily, getTopServices } from "@/actions/analytics";
+import { getAnalyticsDaily, getAnalyticsSummary, getTopServices } from "@/actions/analytics";
 import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard";
 
 export default async function AnalyticsPage() {

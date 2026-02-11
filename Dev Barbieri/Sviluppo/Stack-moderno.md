@@ -1,8 +1,8 @@
-STACK TECNOLOGICO (aggiornato 10 febbraio 2026)
+STACK TECNOLOGICO (aggiornato 11 febbraio 2026)
 
 Runtime: Node.js 22 LTS.
 
-Frontend: Next.js 16.1.6 con App Router, React 19.2.3 con React Compiler e Server Components/Actions. Tailwind CSS v4. Componenti custom con Lucide React per icone. Turbopack come bundler di sviluppo. TypeScript 5.x in strict mode. Biome 2.3.14 per linting e formatting (sostituto moderno di ESLint + Prettier).
+Frontend: Next.js 16.1.6 con App Router, React 19.2.3 con React Compiler e Server Components/Actions. Tailwind CSS v4 + tw-animate-css. shadcn/ui (17 componenti Radix-based) + Lucide React per icone. Dark mode con next-themes ^0.4.6 (ThemeProvider, defaultTheme="dark"). Motion ^12.34.0 (Framer Motion) per animazioni. Sonner ^2.0.7 per toast notifications. Turbopack come bundler di sviluppo. TypeScript 5.x in strict mode. Biome 2.3.14 per linting e formatting (sostituto moderno di ESLint + Prettier).
 
 Backend: Supabase (PostgreSQL 17.6, Auth, Row Level Security, Edge Functions Deno per logica serverless). Server Actions di Next.js 16 per mutazioni dirette dal client. Supabase JS client per query runtime con RLS automatico.
 
@@ -16,7 +16,7 @@ Pagamenti abbonamento barbiere: Stripe Billing (stripe@20.3.1, API 2026-01-28.cl
 
 Cron e job scheduling: pg_cron v1.6.4 nativo di Supabase per job ricorrenti (conferma intelligente, review, riattivazione, analytics). pg_net v0.19.5 per chiamate HTTP async alle Edge Functions. 7 cron schedules attivi.
 
-Monitoring e observability (previsto): Sentry per error tracking. Vercel Analytics per Core Web Vitals. Supabase Dashboard per query performance e database health.
+Monitoring e observability: @vercel/analytics ^1.6.1 e @vercel/speed-insights ^1.3.1 integrati in layout.tsx (page views, visitors, Core Web Vitals automatici su piano Hobby). Sentry per error tracking (previsto). Supabase Dashboard per query performance e database health.
 
 AI (fase 2 post-MVP): Anthropic Claude API per suggerimenti automatici, previsione no-show, generazione testi marketing.
 
@@ -28,4 +28,10 @@ Subscription gating: proxy.ts verifica subscription_status su ogni richiesta das
 
 Package manager: pnpm 10.29.2 (più veloce di npm, gestione dipendenze strict, disk-efficient).
 
-Dipendenze principali: next 16.1.6, react 19.2.3, @supabase/ssr ^0.8.0, drizzle-orm ^0.45.1, stripe 20.3.1, twilio ^5.12.1, lucide-react ^0.563.0, tailwindcss ^4, date-fns ^4.1.0, zod ^4.3.6.
+Validazione input: Zod 4.3.6 (import da "zod/v4") per validazione runtime su tutte le Server Actions. Schema safeParse() prima di qualsiasi query DB, errori restituiti come { error: "messaggio italiano" } senza eccezioni. Tipi validati: UUID, date, orari, enum, stringhe, numeri, record, array.
+
+Rate limiting: src/lib/rate-limit.ts con sliding window in-memory per protezione webhook API routes. checkRateLimit(ip, maxRequests, windowMs) + getClientIp(headers).
+
+Security hardening: next.config.ts applica security headers su tutte le route: Content-Security-Policy (self + Supabase + Stripe.js + Vercel Analytics, frame-ancestors 'none', object-src 'none'), X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy (camera/microphone/geolocation disabilitati), Strict-Transport-Security (HSTS 1 anno). Webhook API routes (/api/stripe/webhook, /api/whatsapp/webhook) protette con verifica firma crittografica e rate limiting, nessun CORS aperto. RLS policies ottimizzate: auth.uid() wrappato in (select auth.uid()) per evitare re-evaluation per riga, policy duplicate consolidate. Supabase Auth: Leaked Password Protection abilitata (HaveIBeenPwned), password minima 8 caratteri.
+
+Dipendenze principali: next 16.1.6, react 19.2.3, @supabase/ssr ^0.8.0, drizzle-orm ^0.45.1, stripe 20.3.1, twilio ^5.12.1, lucide-react ^0.563.0, tailwindcss ^4, radix-ui ^1.4.3, next-themes ^0.4.6, motion ^12.34.0, sonner ^2.0.7, tw-animate-css ^1.4.0, date-fns ^4.1.0, zod ^4.3.6, @vercel/analytics ^1.6.1, @vercel/speed-insights ^1.3.1.

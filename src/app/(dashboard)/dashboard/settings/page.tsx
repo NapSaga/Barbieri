@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
+import { getSubscriptionInfo } from "@/actions/billing";
 import { getCurrentBusiness, getMessageTemplates } from "@/actions/business";
+import { getClosures } from "@/actions/closures";
 import { SettingsManager } from "@/components/settings/settings-manager";
 import { isWhatsAppEnabled } from "@/lib/whatsapp";
-import { getClosures } from "@/actions/closures";
-import { getSubscriptionInfo } from "@/actions/billing";
 
 export default async function SettingsPage() {
   const [business, templates, closures, subscriptionInfo] = await Promise.all([

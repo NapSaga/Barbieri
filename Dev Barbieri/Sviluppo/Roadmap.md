@@ -1,6 +1,6 @@
 BARBEROS MVP — ROADMAP SVILUPPO
 
-Ultimo aggiornamento: 10 febbraio 2026
+Ultimo aggiornamento: 11 febbraio 2026
 
 ---
 
@@ -9,7 +9,7 @@ PANORAMICA FASI
 Fase A — Infrastruttura         ✅ COMPLETATA
 Fase B — Funzionalità core      ✅ COMPLETATA
 Fase C — Automazioni e business  ✅ COMPLETATA
-Fase D — Polish e deploy         🔧 IN CORSO
+Fase D — Polish e deploy         🔧 IN CORSO (10/13 completati)
 
 ---
 
@@ -48,7 +48,7 @@ FASE B — FUNZIONALITÀ CORE ✅
 [x] Note clienti con salvataggio automatico
 [x] Badge no-show per clienti problematici
 
-FASE C — AUTOMAZIONI E BUSINESS 🔧
+FASE C — AUTOMAZIONI E BUSINESS ✅
 
 [x] Pagina impostazioni barberia (/dashboard/settings)
     - Dati barberia (nome, indirizzo, telefono, link Google Review)
@@ -162,20 +162,46 @@ FASE D — POLISH E DEPLOY 🔧
     - Pagina /dashboard/expired con ExpiredView component
     - Settings e expired page esenti dal gating (per permettere riattivazione)
 
+[x] Validazione Zod su Server Actions
+    - Zod 4.3.6 (import da "zod/v4") aggiunto a tutti i 9 moduli in src/actions/
+    - z.safeParse() come prima riga di ogni action, prima di qualsiasi query
+    - Errori restituiti come { error: "messaggio italiano" }
+
+[x] Prevenzione doppie prenotazioni
+    - getStaffBookedSlots() query pubblica per slot occupati
+    - Difesa a 3 livelli: slot nascosti, warning visivo, reject server-side
+    - hasConflict() con overlap detection SQL
+
+[x] UI Polish: shadcn/ui + Dark Mode
+    - shadcn/ui integrato con 17 componenti Radix-based
+    - Dark mode con next-themes (defaultTheme="dark")
+    - Sonner per toast notifications
+    - Motion (Framer Motion) per animazioni
+    - tw-animate-css + radix-ui + components.json
+
+[x] Vercel Analytics
+    - @vercel/analytics + @vercel/speed-insights in layout.tsx
+    - Page views e Core Web Vitals raccolti automaticamente
+
+[x] Rate limiting
+    - src/lib/rate-limit.ts: in-memory sliding window
+    - Protezione webhook da abuso
+
+[x] Test manuali E2E (checklist)
+    - Dev Barbieri/Testing/test-checklist.md
+    - 126 test cases in 16 sezioni
+    - Tabella riepilogo pass/fail + bug log
+
+[x] Esecuzione test E2E
+    - 108 ✅ Pass, 6 ❌ Fail, 12 ⏭️ Skip (94.7% pass rate escludendo skip)
+    - 4 bug fixati: WhatsApp webhook bloccato (critico), waitlist non notificata su cancel calendario, cognome mancante booking, button type a11y
+    - 5 feature gap documentati per backlog (combo services UI, staff-services UI, waitlist add UI, staff reorder, staff filter)
+
 [ ] Dominio + Infrastruttura
     - Acquisto dominio
     - DNS Cloudflare + CDN + SSL/TLS
     - Configurare webhook Stripe live (richiede URL pubblica)
     - Aggiornare NEXT_PUBLIC_APP_URL con dominio produzione
-
-[ ] Test flussi end-to-end
-    - Registrazione → onboarding → creazione servizi/staff
-    - Prenotazione online → conferma smart → completamento → review
-    - Walk-in → completamento
-    - Cancellazione → notifica waitlist
-    - No-show → incremento contatore → tag automatico
-    - Checkout piano → pagamento → webhook → status active
-    - Subscription expired → gating → riattivazione
 
 [ ] PWA con Serwist
     - Service worker per offline caching
@@ -191,62 +217,33 @@ FASE D — POLISH E DEPLOY 🔧
 
 [ ] Monitoring
     - Sentry per error tracking
-    - Vercel Analytics per Core Web Vitals
     - Configurazione dominio personalizzato su Vercel
 
-[ ] Sicurezza finale
-    - Audit RLS policies
-    - Rate limiting su API
-    - CORS configuration
-    - CSP headers
-    - Sanitizzazione input
+[x] Sicurezza finale
+    - CSP headers completi (self + Supabase + Stripe.js + Vercel Analytics, frame-ancestors 'none', HSTS)
+    - X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy
+    - CORS webhook verificato (nessun Access-Control-Allow-Origin: * sui webhook)
+    - Audit RLS: auth.uid() → (select auth.uid()), 7 indici FK, policy duplicate consolidate
+    - WhatsApp renderTemplate() sanitizzazione verificata (plain string replace, sicuro)
+    - Nota: abilitare Leaked Password Protection dalla Supabase Dashboard
 
 ---
 
-DECISIONI TECNICHE PRESE
+FEATURE GAP (da test E2E)
 
-1. Next.js 16 invece di 15
-   - create-next-app@latest ha installato v16 automaticamente
-   - Middleware deprecato (warning "use proxy"), funziona ancora
-   - Da migrare a proxy convention in futuro
-
-2. Supabase client (JS) per query invece di Drizzle ORM per le query runtime
-   - Drizzle usato per schema-as-code e migrazioni
-   - Supabase JS usato per query runtime (beneficia di RLS automatico)
-   - Il db Drizzle connection (src/db/index.ts) è pronto per query complesse future
-
-3. WhatsApp dual-mode (Twilio + mock)
-   - Se TWILIO_* configurate → invio reale via Twilio API
-   - Altrimenti → mock con console.log dettagliato (sviluppo locale)
-   - Stessa interfaccia sendWhatsAppMessage() in entrambi i casi
-   - Webhook /api/whatsapp/webhook per risposte in ingresso (ANNULLA, SI)
-
-4. Server Actions + 1 API Route
-   - Tutte le mutazioni autenticate sono Server Actions ("use server")
-   - Unica eccezione: /api/whatsapp/webhook (POST da Twilio, non autenticato via Supabase)
-   - Webhook usa Supabase admin client (service role key) per bypassare RLS
-   - Beneficio: type-safety end-to-end, nessuna serializzazione manuale
-
-5. Tailwind CSS puro senza shadcn/ui
-   - Componenti custom per pieno controllo
-   - shadcn/ui previsto nello stack ma non ancora integrato
-   - Lucide React per le icone (stesso set di shadcn)
-
-6. Template messaggi: default hardcoded + personalizzazione DB
-   - src/lib/templates.ts contiene i default italiani
-   - Il barbiere può personalizzare via UI settings → salvati su message_templates
-   - Il codice usa prima il template DB, poi fallback al default
-
----
+- UI servizi combo: schema ha is_combo + combo_service_ids ma CRUD servizi non espone la funzionalità
+- UI associazione staff-servizi: tabella staff_services esiste ma nessuna UI per gestirla. Booking wizard mostra tutti gli staff attivi indipendentemente dal servizio
+- UI aggiunta manuale waitlist: WaitlistManager mostra/rimuove entry ma non permette aggiunta manuale
+- Riordino staff: campo sort_order in DB ma nessuna UI drag-and-drop per riordinare
+- Filtro staff nel calendario: vista giornaliera mostra tutti gli staff, manca filtro per singolo barbiere
 
 DEBITO TECNICO NOTO
 
 - date-fns importato nel booking wizard ma slot calculation in lib/slots.ts non usato dal calendario
-- Nessun test automatico
-- Nessuna validazione Zod sugli input delle Server Actions (Zod installato ma non usato)
+- Nessun test automatico (solo checklist manuale E2E)
 - window.location.reload() usato dopo create/update in alcuni componenti (da sostituire con router.refresh())
-- Booking wizard non verifica conflitti con appuntamenti esistenti (solo slot basati su orari staff)
 - settings-manager.tsx è 811 righe — potrebbe essere spezzato in sotto-componenti
 - Drag and drop per spostare appuntamenti non implementato (previsto nella scheda tecnica)
-- Logo e colori brand: campi in DB ma non usati nella pagina booking
+- Colori brand: campo brand_colors in DB ma non usato nella pagina booking
 - Staff photo: campo photo_url in DB ma upload non implementato
+- Rate limiter in-memory: si resetta a ogni deploy/restart (sufficiente pre-launch)

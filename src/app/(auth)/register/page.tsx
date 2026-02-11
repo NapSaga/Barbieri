@@ -1,20 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { LogoIcon } from "@/components/shared/barberos-logo";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -57,21 +51,15 @@ export default function RegisterPage() {
         <div className="flex flex-col items-center gap-3">
           <LogoIcon size={48} />
           <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Barberos
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Crea il tuo account barberia
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Barberos</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Crea il tuo account barberia</p>
           </div>
         </div>
 
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Registrati</CardTitle>
-            <CardDescription>
-              Inizia a gestire la tua barberia in pochi minuti
-            </CardDescription>
+            <CardDescription>Inizia a gestire la tua barberia in pochi minuti</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleRegister} className="space-y-4">
@@ -126,10 +114,7 @@ export default function RegisterPage() {
 
               <p className="text-center text-sm text-muted-foreground">
                 Hai già un account?{" "}
-                <Link
-                  href="/login"
-                  className="font-semibold text-primary hover:text-primary/80"
-                >
+                <Link href="/login" className="font-semibold text-primary hover:text-primary/80">
                   Accedi
                 </Link>
               </p>
