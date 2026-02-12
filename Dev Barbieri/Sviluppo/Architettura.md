@@ -1,6 +1,6 @@
 BARBEROS MVP — ARCHITETTURA E STRUTTURA CODICE
 
-Ultimo aggiornamento: 11 febbraio 2026 (notte)
+Ultimo aggiornamento: 12 febbraio 2026
 
 ---
 
@@ -19,7 +19,7 @@ barberos-mvp/
 ├── README.md                     # Documentazione progetto
 │
 ├── scripts/
-│   └── setup-stripe.ts           # Script setup Stripe (crea prezzo ricorrente + aggiorna .env)
+│   └── setup-stripe.ts           # Script setup Stripe (crea prezzi ricorrenti + prodotto/prezzo setup fee + aggiorna .env)
 │
 └── src/
     ├── sw.ts                     # Service Worker entry point (Serwist: precache + defaultCache runtime caching)
@@ -67,8 +67,8 @@ barberos-mvp/
     │   │                         # getAppointmentsForDate, getAppointmentsForWeek,
     │   │                         # getStaffForCalendar, addWalkIn, bookAppointment,
     │   │                         # updateAppointmentStatus, hasConflict (internal)
-    │   ├── billing.ts            # createCheckoutSession(planId), createPortalSession, getSubscriptionInfo,
-    │   │                         # getPlanLimits (legge piano attivo → restituisce limiti)
+    │   ├── billing.ts            # createCheckoutSession(planId) con setup fee, createPortalSession,
+    │   │                         # getSubscriptionInfo, getPlanLimits (legge piano attivo → limiti per piano)
     │   ├── referral.ts           # getReferralInfo, getReferrals, validateReferralCode
     │   ├── business.ts           # getCurrentBusiness, updateBusinessInfo,
     │   │                         # updateBusinessOpeningHours, updateBusinessThresholds,
@@ -103,7 +103,8 @@ barberos-mvp/
     │   │                              # top servizi, breakdown clienti, selector periodo
     │   │
     │   ├── billing/
-    │   │   └── expired-view.tsx   # Vista abbonamento scaduto: info stato, link a settings per riattivazione
+    │   │   └── expired-view.tsx   # Vista scelta piano / abbonamento scaduto: props isNewUser + showSetupFee,
+    │   │                              # nuovi utenti: Rocket icon + "Scegli il tuo piano" + setup fee visibile
     │   │
     │   ├── customize/
     │   │   └── form-customizer.tsx # Personalizzazione booking page: color picker, logo, welcome text,
@@ -151,7 +152,7 @@ barberos-mvp/
     │   ├── rate-limit.ts         # Rate limiter in-memory sliding window per API routes
     │   │                         # checkRateLimit(), getClientIp()
     │   ├── stripe.ts             # Stripe server client (lazy init + Proxy alias), re-export PLANS,
-    │   │                         # STRIPE_PRICES server-only da env
+    │   │                         # STRIPE_PRICES + STRIPE_PRICE_SETUP server-only da env
     │   ├── stripe-plans.ts       # Definizione piani (Essential, Professional, Enterprise),
     │   │                         # prezzi, features, product IDs — importabile da client components
     │   ├── plan-limits.ts       # Limiti per piano: PlanLimits, PLAN_LIMITS, TRIAL_LIMITS,
@@ -292,10 +293,15 @@ Salvataggio impostazioni:
   Nota: orari apertura, info business e brand settings invalidano anche la pagina booking pubblica
 
 Attivazione abbonamento:
-  SettingsManager > BillingSection → utente sceglie piano (Essential/Professional/Enterprise)
+  Nuovi utenti: proxy.ts redirect a /dashboard/expired (trialing senza stripe_customer_id)
+  Utenti scaduti: proxy.ts redirect a /dashboard/expired (subscription non valida)
+  → ExpiredView: scelta piano (Essential/Professional/Enterprise)
   → createCheckoutSession(planId) Server Action
-  → Stripe: create/ensure Customer → create Checkout Session (mode: subscription, trial 7gg, allow_promotion_codes)
-  → redirect a Stripe Checkout hosted page (con campo codice promo) → pagamento → webhook sync status + piano su DB
+  → Stripe: create/ensure Customer → create Checkout Session:
+    - mode: subscription, trial 7gg, allow_promotion_codes
+    - line_items[0]: subscription price (ricorrente)
+    - line_items[1]: setup fee €500 (one-time, solo se !setup_fee_paid)
+  → redirect a Stripe Checkout hosted page → pagamento setup fee → webhook sync status + piano su DB
 
 Gestione abbonamento:
   SettingsManager > BillingSection → createPortalSession Server Action
@@ -307,7 +313,8 @@ Webhook Stripe:
   → Supabase admin client (service role, bypassa RLS)
   → subscription.created/updated/deleted → detectPlanFromSubscription() + mapStatus()
     → update businesses.subscription_status + subscription_plan
-  → invoice.paid → status active + processReferralReward() (€50 credito al referrer) / invoice.payment_failed → status past_due
+  → invoice.paid → status active + processSetupFeePaid() (setta setup_fee_paid=true) + processReferralReward() (€50 credito al referrer)
+  → invoice.payment_failed → status past_due
 
 Flusso conferma intelligente (per ogni appuntamento):
   1. pg_cron → confirmation-request Edge Function
@@ -376,7 +383,7 @@ PostgreSQL Extensions abilitate:
 10 SQL Helper Functions:
 - find_appointments_needing_confirm_request() — timing smart, SECURITY DEFINER
 - find_appointments_needing_confirm_reminder() — secondo avviso, SECURITY DEFINER
-- auto_cancel_unconfirmed() — UPDATE + RETURNING, plan gating (skip essential), SECURITY DEFINER
+- auto_cancel_unconfirmed() — UPDATE + RETURNING, SECURITY DEFINER (tutti i piani)
 - find_confirmed_needing_pre_reminder() — confermati ~2h prima, SECURITY DEFINER
 - find_review_appointments(hours_min, hours_max) — plan gating (skip essential), SECURITY DEFINER
 - find_dormant_clients(min_days_since_last_msg) — plan gating (skip essential), SECURITY DEFINER
@@ -423,7 +430,7 @@ Supabase Cloud:
 - 10 SQL helper/functions (6 conferma + calculate_analytics_daily + recalc_analytics_on_appointment_change + auto_complete_appointments + on_auth_user_created con referral)
 - 8 pg_cron schedules (6 conferma + analytics-daily-calc alle 02:05 UTC (03:05 Roma), calcola giorno precedente + oggi (safety net))
 - 1 trigger SQL: trg_recalc_analytics su appointments (AFTER INSERT/UPDATE/DELETE → ricalcola analytics_daily)
-- 25 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans)
+- 26 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans + add_setup_fee_paid)
 - 12 tabelle (10 originali + business_closures + referrals)
 
 PWA:

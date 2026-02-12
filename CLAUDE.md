@@ -31,7 +31,7 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 - **Next.js 16 uses `src/proxy.ts`** (not `middleware.ts`) for route protection, session refresh, and subscription gating.
 - **Route groups**: `(auth)` for login/register (public), `(dashboard)` for protected pages with shared sidebar layout.
 - **Public routes**: `/`, `/book/*`, `/login`, `/register`, `/auth/callback`, `/api/stripe/*`.
-- **Subscription gating**: proxy checks `subscription_status` before allowing dashboard access; `/dashboard/settings` and `/dashboard/expired` are exempt.
+- **Subscription gating**: proxy checks `subscription_status` + `stripe_customer_id` before allowing dashboard access. New users (trialing without Stripe customer) are redirected to `/dashboard/expired` for mandatory plan selection. `/dashboard/settings` and `/dashboard/expired` are exempt.
 
 ### Data Layer
 
@@ -57,7 +57,7 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 
 ### External Services
 
-- **Stripe**: Lazy-initialized client (`src/lib/stripe.ts`) to prevent build-time crashes on Vercel. Plans defined in `src/lib/stripe-plans.ts`. Checkout sessions include 7-day trial and promotion codes (allow_promotion_codes). Webhook `invoice.paid` also processes referral rewards (€50 credit via Customer Balance to referrer).
+- **Stripe**: Lazy-initialized client (`src/lib/stripe.ts`) to prevent build-time crashes on Vercel. Plans defined in `src/lib/stripe-plans.ts` (includes `setupFeeCents`/`setupFeeLabel`). Checkout sessions include 7-day trial, promotion codes, and a one-time €500 setup fee (`STRIPE_PRICE_SETUP`) as second line item if `setup_fee_paid` is false. Webhook `invoice.paid` processes setup fee flag (`processSetupFeePaid`) and referral rewards (€50 credit via Customer Balance to referrer). Trial respects the chosen plan (Essential limits for Essential trial, Professional limits for Professional trial).
 - **Twilio WhatsApp**: Dual-mode in `src/lib/whatsapp.ts` — sends real messages if `TWILIO_*` env vars are set, otherwise logs to console (mock mode).
 - **WhatsApp commands**: `CONFERMA`, `CANCELLA`, `CAMBIA ORARIO`, `SI` — handled in the WhatsApp webhook route.
 - **Cron jobs** (Supabase pg_cron + Edge Functions) run confirmation requests, reminders, auto-cancel, pre-appointment messages, review requests, and client reactivation.
@@ -108,6 +108,6 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 
 Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`.
 
-Optional (graceful degradation): `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ESSENTIAL`, `STRIPE_PRICE_PROFESSIONAL`.
+Optional (graceful degradation): `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ESSENTIAL`, `STRIPE_PRICE_PROFESSIONAL`, `STRIPE_PRICE_SETUP`.
 
 See `.env.example` for the full template.

@@ -1,6 +1,6 @@
 BARBEROS MVP — STATO DEL PROGETTO
 
-Ultimo aggiornamento: 11 febbraio 2026 (notte)
+Ultimo aggiornamento: 12 febbraio 2026
 
 ---
 
@@ -283,23 +283,31 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
     - Integrazione Calendario: banner arancione "Chiusura straordinaria" quando si visualizza un giorno chiuso
 
 15. Stripe Billing — Multi-Piano ✅
-    - 3 prodotti Stripe:
+    - 4 prodotti Stripe:
       - BarberOS Essential (prod_TwyoUI0JLvWcj3) → €300/mese (price_1Sz4yuK75hVrlrva5iqHgE52)
       - BarberOS Professional (prod_TwypWo5jLd3doz) → €500/mese (price_1Sz4yvK75hVrlrvaemSc8lLf)
       - BarberOS Enterprise (prod_TwyphvT1F82GrB) → prezzo custom (gestito manualmente)
+      - Setup & Onboarding BarberOS (prod_Txi5JcLgAyUgxl) → €500 una tantum (price_1SzmfYK75hVrlrvakliriMVK)
     - Vecchio prodotto "Barberos Pro" (prod_TwyPNdkh0a8xAT) deprecato
+    - Setup fee: €500 una tantum, addebitato subito al checkout (anche durante trial)
+      - Aggiunto come secondo line_items[] nella Checkout Session (one-time price)
+      - Flag setup_fee_paid su businesses: se true, non viene più addebitato (no doppio addebito su resubscribe)
+      - Webhook invoice.paid: processSetupFeePaid() setta setup_fee_paid=true quando l'invoice contiene il setup fee
+      - UI: "+ €500 setup una tantum" mostrato sotto il prezzo mensile nelle card Essential/Professional
+      - Enterprise: "Setup White Glove incluso" (gestito manualmente)
     - Trial: 7 giorni gratuiti (configurabile in STRIPE_CONFIG.trialDays)
     - Codici promozionali/coupon abilitati in Checkout (allow_promotion_codes: true)
     - stripe@20.3.1 installato, API version 2026-01-28.clover
-    - src/lib/stripe.ts: Stripe server client + PLANS config (3 piani con features, prezzi, product/price IDs)
+    - src/lib/stripe.ts: Stripe server client + PLANS config (3 piani con features, prezzi, product/price IDs) + STRIPE_PRICE_SETUP
     - src/actions/billing.ts: 3 server actions
-      - createCheckoutSession(planId): crea/ensure Stripe Customer + Checkout Session per piano scelto
+      - createCheckoutSession(planId): crea/ensure Stripe Customer + Checkout Session per piano scelto + setup fee se non pagato
       - createPortalSession(): redirect a Stripe Customer Portal per self-service
       - getSubscriptionInfo(): legge status + piano attivo da Stripe API, fallback a DB
     - src/app/api/stripe/webhook/route.ts: webhook handler
       - Verifica firma Stripe (STRIPE_WEBHOOK_SECRET)
       - Supabase admin client (service role, bypassa RLS)
       - Eventi gestiti: subscription.created/updated/deleted, invoice.paid/failed
+      - invoice.paid: processSetupFeePaid() + processReferralReward()
       - mapStatus(): mappa stati Stripe → enum DB (active, past_due, cancelled, trialing, incomplete)
     - Sezione "Abbonamento" in Settings:
       - Banner stato colorato (emerald/blue/amber/red per active/trial/past_due/cancelled)
@@ -309,8 +317,8 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
       - Info trial con durata e data scadenza
       - Nota contratto 12 mesi + garanzia risultati
     - proxy.ts aggiornato: /api/stripe/ come path pubblico
-    - scripts/setup-stripe.ts: crea prezzi ricorrenti per Essential e Professional
-    - Env vars: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ESSENTIAL, STRIPE_PRICE_PROFESSIONAL
+    - scripts/setup-stripe.ts: crea prezzi ricorrenti per Essential e Professional + prodotto/prezzo setup fee
+    - Env vars: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ESSENTIAL, STRIPE_PRICE_PROFESSIONAL, STRIPE_PRICE_SETUP
 
 ---
 
@@ -326,7 +334,11 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
 2. Subscription Gating ✅
    - proxy.ts aggiornato con gating sulle route /dashboard/*
    - Se subscription_status non è active/trialing/past_due → redirect a /dashboard/expired
-   - Pagina /dashboard/expired con ExpiredView component (info piano + link settings)
+   - Nuovi utenti (trialing senza stripe_customer_id) → redirect a /dashboard/expired per scelta piano obbligatoria
+   - Pagina /dashboard/expired con ExpiredView component:
+     - Nuovi utenti: icona Rocket, "Scegli il tuo piano", bottone "Inizia ora", setup fee visibile
+     - Utenti scaduti: icona AlertTriangle, "Abbonamento non attivo", bottone "Abbonati"
+     - Props: isNewUser, showSetupFee (calcolati da expired/page.tsx)
    - Settings e expired page esenti dal gating (per permettere riattivazione)
 
 3. Validazione Zod su Server Actions ✅
@@ -544,7 +556,9 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
    Architettura:
    - src/lib/plan-limits.ts: definizione centralizzata limiti e feature flags per piano
    - src/actions/billing.ts: getPlanLimits() server action — legge piano attivo da Stripe e restituisce limiti
-   - Fix trial: se DB dice "trialing", restituisce TRIAL_LIMITS (Professional-level) senza passare da Stripe
+   - Fix trial: il trial rispetta il piano scelto (Essential → limiti Essential, Professional → limiti Professional)
+     - getPlanLimitsForPlan(): se trialing + planId noto → restituisce limiti del piano scelto
+     - getPlanLimits() in billing.ts: non fa più early return per trialing, passa sempre da Stripe per leggere il piano
    - Colonna subscription_plan su businesses (migration add_subscription_plan) — salvata dal webhook Stripe
    - Webhook Stripe aggiornato: detectPlanFromSubscription() salva plan ID su subscription.created/updated/deleted
    - Schema Drizzle aggiornato: subscriptionPlan su businesses
@@ -553,7 +567,7 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
    - Essential (€300/mese): max 2 barbieri
    - Professional (€500/mese): max 5 barbieri
    - Enterprise (custom): illimitato
-   - Trial: accesso Professional completo (maxStaff: 5, tutte le feature)
+   - Trial: accesso basato sul piano scelto (Essential: maxStaff 2, Professional: maxStaff 5)
 
    Cosa è uguale per tutti i piani:
    - Servizi: illimitati (nessun gate)
@@ -589,7 +603,7 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
    - src/actions/staff.ts (limit check maxStaff)
    - src/components/staff/staff-manager.tsx (maxStaff prop, banner)
    - src/app/(dashboard)/dashboard/staff/page.tsx (passa maxStaff da getPlanLimits)
-   - 3 migrazioni Supabase: add_subscription_plan, gate_edge_functions_by_plan, auto_cancel_all_plans
+   - 4 migrazioni Supabase: add_subscription_plan, gate_edge_functions_by_plan, auto_cancel_all_plans, add_setup_fee_paid
 
    typecheck ✅, test 139/139 ✅, lint ✅
 
@@ -713,13 +727,13 @@ Tutti i tipi condivisi sono stati spostati in src/types/index.ts:
 NOTE TECNICHE
 
 - Next.js 16 usa proxy.ts invece di middleware.ts per la protezione route e il refresh sessione.
-- proxy.ts gestisce anche il subscription gating: verifica subscription_status e redirect a /dashboard/expired se non valido.
+- proxy.ts gestisce anche il subscription gating: verifica subscription_status + stripe_customer_id e redirect a /dashboard/expired se non valido o se utente non ha ancora scelto un piano.
 - Le policy RLS per booking anonimo (INSERT su clients e appointments) sono state ristrette a richiedere un business_id valido (non più WITH CHECK true).
 - Il trigger on_auth_user_created genera uno slug unico per la business appendendo i primi 8 caratteri dell'UUID utente. Genera anche un referral_code unico (REF-NOME-XXXX) e, se presente un referral_code nei metadata, salva referred_by e crea un record referrals con status 'pending'.
 - WhatsApp dual-mode: se variabili TWILIO_* configurate → invio reale via Twilio API. Altrimenti → mock con console.log dettagliato. Trasparente per il resto del codice.
 - Webhook WhatsApp usa Supabase admin client (service role key) per bypassare RLS nelle operazioni server-to-server.
 - Template messaggi: default italiani hardcoded in lib/templates.ts, personalizzabili dal barbiere via UI e salvati su DB (message_templates).
-- Stripe: getStripe() con lazy init + Proxy per alias. stripe-plans.ts separato (importabile da client components). STRIPE_PRICES server-only da env. Webhook invoice.paid processa anche referral reward (€50 credito via Customer Balance al referrer).
+- Stripe: getStripe() con lazy init + Proxy per alias. stripe-plans.ts separato (importabile da client components, include setupFeeCents/setupFeeLabel). STRIPE_PRICES + STRIPE_PRICE_SETUP server-only da env. Webhook invoice.paid processa setup fee (setup_fee_paid flag) e referral reward (€50 credito via Customer Balance al referrer).
 - Validazione Zod: tutti i 10 moduli Server Actions usano zod/v4 con safeParse() per validare input utente prima di qualsiasi query DB. Errori restituiti come { error: "messaggio italiano" }, mai eccezioni. Waitlist: .refine() per rifiutare date passate sia server-side che client-side.
 - Deploy: Vercel per frontend/server actions/API routes. Supabase Cloud per DB/auth/edge functions/pg_cron (già attivo).
 - shadcn/ui: 17 componenti Radix-based integrati in src/components/ui/. CLI configurato con components.json.

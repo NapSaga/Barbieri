@@ -1,15 +1,19 @@
 BARBEROS — PIANI E PREZZI
 
-Ultimo aggiornamento: 11 febbraio 2026
+Ultimo aggiornamento: 12 febbraio 2026
 
 ---
 
 3 PIANI DISPONIBILI
 
-Setup una tantum: €1.000 (fatturato separatamente, non su Stripe)
+Setup una tantum: €500 (addebitato via Stripe al checkout, insieme al primo pagamento)
 Include: analisi barberia, configurazione completa, import clienti, training personalizzato, 30 giorni supporto premium.
+Stripe Product: Setup & Onboarding BarberOS (prod_Txi5JcLgAyUgxl)
+Stripe Price: price_1SzmfYK75hVrlrvakliriMVK (€500 one-time)
+Flag DB: setup_fee_paid su businesses — se true, non viene più addebitato (no doppio addebito su resubscribe)
+Enterprise: Setup White Glove €1.500-€2.000 (gestito manualmente, non su Stripe)
 
-Trial: 7 giorni gratuiti per tutti i piani (tutte le funzionalità)
+Trial: 7 giorni gratuiti per tutti i piani (funzionalità limitate al piano scelto)
 Fatturazione: mensile, tramite Stripe
 Contratto: 12 mesi
 Pagamento: carta di credito/debito (Visa, Mastercard, Amex), Apple Pay, Google Pay
@@ -73,7 +77,7 @@ Calendario e Prenotazioni
 - Gestione stati: prenotato, confermato, completato, cancellato, no-show
 
 Gestione Staff
-- Profili barbiere illimitati
+- Profili barbiere limitati per piano (Essential: max 2, Professional: max 5, Enterprise: illimitato)
 - Orari di lavoro personalizzati per ogni barbiere (7 giorni, pausa pranzo)
 - Associazione servizi per barbiere: ogni barbiere può essere abilitato solo ai servizi che sa eseguire
   - Il cliente nella pagina di prenotazione vede solo i barbieri abilitati al servizio scelto
@@ -103,11 +107,12 @@ CRM Clienti
 - Storico visite e contatore no-show
 
 Automazioni WhatsApp
-- Conferma prenotazione istantanea
-- Sistema conferma intelligente (richiesta + reminder + auto-cancellazione)
-- Reminder pre-appuntamento (~2h prima)
-- Richiesta recensione Google automatica post-appuntamento
-- Riattivazione clienti dormienti (soglia configurabile)
+- Conferma prenotazione istantanea (tutti i piani)
+- Sistema conferma intelligente: richiesta + reminder + auto-cancellazione (tutti i piani)
+- Reminder pre-appuntamento ~2h prima (tutti i piani)
+- Richiesta recensione Google automatica post-appuntamento (solo Professional/Enterprise)
+- Riattivazione clienti dormienti con soglia configurabile (solo Professional/Enterprise)
+- Tag automatici clienti: "Affidabile" / "Non conferma" (solo Professional/Enterprise)
 - Template personalizzabili per ogni tipo di messaggio
 - Comandi cliente: CONFERMA, CANCELLA, CAMBIA ORARIO, SI
 
@@ -158,20 +163,27 @@ MARGINI (stima con mix Essential/Professional)
 
 Nota: revenue media €400/cliente assume mix 60% Essential (€300) + 40% Professional (€500).
 Nota: i costi Twilio scalano con il volume messaggi. Stripe prende ~1.5% + €0.25 per transazione su carta EU.
-Nota: setup €1.000 una tantum non incluso nella tabella (fatturato separatamente).
+Nota: setup €500 una tantum non incluso nella tabella (addebitato via Stripe al checkout).
 
 ---
 
 STRIPE SETUP
 
-3 Prodotti Stripe:
-- BarberOS Essential (prod_TwyoUI0JLvWcj3) → price_1Sz4yuK75hVrlrva5iqHgE52 (€300/mese)
-- BarberOS Professional (prod_TwypWo5jLd3doz) → price_1Sz4yvK75hVrlrvaemSc8lLf (€500/mese)
+4 Prodotti Stripe:
+- BarberOS Essential (prod_TwyoUI0JLvWcj3) → price_1Sz4yuK75hVrlrva5iqHgE52 (€300/mese ricorrente)
+- BarberOS Professional (prod_TwypWo5jLd3doz) → price_1Sz4yvK75hVrlrvaemSc8lLf (€500/mese ricorrente)
 - BarberOS Enterprise (prod_TwyphvT1F82GrB) → prezzo custom (gestito manualmente)
+- Setup & Onboarding BarberOS (prod_Txi5JcLgAyUgxl) → price_1SzmfYK75hVrlrvakliriMVK (€500 one-time)
 
 Vecchio prodotto "Barberos Pro" (prod_TwyPNdkh0a8xAT) → deprecato, non più usato.
 
+Setup fee: €500 una tantum, addebitato subito al checkout come secondo line_items[]
+- Se setup_fee_paid = true nel DB → non viene aggiunto (no doppio addebito su resubscribe)
+- Webhook invoice.paid: processSetupFeePaid() setta il flag quando l'invoice contiene il setup price
+
 Trial: 7 giorni (configurato in STRIPE_CONFIG.trialDays)
+- Il trial rispetta il piano scelto (Essential → limiti Essential, Professional → limiti Professional)
+- Setup fee addebitato subito, subscription parte dopo 7 giorni
 Codici promozionali: abilitati in Checkout (allow_promotion_codes: true) — supporta coupon e referral code
 Customer Portal: attivo per gestione self-service (cambio carta, cancellazione, fatture)
 
@@ -180,12 +192,13 @@ Env vars:
 - STRIPE_WEBHOOK_SECRET → whsec_... (da configurare quando c'è il dominio)
 - STRIPE_PRICE_ESSENTIAL → price_1Sz4yuK75hVrlrva5iqHgE52
 - STRIPE_PRICE_PROFESSIONAL → price_1Sz4yvK75hVrlrvaemSc8lLf
+- STRIPE_PRICE_SETUP → price_1SzmfYK75hVrlrvakliriMVK
 
 Webhook eventi gestiti:
-- customer.subscription.created → sync status su DB
-- customer.subscription.updated → sync status su DB
+- customer.subscription.created → sync status + piano su DB
+- customer.subscription.updated → sync status + piano su DB
 - customer.subscription.deleted → status → cancelled
-- invoice.paid → status → active
+- invoice.paid → status → active + processSetupFeePaid() + processReferralReward()
 - invoice.payment_failed → status → past_due
 
 Stati abbonamento nel DB (subscription_status enum):
@@ -199,19 +212,23 @@ Stati abbonamento nel DB (subscription_status enum):
 
 FLUSSO UTENTE
 
-1. Registrazione gratuita → business creata con subscription_status = trialing
-2. 7 giorni di prova completa (tutte le funzionalità)
-3. Al termine: sezione "Abbonamento" in Impostazioni → 3 card piani
-4. Scelta piano (Essential/Professional) → redirect a Stripe Checkout
-5. Pagamento → webhook → status = active, piano salvato in metadata
-6. Gestione autonoma da "Gestisci abbonamento" → Stripe Customer Portal
-7. Enterprise: contatto diretto via email → setup manuale
+1. Registrazione → business creata con subscription_status = trialing, stripe_customer_id = null
+2. Redirect automatico a /dashboard/expired (scelta piano obbligatoria)
+   - proxy.ts: utenti trialing senza stripe_customer_id → redirect a scelta piano
+   - UI: icona Rocket, "Scegli il tuo piano", "Hai 7 giorni di prova gratuita"
+3. Scelta piano (Essential/Professional) → redirect a Stripe Checkout
+   - Line items: subscription (trial 7gg) + setup fee €500 (one-time, addebitato subito)
+   - Se referral: sconto 20% primo mese (coupon REFERRAL_20_OFF)
+4. Pagamento setup fee → webhook subscription.created → status = trialing, piano salvato
+5. 7 giorni di prova con funzionalità del piano scelto (Essential: max 2 staff, Professional: max 5)
+6. Al termine trial: Stripe addebita primo mese → webhook invoice.paid → status = active
+7. Gestione autonoma da "Gestisci abbonamento" → Stripe Customer Portal
+8. Se cancella e riabbona: setup fee NON riaddebitato (setup_fee_paid = true)
+9. Enterprise: contatto diretto via email → setup manuale
 
 ---
 
 PROSSIMI PASSI
 
-- Configurare webhook Stripe quando il dominio è pronto
-- Aggiungere gating: bloccare funzionalità se subscription scaduta
 - Sconto annuale: 2 mesi gratis (€3.000/anno Essential, €5.000/anno Professional)
 - Add-on WhatsApp: sovrapprezzo se messaggi > 200/mese

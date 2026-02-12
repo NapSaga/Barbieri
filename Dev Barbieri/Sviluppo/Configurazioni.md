@@ -1,6 +1,6 @@
 BARBEROS MVP — CONFIGURAZIONI E INFRASTRUTTURA
 
-Ultimo aggiornamento: 11 febbraio 2026
+Ultimo aggiornamento: 12 febbraio 2026
 
 ---
 
@@ -42,12 +42,13 @@ STRIPE_SECRET_KEY=[da https://dashboard.stripe.com/apikeys → Secret key]
 STRIPE_WEBHOOK_SECRET=[da https://dashboard.stripe.com/webhooks → Signing Secret — richiede dominio]
 STRIPE_PRICE_ESSENTIAL=[creato da scripts/setup-stripe.ts]
 STRIPE_PRICE_PROFESSIONAL=[creato da scripts/setup-stripe.ts]
+STRIPE_PRICE_SETUP=[creato da scripts/setup-stripe.ts — prezzo one-time €500 setup fee]
 
 Nota: la password del database va recuperata dalla Supabase Dashboard > Settings > Database.
 Nota: SUPABASE_SERVICE_ROLE_KEY è server-only, usata dai webhook per bypassare RLS.
 Nota: Se le variabili TWILIO_* non sono configurate, i messaggi vengono solo loggati in console (mock mode).
 Nota: STRIPE_SECRET_KEY è server-only (sk_live_..., NON pk_live_...).
-Nota: Per creare i prezzi ricorrenti: npx tsx scripts/setup-stripe.ts
+Nota: Per creare i prezzi ricorrenti + setup fee: npx tsx scripts/setup-stripe.ts
 Nota: STRIPE_WEBHOOK_SECRET non configurabile finché non c'è un dominio pubblico.
 
 ---

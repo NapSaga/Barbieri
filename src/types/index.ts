@@ -6,6 +6,7 @@ import type {
   clients,
   messages,
   messageTemplates,
+  notifications,
   referrals,
   services,
   staff,
@@ -23,6 +24,7 @@ export type Message = InferSelectModel<typeof messages>;
 export type MessageTemplate = InferSelectModel<typeof messageTemplates>;
 export type AnalyticsDaily = InferSelectModel<typeof analyticsDaily>;
 export type Referral = InferSelectModel<typeof referrals>;
+export type Notification = InferSelectModel<typeof notifications>;
 
 // Insert types (write to DB)
 export type NewBusiness = InferInsertModel<typeof businesses>;
@@ -34,6 +36,7 @@ export type NewWaitlist = InferInsertModel<typeof waitlist>;
 export type NewMessage = InferInsertModel<typeof messages>;
 export type NewMessageTemplate = InferInsertModel<typeof messageTemplates>;
 export type NewReferral = InferInsertModel<typeof referrals>;
+export type NewNotification = InferInsertModel<typeof notifications>;
 
 // Appointment status and source types
 export type AppointmentStatus = "booked" | "confirmed" | "completed" | "cancelled" | "no_show";
@@ -49,6 +52,7 @@ export type MessageType =
   | "waitlist_notify";
 export type MessageStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 export type ReferralStatus = "pending" | "converted" | "rewarded" | "expired";
+export type NotificationType = "new_booking" | "cancellation" | "confirmation" | "no_show" | "waitlist_converted";
 
 // Waitlist entry (joined shape used by UI)
 export interface WaitlistEntry {
@@ -127,6 +131,17 @@ export interface ReferralEntry {
   createdAt: string;
   convertedAt: string | null;
   rewardedAt: string | null;
+}
+
+// Notification entry (shape used by UI)
+export interface NotificationEntry {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  appointment_id: string | null;
+  read: boolean;
+  created_at: string;
 }
 
 // Closure entry (joined shape used by UI)

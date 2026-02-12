@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  Bell,
   Calendar,
   Clock,
   Gift,
@@ -22,7 +23,7 @@ import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogoFull, LogoIcon } from "@/components/shared/barberos-logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -64,13 +65,61 @@ const navSections = [
   },
 ];
 
-export function DashboardSidebar() {
+export function DashboardSidebar({ businessId, initialUnreadCount = 0 }: { businessId?: string | null; initialUnreadCount?: number }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+
+  // Supabase Realtime: listen for new notifications
+  useEffect(() => {
+    if (!businessId) return;
+
+    const channel = supabase
+      .channel("notifications-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `business_id=eq.${businessId}`,
+        },
+        () => {
+          setUnreadCount((prev) => prev + 1);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `business_id=eq.${businessId}`,
+        },
+        (payload) => {
+          // When a notification is marked as read
+          if (payload.new && (payload.new as { read?: boolean }).read === true && payload.old && (payload.old as { read?: boolean }).read === false) {
+            setUnreadCount((prev) => Math.max(0, prev - 1));
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [businessId, supabase]);
+
+  // Reset unread count when visiting notifications page
+  useEffect(() => {
+    if (pathname === "/dashboard/notifications") {
+      setUnreadCount(0);
+    }
+  }, [pathname]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -173,6 +222,24 @@ export function DashboardSidebar() {
           ) : (
             <>
               <LogoFull className="flex-1 min-w-0" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/dashboard/notifications"
+                    className="relative shrink-0 rounded-md p-2 text-sidebar-foreground/30 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={4}>
+                  Notifiche{unreadCount > 0 ? ` (${unreadCount})` : ""}
+                </TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button

@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("subscription_status, stripe_customer_id")
+    .select("id, subscription_status, stripe_customer_id")
     .eq("owner_id", user.id)
     .single();
 
@@ -22,6 +22,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const hasStripeCustomer = !!business?.stripe_customer_id;
   const allowedStatuses = ["active", "trialing", "past_due"];
   const showSidebar = allowedStatuses.includes(status) && hasStripeCustomer;
+
+  // Fetch unread notification count for sidebar badge
+  let unreadCount = 0;
+  if (showSidebar && business?.id) {
+    const { count } = await supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("business_id", business.id)
+      .eq("read", false);
+    unreadCount = count || 0;
+  }
 
   if (!showSidebar) {
     return (
@@ -35,7 +46,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex h-screen bg-background">
-      <DashboardSidebar />
+      <DashboardSidebar businessId={business?.id} initialUnreadCount={unreadCount} />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</div>
       </main>

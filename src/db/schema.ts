@@ -72,6 +72,14 @@ export const referralStatusEnum = pgEnum("referral_status", [
   "expired",
 ]);
 
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "new_booking",
+  "cancellation",
+  "confirmation",
+  "no_show",
+  "waitlist_converted",
+]);
+
 // ─── Tables ──────────────────────────────────────────────────────────
 
 export const businesses = pgTable("businesses", {
@@ -334,6 +342,28 @@ export const referrals = pgTable(
   ],
 );
 
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    businessId: uuid("business_id")
+      .references(() => businesses.id, { onDelete: "cascade" })
+      .notNull(),
+    type: notificationTypeEnum("type").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    appointmentId: uuid("appointment_id").references(() => appointments.id, {
+      onDelete: "set null",
+    }),
+    read: boolean("read").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("notifications_business_id_idx").on(table.businessId),
+    index("notifications_business_read_idx").on(table.businessId, table.read),
+  ],
+);
+
 // ─── Relations ───────────────────────────────────────────────────────
 
 export const businessesRelations = relations(businesses, ({ many }) => ({
@@ -348,6 +378,7 @@ export const businessesRelations = relations(businesses, ({ many }) => ({
   closures: many(businessClosures),
   referralsMade: many(referrals, { relationName: "referrer" }),
   referralsReceived: many(referrals, { relationName: "referred" }),
+  notifications: many(notifications),
 }));
 
 export const staffRelations = relations(staff, ({ one, many }) => ({
@@ -470,5 +501,16 @@ export const referralsRelations = relations(referrals, ({ one }) => ({
     fields: [referrals.referredBusinessId],
     references: [businesses.id],
     relationName: "referred",
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  business: one(businesses, {
+    fields: [notifications.businessId],
+    references: [businesses.id],
+  }),
+  appointment: one(appointments, {
+    fields: [notifications.appointmentId],
+    references: [appointments.id],
   }),
 }));
