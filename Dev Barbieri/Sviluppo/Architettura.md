@@ -253,7 +253,8 @@ Prenotazione online:
        - bookedSlots passato esplicitamente per compatibilità React Compiler
     4. Durate servizi: solo 15-120 min in incrementi di 15 (ALLOWED_DURATIONS, validazione Zod)
   → Se slot disponibili: bookAppointment Server Action → reject se data+ora nel passato → hasConflict() check (reject se overlap)
-    → Supabase: find/create client + create appointment + send WhatsApp mock + create message record
+    → Supabase: find/create client + create appointment (protetto da partial unique index DB) + send WhatsApp mock + create message record
+    → Se race condition: partial unique index appointments_no_overlap_idx cattura duplicato → errore 23505 → messaggio user-friendly
     → revalidatePath("/dashboard")
   → Se nessun slot: bottone "Avvisami se si libera un posto" → form inline (nome, telefono)
     → addToWaitlistPublic Server Action (no auth, usa businessId)
@@ -264,7 +265,7 @@ Walk-in:
   Dashboard → WalkInDialog (client, riceve appointments dal calendario)
   → Client-side: warning arancione se orario selezionato confligge con appuntamento esistente
   → addWalkIn Server Action → hasConflict() check (reject se overlap)
-  → Supabase: find/create client + create appointment (status: confirmed, source: walk_in)
+  → Supabase: find/create client + create appointment (status: confirmed, source: walk_in, protetto da partial unique index DB)
   → revalidatePath("/dashboard")
 
 Cambio stato appuntamento:
@@ -434,8 +435,9 @@ Supabase Cloud:
 - 11 SQL helper/functions (6 conferma + calculate_analytics_daily + recalc_analytics_on_appointment_change + auto_complete_appointments + on_auth_user_created con referral + generate_appointment_notification)
 - 8 pg_cron schedules (6 conferma + analytics-daily-calc alle 02:05 UTC (03:05 Roma), calcola giorno precedente + oggi (safety net))
 - 2 trigger SQL: trg_recalc_analytics su appointments (analytics), trg_generate_notification su appointments (notifiche in-app)
+- 1 partial unique index: appointments_no_overlap_idx su (staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show') — prevenzione atomica double booking
 - 1 Supabase Realtime publication: tabella notifications (websocket push per badge sidebar + lista notifiche live)
-- 27 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans + add_setup_fee_paid + notifications_system)
+- 28 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans + add_setup_fee_paid + notifications_system + prevent_double_booking_index)
 - 13 tabelle (10 originali + business_closures + referrals + notifications)
 
 PWA:

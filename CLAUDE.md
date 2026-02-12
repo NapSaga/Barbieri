@@ -46,7 +46,7 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 - **10 server action modules** in `src/actions/` handle all authenticated mutations. No REST API for CRUD.
 - **Only 2 API routes** exist: `/api/stripe/webhook` and `/api/whatsapp/webhook` — both verify signatures.
 - `waitlist.ts` includes `addToWaitlistPublic()` (no auth, for booking page) and `getWaitlistCountsByDate()` (calendar badge).
-- `appointments.ts`: `bookAppointment()` rejects past date+time slots server-side. Booking wizard also hides past slots client-side for today's date.
+- `appointments.ts`: `bookAppointment()` rejects past date+time slots server-side. Booking wizard also hides past slots client-side for today's date. Partial unique index `appointments_no_overlap_idx` on `(staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show')` provides atomic DB-level double-booking prevention as fallback for race conditions (error code 23505 caught and translated to user-friendly message).
 - Server actions call `revalidatePath()` after mutations.
 
 ### Auth

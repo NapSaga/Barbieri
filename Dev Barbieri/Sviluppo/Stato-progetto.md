@@ -358,9 +358,10 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
    - Server-side conflict check in bookAppointment(): query overlap prima di INSERT, rifiuta con errore "Questo orario non è più disponibile"
    - Server-side conflict check in addWalkIn(): stessa logica, rifiuta con errore "Conflitto: il barbiere ha già un appuntamento in questo orario"
    - Blocco slot passati: per la data odierna, il booking wizard nasconde gli slot con orario ≤ ora attuale; bookAppointment() rifiuta server-side se data+ora nel passato (errore: "Non è possibile prenotare un appuntamento nel passato.")
-   - Difesa a 5 livelli: (1) slot passati nascosti nel wizard, (2) slot occupati nascosti nel wizard, (3) warning visivo nel walk-in, (4) reject server-side per slot passato o race condition, (5) conflict check nel flusso waitlist (comando SI via WhatsApp)
+   - Difesa a 6 livelli: (1) slot passati nascosti nel wizard, (2) slot occupati nascosti nel wizard, (3) warning visivo nel walk-in, (4) reject server-side per slot passato o race condition, (5) conflict check nel flusso waitlist (comando SI via WhatsApp), (6) partial unique index DB per protezione atomica contro race condition
    - hasConflict() usa query SQL con .lt("start_time", endTime).gt("end_time", startTime) per overlap detection
    - hasConflictAdmin() replica la stessa logica con AdminClient per il webhook WhatsApp (waitlist → appuntamento)
+   - Partial unique index: appointments_no_overlap_idx su (staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show') — garantisce che PostgreSQL rifiuti INSERT duplicati anche in caso di race condition al millisecondo (errore 23505 intercettato e tradotto in messaggio user-friendly in bookAppointment e addWalkIn)
 
 5. UI Polish: shadcn/ui + Dark Mode ✅
    - shadcn/ui integrato con 17 componenti Radix-based (button, card, dialog, dropdown-menu, input, label, popover, select, separator, sheet, skeleton, sonner, table, tabs, tooltip, avatar, badge)
@@ -725,7 +726,7 @@ Pagina /book/[slug] completamente funzionante:
 - Durate servizi predefinite: solo 15, 30, 45, 60, 75, 90, 105, 120 minuti (ALLOWED_DURATIONS)
 - useEffect fetcha slot occupati via getStaffBookedSlots() al cambio staff/data
 - Blocco slot passati (data odierna): client-side filtra slot con orario ≤ ora attuale; server-side bookAppointment() rifiuta se data+ora < now
-- Server-side conflict check in bookAppointment() previene race condition
+- Server-side conflict check in bookAppointment() previene race condition + partial unique index DB (appointments_no_overlap_idx) come fallback atomico
 - Creazione automatica client se non esiste (lookup per telefono)
 - Creazione appuntamento con status "booked" e source "online"
 - Messaggio WhatsApp di conferma (mock o reale in base a configurazione Twilio)

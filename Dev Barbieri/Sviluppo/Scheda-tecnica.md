@@ -13,6 +13,7 @@ Il sistema blocca automaticamente lo slot e aggiorna il calendario in tempo real
 Gestione servizi combinati: il cliente può prenotare taglio + barba come unico appuntamento con durata sommata.
 Durata minima slot: 15 minuti (pensato per servizi rapidi da barbiere).
 Blocco slot passati: per la data odierna, gli slot con orario già trascorso non vengono mostrati. Protezione doppia: client-side (slot nascosti) + server-side (prenotazione rifiutata se data+ora nel passato).
+Prevenzione double booking a 6 livelli: (1) slot occupati nascosti nel wizard, (2) slot passati nascosti, (3) warning visivo walk-in, (4) hasConflict() server-side, (5) conflict check waitlist WhatsApp, (6) partial unique index PostgreSQL (appointments_no_overlap_idx) come fallback atomico contro race condition.
 
 ---
 
@@ -256,7 +257,7 @@ staff_services: staff_id (fk), service_id (fk) — tabella ponte many-to-many.
 
 clients: id (uuid), business_id (fk), first_name, last_name, phone (unique per business), email, notes (text), tags (text array), no_show_count (int default 0), total_visits (int default 0), last_visit_at (timestamptz), created_at, updated_at.
 
-appointments: id (uuid), business_id (fk), client_id (fk), staff_id (fk), service_id (fk), date (date), start_time (time), end_time (time), status (enum: booked, confirmed, completed, cancelled, no_show), source (enum: online, walk_in, manual, waitlist), cancelled_at (timestamptz nullable), created_at, updated_at.
+appointments: id (uuid), business_id (fk), client_id (fk), staff_id (fk), service_id (fk), date (date), start_time (time), end_time (time), status (enum: booked, confirmed, completed, cancelled, no_show), source (enum: online, walk_in, manual, waitlist), cancelled_at (timestamptz nullable), created_at, updated_at. Partial unique index: appointments_no_overlap_idx(staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show') per prevenzione atomica double booking.
 
 waitlist: id (uuid), business_id (fk), client_id (fk), service_id (fk), desired_date (date), desired_start_time (time), desired_end_time (time), status (enum: waiting, notified, converted, expired), notified_at (timestamptz nullable), created_at.
 

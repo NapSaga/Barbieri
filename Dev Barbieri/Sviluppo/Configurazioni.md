@@ -193,6 +193,7 @@ Tabelle (13):
 6. appointments
    - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), client_id (FK → clients ON DELETE SET NULL), staff_id (FK → staff ON DELETE SET NULL), service_id (FK → services ON DELETE SET NULL), date, start_time, end_time, status (default booked), source (default online), cancelled_at, created_at, updated_at
    - Index: appointments_business_date_idx, appointments_staff_date_idx
+   - Partial unique index: appointments_no_overlap_idx(staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show') — prevenzione atomica double booking
 
 7. waitlist
    - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), client_id (FK → clients ON DELETE CASCADE), service_id (FK → services ON DELETE SET NULL), desired_date, desired_start_time, desired_end_time, status (default waiting), notified_at, created_at
@@ -285,6 +286,7 @@ MIGRAZIONI APPLICATE
 25. auto_cancel_all_plans — Rimosso filtro piano da auto_cancel_unconfirmed (ora gira per tutti)
 26. add_setup_fee_paid — Colonna setup_fee_paid (boolean) su businesses per tracking setup fee
 27. notifications_system — Enum notification_type, tabella notifications con RLS e indici, Supabase Realtime, trigger generate_appointment_notification() su appointments (AFTER INSERT/UPDATE OF status)
+28. prevent_double_booking_index — Partial unique index appointments_no_overlap_idx su (staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show'). Prevenzione atomica double booking a livello DB, fallback per race condition tra hasConflict() SELECT e INSERT.
 
 ---
 
