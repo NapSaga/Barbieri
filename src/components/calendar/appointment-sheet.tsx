@@ -14,10 +14,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState, useTransition } from "react";
-import type { CalendarAppointment } from "@/types";
 import { revertAppointmentStatus, updateAppointmentStatus } from "@/actions/appointments";
 import { formatPrice } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
+import type { CalendarAppointment } from "@/types";
 import { STATUS_LABELS, STATUS_STYLES } from "./appointment-card";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -47,9 +47,11 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
   const today = new Date().toISOString().split("T")[0];
   const isFuture = appointment.date > today;
 
-  const canComplete = (appointment.status === "booked" || appointment.status === "confirmed") && !isFuture;
+  const canComplete =
+    (appointment.status === "booked" || appointment.status === "confirmed") && !isFuture;
   const canCancel = appointment.status === "booked" || appointment.status === "confirmed";
-  const canNoShow = (appointment.status === "booked" || appointment.status === "confirmed") && !isFuture;
+  const canNoShow =
+    (appointment.status === "booked" || appointment.status === "confirmed") && !isFuture;
   const canConfirm = appointment.status === "booked";
   const canRevert = appointment.status === "completed" || appointment.status === "no_show";
 
@@ -205,8 +207,8 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
                 )}
                 {appointment.confirmationStatus === "auto_cancelled" && (
                   <span className="text-red-400">
-                    Il cliente non ha confermato via WhatsApp entro il termine previsto —
-                    cancellato automaticamente
+                    Il cliente non ha confermato via WhatsApp entro il termine previsto — cancellato
+                    automaticamente
                   </span>
                 )}
                 {appointment.confirmRequestSentAt &&

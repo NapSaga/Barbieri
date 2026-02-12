@@ -65,7 +65,13 @@ const navSections = [
   },
 ];
 
-export function DashboardSidebar({ businessId, initialUnreadCount = 0 }: { businessId?: string | null; initialUnreadCount?: number }) {
+export function DashboardSidebar({
+  businessId,
+  initialUnreadCount = 0,
+}: {
+  businessId?: string | null;
+  initialUnreadCount?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -102,7 +108,12 @@ export function DashboardSidebar({ businessId, initialUnreadCount = 0 }: { busin
         },
         (payload) => {
           // When a notification is marked as read
-          if (payload.new && (payload.new as { read?: boolean }).read === true && payload.old && (payload.old as { read?: boolean }).read === false) {
+          if (
+            payload.new &&
+            (payload.new as { read?: boolean }).read === true &&
+            payload.old &&
+            (payload.old as { read?: boolean }).read === false
+          ) {
             setUnreadCount((prev) => Math.max(0, prev - 1));
           }
         },

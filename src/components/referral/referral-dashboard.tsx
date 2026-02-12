@@ -2,7 +2,6 @@
 
 import { ArrowRight, Check, Copy, Gift, MessageCircle, Share2, Users } from "lucide-react";
 import { useState } from "react";
-import type { ReferralEntry, ReferralInfo } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatPrice } from "@/lib/time-utils";
+import type { ReferralEntry, ReferralInfo } from "@/types";
 
 // ─── Status helpers ─────────────────────────────────────────────────
 
@@ -238,7 +238,8 @@ export function ReferralDashboard({
               </div>
               <p className="text-sm font-medium">Si abbona a un piano</p>
               <p className="text-xs text-muted-foreground">
-                Dopo i 7 giorni di prova, sceglie un piano e lo sconto del 20% si applica in automatico
+                Dopo i 7 giorni di prova, sceglie un piano e lo sconto del 20% si applica in
+                automatico
               </p>
             </div>
             <div className="flex flex-col items-center gap-2 rounded-lg border p-4 text-center">
@@ -262,7 +263,8 @@ export function ReferralDashboard({
               <div>
                 <p className="text-sm font-semibold">Per te (chi invita)</p>
                 <p className="text-xs text-muted-foreground">
-                  €50 di credito scalato automaticamente dalla tua prossima fattura Stripe, per ogni barbiere invitato che attiva un abbonamento
+                  €50 di credito scalato automaticamente dalla tua prossima fattura Stripe, per ogni
+                  barbiere invitato che attiva un abbonamento
                 </p>
               </div>
             </div>
@@ -273,7 +275,8 @@ export function ReferralDashboard({
               <div>
                 <p className="text-sm font-semibold">Per chi viene invitato</p>
                 <p className="text-xs text-muted-foreground">
-                  20% di sconto applicato automaticamente al checkout sul primo mese dopo il trial gratuito di 7 giorni. Non serve inserire nessun codice.
+                  20% di sconto applicato automaticamente al checkout sul primo mese dopo il trial
+                  gratuito di 7 giorni. Non serve inserire nessun codice.
                 </p>
               </div>
             </div>

@@ -167,10 +167,14 @@ export function BookingWizard({
     if (businessDay?.closed) return [];
 
     const effectiveStart = businessDay
-      ? staffSchedule.start > businessDay.open ? staffSchedule.start : businessDay.open
+      ? staffSchedule.start > businessDay.open
+        ? staffSchedule.start
+        : businessDay.open
       : staffSchedule.start;
     const effectiveEnd = businessDay
-      ? staffSchedule.end < businessDay.close ? staffSchedule.end : businessDay.close
+      ? staffSchedule.end < businessDay.close
+        ? staffSchedule.end
+        : businessDay.close
       : staffSchedule.end;
 
     if (effectiveStart >= effectiveEnd) return [];
@@ -504,9 +508,7 @@ export function BookingWizard({
                         onChange={(e) => setWaitlistPhone(e.target.value)}
                         placeholder="Telefono *"
                       />
-                      {waitlistError && (
-                        <p className="text-xs text-destructive">{waitlistError}</p>
-                      )}
+                      {waitlistError && <p className="text-xs text-destructive">{waitlistError}</p>}
                       <div className="flex gap-2">
                         <Button
                           size="sm"

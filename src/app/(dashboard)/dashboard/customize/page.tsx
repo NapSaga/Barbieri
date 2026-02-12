@@ -11,9 +11,10 @@ const FormCustomizer = dynamic(
       <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
         <div className="w-full space-y-4 lg:w-80">
           <Skeleton className="h-8 w-56" />
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
-          ))}
+          <Skeleton key="s1" className="h-16 rounded-xl" />
+          <Skeleton key="s2" className="h-16 rounded-xl" />
+          <Skeleton key="s3" className="h-16 rounded-xl" />
+          <Skeleton key="s4" className="h-16 rounded-xl" />
         </div>
         <Skeleton className="flex-1 h-96 rounded-2xl" />
       </div>

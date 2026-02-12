@@ -16,8 +16,8 @@ import {
   Smartphone,
   Star,
   TrendingUp,
-  UserX,
   Users,
+  UserX,
   X,
   Zap,
 } from "lucide-react";
@@ -175,7 +175,8 @@ export function RoiSimulator() {
   const roiMultiplier = planCost > 0 ? (totalRecovered / planCost).toFixed(1) : "∞";
 
   // PAYBACK
-  const paybackMonths = netGain > 0 ? 1 : totalRecovered > 0 ? Math.ceil(planCost / totalRecovered) : 0;
+  const paybackMonths =
+    netGain > 0 ? 1 : totalRecovered > 0 ? Math.ceil(planCost / totalRecovered) : 0;
 
   // FATTURATO ANNUO per contesto
   const annualRevenue = currentRevenue * 12;
@@ -187,9 +188,7 @@ export function RoiSimulator() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-          ROI & Vantaggi
-        </h1>
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">ROI & Vantaggi</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Scopri quanto guadagna la tua barberia e quanto di più potresti incassare con BarberOS.
         </p>
@@ -347,11 +346,7 @@ export function RoiSimulator() {
                   value={`+${fmtEuro(Math.round(recoveredFromReactivation))}`}
                   positive
                 />
-                <SummaryRow
-                  label={`Tempo risparmiato`}
-                  value={`${timeSavedHours}h/mese`}
-                  muted
-                />
+                <SummaryRow label={`Tempo risparmiato`} value={`${timeSavedHours}h/mese`} muted />
               </div>
 
               {/* RIEPILOGO FINALE */}
@@ -398,12 +393,10 @@ export function RoiSimulator() {
 
               {/* Contesto annuale */}
               <div className="rounded-lg border border-border bg-background/50 p-3 space-y-1.5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">In un anno</p>
-                <SummaryRow
-                  label="Fatturato annuo attuale"
-                  value={fmtEuro(annualRevenue)}
-                  muted
-                />
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  In un anno
+                </p>
+                <SummaryRow label="Fatturato annuo attuale" value={fmtEuro(annualRevenue)} muted />
                 <SummaryRow
                   label="Fatturato annuo con BarberOS"
                   value={fmtEuro(annualWithBarberOS)}
@@ -431,9 +424,12 @@ export function RoiSimulator() {
               <BarChart3 className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-foreground">Perché costa di più (e perché conviene)</h2>
+              <h2 className="text-base font-semibold text-foreground">
+                Perché costa di più (e perché conviene)
+              </h2>
               <p className="text-xs text-muted-foreground">
-                I gestionali da €30/mese non hanno WhatsApp automatico — tu continui a perdere clienti
+                I gestionali da €30/mese non hanno WhatsApp automatico — tu continui a perdere
+                clienti
               </p>
             </div>
           </div>
@@ -445,8 +441,16 @@ export function RoiSimulator() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="pb-3 text-left font-semibold text-foreground">Funzionalità</th>
-                  <th className="pb-3 text-center font-semibold text-muted-foreground">Gestionali classici<br/><span className="text-xs font-normal">€0-35/mese</span></th>
-                  <th className="pb-3 text-center font-semibold text-primary">BarberOS<br/><span className="text-xs font-normal">{fmtEuro(planCost)}/mese</span></th>
+                  <th className="pb-3 text-center font-semibold text-muted-foreground">
+                    Gestionali classici
+                    <br />
+                    <span className="text-xs font-normal">€0-35/mese</span>
+                  </th>
+                  <th className="pb-3 text-center font-semibold text-primary">
+                    BarberOS
+                    <br />
+                    <span className="text-xs font-normal">{fmtEuro(planCost)}/mese</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -466,9 +470,13 @@ export function RoiSimulator() {
 
           <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
             <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">Il punto:</span> un gestionale da €30/mese ti dà un calendario.
-              BarberOS ti fa <span className="font-semibold text-foreground">recuperare {fmtEuro(totalRecovered)} al mese</span> che
-              oggi stai perdendo — perché nessun altro ha l'automazione WhatsApp che elimina i no-show e riempie i buchi in agenda.
+              <span className="font-semibold text-foreground">Il punto:</span> un gestionale da
+              €30/mese ti dà un calendario. BarberOS ti fa{" "}
+              <span className="font-semibold text-foreground">
+                recuperare {fmtEuro(totalRecovered)} al mese
+              </span>{" "}
+              che oggi stai perdendo — perché nessun altro ha l'automazione WhatsApp che elimina i
+              no-show e riempie i buchi in agenda.
             </p>
           </div>
         </div>
@@ -486,8 +494,11 @@ export function RoiSimulator() {
                 Perché WhatsApp cambia tutto
               </h2>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Ogni barbiere in Italia usa WhatsApp per parlare con i clienti — ma lo fa <span className="font-semibold text-foreground">manualmente</span>: messaggi uno per uno, reminder a voce, nessun sistema.
-                Nessun gestionale per barbieri offre l'automazione WhatsApp completa. <span className="font-semibold text-foreground">BarberOS è l'unico.</span>
+                Ogni barbiere in Italia usa WhatsApp per parlare con i clienti — ma lo fa{" "}
+                <span className="font-semibold text-foreground">manualmente</span>: messaggi uno per
+                uno, reminder a voce, nessun sistema. Nessun gestionale per barbieri offre
+                l'automazione WhatsApp completa.{" "}
+                <span className="font-semibold text-foreground">BarberOS è l'unico.</span>
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <WhatsAppFeature
@@ -546,7 +557,12 @@ export function RoiSimulator() {
                 key={adv.title}
                 className="group rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/30 hover:bg-primary/5"
               >
-                <div className={cn("mb-3 flex h-10 w-10 items-center justify-center rounded-lg", adv.bg)}>
+                <div
+                  className={cn(
+                    "mb-3 flex h-10 w-10 items-center justify-center rounded-lg",
+                    adv.bg,
+                  )}
+                >
                   <adv.icon className={cn("h-5 w-5", adv.color)} />
                 </div>
                 <h3 className="text-sm font-semibold text-foreground">{adv.title}</h3>
@@ -579,11 +595,12 @@ export function RoiSimulator() {
 
       {/* Bottom CTA */}
       <div className="rounded-xl border border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10 p-6 text-center">
-        <h3 className="text-lg font-bold text-foreground">
-          Pronto a far crescere il tuo negozio?
-        </h3>
+        <h3 className="text-lg font-bold text-foreground">Pronto a far crescere il tuo negozio?</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Con i tuoi numeri, BarberOS si ripaga {paybackMonths <= 1 ? "dal primo mese" : `in ${paybackMonths} mesi`} e ti genera <span className="font-semibold text-foreground">+{fmtEuro(netGain * 12)}/anno</span> netti.
+          Con i tuoi numeri, BarberOS si ripaga{" "}
+          {paybackMonths <= 1 ? "dal primo mese" : `in ${paybackMonths} mesi`} e ti genera{" "}
+          <span className="font-semibold text-foreground">+{fmtEuro(netGain * 12)}/anno</span>{" "}
+          netti.
         </p>
         <a
           href="/dashboard/settings"
@@ -624,7 +641,10 @@ function SliderInput({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <label
+          htmlFor={`slider-${label}`}
+          className="flex items-center gap-2 text-sm font-medium text-foreground"
+        >
           <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span>{label}</span>
         </label>
@@ -634,6 +654,7 @@ function SliderInput({
         </span>
       </div>
       <input
+        id={`slider-${label}`}
         type="range"
         min={min}
         max={max}
@@ -645,13 +666,13 @@ function SliderInput({
       />
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-muted-foreground/60">
-          {min}{suffix}
+          {min}
+          {suffix}
         </span>
-        {hint && (
-          <span className="text-[11px] text-muted-foreground">{hint}</span>
-        )}
+        {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
         <span className="text-[10px] text-muted-foreground/60">
-          {max}{suffix}
+          {max}
+          {suffix}
         </span>
       </div>
     </div>
@@ -678,10 +699,7 @@ function SummaryRow({
   return (
     <div className="flex items-baseline justify-between gap-3">
       <p
-        className={cn(
-          "text-sm",
-          bold ? "font-semibold text-foreground" : "text-muted-foreground",
-        )}
+        className={cn("text-sm", bold ? "font-semibold text-foreground" : "text-muted-foreground")}
       >
         {label}
       </p>

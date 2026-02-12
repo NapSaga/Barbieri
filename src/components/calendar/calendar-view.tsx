@@ -11,7 +11,6 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useMemo, useState, useTransition } from "react";
-import type { CalendarAppointment } from "@/types";
 import { getAppointmentsForDate, getAppointmentsForWeek } from "@/actions/appointments";
 import {
   Select,
@@ -21,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import type { CalendarAppointment } from "@/types";
 import { AppointmentSheet } from "./appointment-sheet";
 import { DayView } from "./day-view";
 import { WalkInDialog } from "./walk-in-dialog";
@@ -46,6 +46,7 @@ interface ServiceItem {
 interface CalendarViewProps {
   initialDate: string;
   initialAppointments: CalendarAppointment[];
+  initialWeekAppointments?: CalendarAppointment[];
   staffMembers: StaffMember[];
   services: ServiceItem[];
   closureDates?: string[];
@@ -93,6 +94,7 @@ function formatWeekHeader(start: Date, end: Date): string {
 export function CalendarView({
   initialDate,
   initialAppointments,
+  initialWeekAppointments,
   staffMembers,
   services,
   closureDates = [],
@@ -100,11 +102,14 @@ export function CalendarView({
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date(`${initialDate}T00:00:00`));
   const [viewMode, setViewMode] = useState<ViewMode>("day");
-  const [appointments, setAppointments] = useState<CalendarAppointment[]>(initialAppointments);
+  const [dayAppointments, setDayAppointments] = useState<CalendarAppointment[]>(initialAppointments);
+  const [weekAppointments, setWeekAppointments] = useState<CalendarAppointment[]>(initialWeekAppointments || []);
   const [isPending, startTransition] = useTransition();
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<CalendarAppointment | null>(null);
   const [staffFilter, setStaffFilter] = useState<string>("all");
+
+  const appointments = viewMode === "day" ? dayAppointments : weekAppointments;
 
   const filteredStaff = useMemo(
     () => (staffFilter === "all" ? staffMembers : staffMembers.filter((s) => s.id === staffFilter)),
@@ -119,19 +124,32 @@ export function CalendarView({
     [staffFilter, appointments],
   );
 
-  const fetchAppointments = useCallback((date: Date, mode: ViewMode) => {
+  const fetchDay = useCallback((date: Date) => {
     startTransition(async () => {
-      if (mode === "day") {
-        const data = await getAppointmentsForDate(toISODate(date));
-        setAppointments(data);
-      } else {
-        const monday = getMonday(date);
-        const sunday = addDays(monday, 6);
-        const data = await getAppointmentsForWeek(toISODate(monday), toISODate(sunday));
-        setAppointments(data);
-      }
+      const data = await getAppointmentsForDate(toISODate(date));
+      setDayAppointments(data);
     });
   }, []);
+
+  const fetchWeek = useCallback((date: Date) => {
+    startTransition(async () => {
+      const monday = getMonday(date);
+      const sunday = addDays(monday, 6);
+      const data = await getAppointmentsForWeek(toISODate(monday), toISODate(sunday));
+      setWeekAppointments(data);
+    });
+  }, []);
+
+  const fetchAppointments = useCallback(
+    (date: Date, mode: ViewMode) => {
+      if (mode === "day") {
+        fetchDay(date);
+      } else {
+        fetchWeek(date);
+      }
+    },
+    [fetchDay, fetchWeek],
+  );
 
   function navigate(direction: -1 | 1) {
     const days = viewMode === "day" ? 1 : 7;
@@ -152,7 +170,9 @@ export function CalendarView({
   }
 
   function handleRefresh() {
-    fetchAppointments(currentDate, viewMode);
+    // Refresh both views so switching is always instant after a mutation
+    fetchDay(currentDate);
+    fetchWeek(currentDate);
   }
 
   const weekStart = getMonday(currentDate);

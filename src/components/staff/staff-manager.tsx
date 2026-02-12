@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -15,7 +16,6 @@ import {
   Trash2,
   UserCog,
   X,
-  AlertTriangle,
 } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import {

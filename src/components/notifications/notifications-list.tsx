@@ -192,14 +192,14 @@ export function NotificationsList({
                   <p
                     className={cn(
                       "truncate text-sm",
-                      !notif.read ? "font-semibold text-foreground" : "font-medium text-foreground/70",
+                      !notif.read
+                        ? "font-semibold text-foreground"
+                        : "font-medium text-foreground/70",
                     )}
                   >
                     {notif.title}
                   </p>
-                  {!notif.read && (
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
-                  )}
+                  {!notif.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
                 </div>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">{notif.body}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground/60">

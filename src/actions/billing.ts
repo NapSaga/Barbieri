@@ -24,7 +24,9 @@ async function getAuthenticatedBusiness() {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("id, owner_id, name, stripe_customer_id, subscription_status, referred_by, setup_fee_paid")
+    .select(
+      "id, owner_id, name, stripe_customer_id, subscription_status, referred_by, setup_fee_paid",
+    )
     .eq("owner_id", user.id)
     .single();
 
@@ -78,9 +80,7 @@ export async function createCheckoutSession(planId: PlanId) {
   const isReferred = !!business.referred_by;
 
   // Build line items: subscription + optional one-time setup fee
-  const lineItems: { price: string; quantity: number }[] = [
-    { price: priceId, quantity: 1 },
-  ];
+  const lineItems: { price: string; quantity: number }[] = [{ price: priceId, quantity: 1 }];
 
   // Add setup fee only if not already paid and price is configured
   if (!business.setup_fee_paid && STRIPE_PRICE_SETUP) {

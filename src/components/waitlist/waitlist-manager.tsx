@@ -16,10 +16,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
-import type { WaitlistEntry } from "@/types";
 import { addToWaitlist, expireOldEntries, removeWaitlistEntry } from "@/actions/waitlist";
 import { addMinutesToTime } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
+import type { WaitlistEntry } from "@/types";
 
 type StatusFilter = "all" | "waiting" | "notified" | "converted" | "expired";
 

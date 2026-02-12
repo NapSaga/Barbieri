@@ -1,7 +1,7 @@
 "use client";
 
-import type { CalendarAppointment } from "@/types";
 import { cn } from "@/lib/utils";
+import type { CalendarAppointment } from "@/types";
 import { AppointmentCard } from "./appointment-card";
 
 interface StaffMember {

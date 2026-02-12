@@ -37,10 +37,7 @@ function subtractDays(dateStr: string, days: number): string {
 
 // ─── Get Daily Rows ──────────────────────────────────────────────────
 
-export async function getAnalyticsDaily(
-  startDate: string,
-  endDate: string,
-) {
+export async function getAnalyticsDaily(startDate: string, endDate: string) {
   const parsed = z
     .object({ startDate: dateStringSchema, endDate: dateStringSchema })
     .safeParse({ startDate, endDate });
@@ -59,15 +56,17 @@ export async function getAnalyticsDaily(
     .lte("date", endDate)
     .order("date", { ascending: true });
 
-  return (data as Array<{
-    date: string;
-    total_revenue_cents: number;
-    appointments_completed: number;
-    appointments_cancelled: number;
-    appointments_no_show: number;
-    new_clients: number;
-    returning_clients: number;
-  }>) || [];
+  return (
+    (data as Array<{
+      date: string;
+      total_revenue_cents: number;
+      appointments_completed: number;
+      appointments_cancelled: number;
+      appointments_no_show: number;
+      new_clients: number;
+      returning_clients: number;
+    }>) || []
+  );
 }
 
 // ─── Get Summary with Delta ──────────────────────────────────────────

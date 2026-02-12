@@ -52,7 +52,12 @@ export type MessageType =
   | "waitlist_notify";
 export type MessageStatus = "queued" | "sent" | "delivered" | "read" | "failed";
 export type ReferralStatus = "pending" | "converted" | "rewarded" | "expired";
-export type NotificationType = "new_booking" | "cancellation" | "confirmation" | "no_show" | "waitlist_converted";
+export type NotificationType =
+  | "new_booking"
+  | "cancellation"
+  | "confirmation"
+  | "no_show"
+  | "waitlist_converted";
 
 // Waitlist entry (joined shape used by UI)
 export interface WaitlistEntry {

@@ -143,9 +143,7 @@ async function ensureSetupProduct(): Promise<string> {
     currency: "eur",
     metadata: { type: "setup_fee" },
   });
-  console.log(
-    `   Prezzo one-time creato: ${price.id} (€${SETUP_FEE_CONFIG.amountCents / 100})`,
-  );
+  console.log(`   Prezzo one-time creato: ${price.id} (€${SETUP_FEE_CONFIG.amountCents / 100})`);
   return price.id;
 }
 

@@ -46,7 +46,7 @@ export async function getStaffBookedSlots(
 ): Promise<BookedSlot[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("appointments")
     .select("start_time, end_time")
     .eq("business_id", businessId)
@@ -138,10 +138,7 @@ export async function getAppointmentsForDate(date: string) {
   return enrichWithConfirmationStatus(supabase, data || [], business.id);
 }
 
-export async function getAppointmentsForWeek(
-  startDate: string,
-  endDate: string,
-) {
+export async function getAppointmentsForWeek(startDate: string, endDate: string) {
   const parsed = z
     .object({ startDate: dateSchema, endDate: dateSchema })
     .safeParse({ startDate, endDate });

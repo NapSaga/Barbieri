@@ -301,7 +301,9 @@ function getSupabaseAdmin() {
   if (!_supabaseAdmin) {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
-      throw new Error("SUPABASE_SERVICE_ROLE_KEY non configurata. Impossibile eliminare l'account.");
+      throw new Error(
+        "SUPABASE_SERVICE_ROLE_KEY non configurata. Impossibile eliminare l'account.",
+      );
     }
     _supabaseAdmin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
   }

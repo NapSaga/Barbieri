@@ -158,7 +158,7 @@ Biome config (biome.json):
 
 DATABASE — SCHEMA COMPLETO
 
-Enums (7):
+Enums (8):
 - appointment_status: booked, confirmed, completed, cancelled, no_show
 - appointment_source: online, walk_in, manual, waitlist
 - waitlist_status: waiting, notified, converted, expired
@@ -166,8 +166,9 @@ Enums (7):
 - message_status: queued, sent, delivered, read, failed
 - subscription_status: active, past_due, cancelled, trialing, incomplete
 - referral_status: pending, converted, rewarded, expired
+- notification_type: new_booking, cancellation, confirmation, no_show, waitlist_converted
 
-Tabelle (12):
+Tabelle (13):
 
 1. businesses
    - id (uuid PK), owner_id (uuid, auth.uid), name, slug (unique), address, phone, logo_url, google_review_link, opening_hours (jsonb), welcome_text (text), cover_image_url (text), font_preset (text), brand_colors (jsonb), timezone (default Europe/Rome), stripe_customer_id, subscription_status (default trialing), dormant_threshold_days (default 28), no_show_threshold (default 2), auto_complete_delay_minutes (int, default 20), referral_code (text unique), referred_by (uuid FK → businesses.id), created_at, updated_at
@@ -220,6 +221,12 @@ Tabelle (12):
     - Index: referrals_referrer_idx, referrals_referred_idx
     - RLS: SELECT solo per referrer_business_id = get_user_business_id()
 
+13. notifications
+    - id (uuid PK), business_id (FK → businesses ON DELETE CASCADE), type (notification_type), title (text), body (text), appointment_id (FK → appointments ON DELETE SET NULL, nullable), read (boolean, default false), created_at
+    - Index: notifications_business_id_idx, notifications_business_read_idx(business_id, read), notifications_created_at_idx(created_at DESC)
+    - RLS: SELECT/UPDATE per owner, INSERT aperto (trigger SECURITY DEFINER)
+    - Supabase Realtime abilitato (ALTER PUBLICATION supabase_realtime ADD TABLE)
+
 ---
 
 RLS POLICIES
@@ -240,6 +247,7 @@ Funzioni DB:
 - on_auth_user_created() — Trigger AFTER INSERT su auth.users. Crea business con slug, referral_code (REF-NOME-XXXX). Se referral_code nei metadata: salva referred_by e crea record referrals con status 'pending'. SECURITY DEFINER, search_path = ''.
 - calculate_analytics_daily(target_date) — Calcola metriche giornaliere (fatturato, completati, cancellati, no-show, nuovi/ricorrenti clienti) per ogni business. UPSERT su analytics_daily. SECURITY DEFINER, search_path = 'public'.
 - recalc_analytics_on_appointment_change() — Trigger AFTER INSERT/UPDATE/DELETE su appointments. Ricalcola analytics_daily in tempo reale quando cambia status, data o servizio. SECURITY DEFINER, search_path = 'public'.
+- generate_appointment_notification() — Trigger AFTER INSERT/UPDATE OF status su appointments. Genera notifiche in-app: new_booking (online), cancellation, confirmation, no_show. Fetch nome cliente + servizio, formatta data DD/MM/YYYY. SECURITY DEFINER, search_path = ''.
 
 Supabase Auth Security:
 - Leaked Password Protection: ENABLED (HaveIBeenPwned.org)
@@ -272,6 +280,11 @@ MIGRAZIONI APPLICATE
 20. referral_system — Enum referral_status, colonne referral_code/referred_by su businesses, tabella referrals con RLS e indici, generazione codici per business esistenti
 21. referral_trigger_update — Trigger on_auth_user_created aggiornato per generare referral_code, salvare referred_by e creare record referrals
 22. analytics_realtime_trigger — Trigger trg_recalc_analytics su appointments (AFTER INSERT/UPDATE OF status,date,service_id/DELETE) → ricalcola analytics_daily in tempo reale. Cron analytics-daily-calc aggiornato per calcolare anche oggi (non solo ieri)
+23. add_subscription_plan — Colonna subscription_plan su businesses per feature gating
+24. gate_edge_functions_by_plan — SQL functions filtrano per subscription_plan (skip essential)
+25. auto_cancel_all_plans — Rimosso filtro piano da auto_cancel_unconfirmed (ora gira per tutti)
+26. add_setup_fee_paid — Colonna setup_fee_paid (boolean) su businesses per tracking setup fee
+27. notifications_system — Enum notification_type, tabella notifications con RLS e indici, Supabase Realtime, trigger generate_appointment_notification() su appointments (AFTER INSERT/UPDATE OF status)
 
 ---
 

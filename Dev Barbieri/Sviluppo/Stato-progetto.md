@@ -646,7 +646,54 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
 
    typecheck ✅, build ✅
 
-20. Da fare (dettagli in Dev Barbieri/Piano/Task-Fase-D-Rimanenti.md):
+20. Sistema Notifiche In-App (Realtime) ✅
+   Notifiche in tempo reale per il barbiere quando arrivano prenotazioni, cancellazioni, conferme e no-show.
+
+   Database:
+   - Tabella notifications: id, business_id (FK), type (notification_type enum), title, body, appointment_id (FK nullable), read (default false), created_at
+   - Enum notification_type: new_booking, cancellation, confirmation, no_show, waitlist_converted
+   - Indici: business_id, (business_id, read), created_at DESC
+   - RLS: SELECT/UPDATE per owner, INSERT aperto (trigger SECURITY DEFINER)
+   - Supabase Realtime abilitato sulla tabella notifications (ALTER PUBLICATION supabase_realtime ADD TABLE)
+
+   Trigger SQL (generate_appointment_notification):
+   - AFTER INSERT OR UPDATE OF status su appointments
+   - INSERT con source='online' + status='booked' → notifica "Nuova prenotazione"
+   - UPDATE status a cancelled → "Appuntamento cancellato"
+   - UPDATE status a confirmed → "Appuntamento confermato"
+   - UPDATE status a no_show → "Cliente non presentato"
+   - Fetch automatico nome cliente + nome servizio, formattazione data DD/MM/YYYY
+   - SECURITY DEFINER, search_path = ''
+
+   Server actions (src/actions/notifications.ts):
+   - getNotifications(limit) — ultime N notifiche per business
+   - getUnreadNotificationCount() — conteggio non lette
+   - getBusinessIdForNotifications() — ID business per Realtime
+   - markNotificationAsRead(id) — segna come letta
+   - markAllNotificationsAsRead() — segna tutte come lette
+
+   UI:
+   - Campanella nell'header sidebar con badge rosso conteggio non lette (Supabase Realtime subscription)
+   - Pagina /dashboard/notifications con lista notifiche
+   - Icone colorate per tipo (emerald new_booking, red cancellation, blue confirmation, amber no_show)
+   - Timestamp relativo ("Adesso", "5 min fa", "2h fa", "Ieri")
+   - "Segna tutte come lette" + click singolo per segnare come letta
+   - Click su notifica con appointment_id → naviga al calendario
+   - Realtime: nuove notifiche appaiono in lista senza refresh pagina
+
+   File:
+   - supabase/migrations/20260212_notifications_system.sql
+   - src/db/schema.ts (notificationTypeEnum + notifications + relazioni)
+   - src/types/index.ts (Notification, NewNotification, NotificationType, NotificationEntry)
+   - src/actions/notifications.ts (5 server actions)
+   - src/components/notifications/notifications-list.tsx (lista con Realtime)
+   - src/app/(dashboard)/dashboard/notifications/page.tsx
+   - src/components/shared/sidebar.tsx (campanella header + Realtime badge)
+   - src/app/(dashboard)/layout.tsx (passa businessId + initialUnreadCount)
+
+   typecheck ✅
+
+21. Da fare (dettagli in Dev Barbieri/Piano/Task-Fase-D-Rimanenti.md):
    - Dominio custom + DNS (attualmente su barberos-mvp.vercel.app)
    - WhatsApp produzione: sandbox funzionante, Twilio sara' subaccount del cliente
    - Monitoring: Sentry per error tracking

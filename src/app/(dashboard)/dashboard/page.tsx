@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { getAppointmentsForDate, getStaffForCalendar } from "@/actions/appointments";
+import {
+  getAppointmentsForDate,
+  getAppointmentsForWeek,
+  getStaffForCalendar,
+} from "@/actions/appointments";
 import { getClosureDates } from "@/actions/closures";
 import { getWaitlistCountsByDate } from "@/actions/waitlist";
 import { CalendarView } from "@/components/calendar/calendar-view";
@@ -35,11 +39,20 @@ export default async function DashboardPage() {
     );
   }
 
-  const today = toISODate(new Date());
+  const now = new Date();
+  const today = toISODate(now);
 
-  const [appointments, staffMembers, servicesResult, closureDates, waitlistCounts] =
+  // Pre-compute current week range (Monday–Sunday)
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - day + (day === 0 ? -6 : 1));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const [appointments, weekAppointments, staffMembers, servicesResult, closureDates, waitlistCounts] =
     await Promise.all([
       getAppointmentsForDate(today),
+      getAppointmentsForWeek(toISODate(monday), toISODate(sunday)),
       getStaffForCalendar(),
       supabase
         .from("services")
@@ -60,6 +73,7 @@ export default async function DashboardPage() {
     <CalendarView
       initialDate={today}
       initialAppointments={appointments}
+      initialWeekAppointments={weekAppointments}
       staffMembers={typedStaff}
       services={services}
       closureDates={closureDates}

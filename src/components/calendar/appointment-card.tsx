@@ -1,7 +1,7 @@
 "use client";
 
-import type { CalendarAppointment } from "@/types";
 import { cn } from "@/lib/utils";
+import type { CalendarAppointment } from "@/types";
 
 const STATUS_STYLES: Record<string, { accent: string; bg: string; text: string; muted: string }> = {
   booked: {

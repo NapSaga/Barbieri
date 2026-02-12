@@ -3,13 +3,13 @@
 import { AlertTriangle, Check, CreditCard, Crown, Loader2, Rocket, Settings } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import type { SubscriptionInfo } from "@/types";
 import { createCheckoutSession } from "@/actions/billing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PLANS, type PlanId, STRIPE_CONFIG } from "@/lib/stripe-plans";
 import { cn } from "@/lib/utils";
+import type { SubscriptionInfo } from "@/types";
 
 const PLAN_ORDER: PlanId[] = ["essential", "professional", "enterprise"];
 
@@ -44,8 +44,8 @@ export function ExpiredView({
             </div>
             <h1 className="text-2xl font-bold text-foreground">Scegli il tuo piano</h1>
             <p className="mt-2 max-w-md text-muted-foreground">
-              Benvenuto su BarberOS! Scegli il piano più adatto alla tua barberia per iniziare.
-              Hai {STRIPE_CONFIG.trialDays} giorni di prova gratuita.
+              Benvenuto su BarberOS! Scegli il piano più adatto alla tua barberia per iniziare. Hai{" "}
+              {STRIPE_CONFIG.trialDays} giorni di prova gratuita.
             </p>
           </>
         ) : (

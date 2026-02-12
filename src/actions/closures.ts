@@ -40,7 +40,9 @@ export async function getClosures() {
     .eq("business_id", business.id)
     .order("date", { ascending: true });
 
-  return (data as Array<{ id: string; date: string; reason: string | null; created_at: string }>) || [];
+  return (
+    (data as Array<{ id: string; date: string; reason: string | null; created_at: string }>) || []
+  );
 }
 
 // ─── Get Closure Dates (for booking) ─────────────────────────────────

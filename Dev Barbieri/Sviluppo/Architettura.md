@@ -134,12 +134,15 @@ barberos-mvp/
     │   ├── waitlist/
     │   │   └── waitlist-manager.tsx # Gestione waitlist: filtri stato, ricerca, badge colorati, rimozione, bulk-expire
     │   │
+    │   ├── notifications/
+    │   │   └── notifications-list.tsx # Lista notifiche: icone per tipo, timeAgo, mark read, Supabase Realtime subscription
+    │   │
     │   └── shared/
     │       ├── sidebar.tsx        # Sidebar navigazione dashboard (mobile + desktop)
     │       └── barberos-logo.tsx  # Logo SVG custom (LogoIcon + LogoFull)
     │
     ├── db/
-    │   ├── schema.ts             # Schema Drizzle ORM completo (12 tabelle, 7 enums, relazioni)
+    │   ├── schema.ts             # Schema Drizzle ORM completo (13 tabelle, 8 enums, relazioni)
     │   └── index.ts              # Connessione database (postgres.js + drizzle)
     │
     ├── lib/
@@ -390,6 +393,7 @@ PostgreSQL Extensions abilitate:
 - auto_complete_appointments() — SQL diretto, ritardo per-business, SECURITY DEFINER
 - on_auth_user_created() — trigger per nuovo utente, crea referral entry, SECURITY DEFINER
 - recalc_analytics_on_appointment_change() — trigger su appointments, ricalcola analytics_daily in tempo reale, SECURITY DEFINER
+- generate_appointment_notification() — trigger su appointments (AFTER INSERT/UPDATE OF status), genera notifiche in-app per new_booking/cancellation/confirmation/no_show, SECURITY DEFINER
 
 8 pg_cron Schedules:
 - confirmation-request: */30 * * * * → pg_net → Edge Function
@@ -412,10 +416,10 @@ Timing smart conferma (in base a orario appuntamento):
 CONTEGGIO FILE
 
 Codebase Next.js (locale):
-- 10 Server Actions (analytics, appointments, billing, business, clients, closures, referral, services, staff, waitlist)
+- 11 Server Actions (analytics, appointments, billing, business, clients, closures, notifications, referral, services, staff, waitlist)
 - 21 route/pagine (incluso layout, callback, booking, customize, expired, referral, roi, 2 webhook)
 - 17 componenti UI shadcn/ui (avatar, badge, button, card, dialog, dropdown-menu, input, label, popover, select, separator, sheet, skeleton, sonner, table, tabs, tooltip)
-- 14 componenti feature (6 calendar, 1 analytics, 1 billing, 1 booking, 1 clients, 1 customize, 1 referral, 1 roi, 1 services, 1 settings, 1 staff, 1 waitlist)
+- 15 componenti feature (6 calendar, 1 analytics, 1 billing, 1 booking, 1 clients, 1 customize, 1 notifications, 1 referral, 1 roi, 1 services, 1 settings, 1 staff, 1 waitlist)
 - 2 componenti shared (sidebar, barberos-logo)
 - 12 file lib/utility (utils, slots, brand-settings, plan-limits, rate-limit, stripe, stripe-plans, stripe-utils, whatsapp, templates, time-utils, 3 supabase clients)
 - 2 file database (schema, index)
@@ -427,11 +431,12 @@ Codebase Next.js (locale):
 
 Supabase Cloud:
 - 6 Edge Functions attive (confirmation-request/reminder, auto-cancel, pre-appointment, review-request, reactivation)
-- 10 SQL helper/functions (6 conferma + calculate_analytics_daily + recalc_analytics_on_appointment_change + auto_complete_appointments + on_auth_user_created con referral)
+- 11 SQL helper/functions (6 conferma + calculate_analytics_daily + recalc_analytics_on_appointment_change + auto_complete_appointments + on_auth_user_created con referral + generate_appointment_notification)
 - 8 pg_cron schedules (6 conferma + analytics-daily-calc alle 02:05 UTC (03:05 Roma), calcola giorno precedente + oggi (safety net))
-- 1 trigger SQL: trg_recalc_analytics su appointments (AFTER INSERT/UPDATE/DELETE → ricalcola analytics_daily)
-- 26 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans + add_setup_fee_paid)
-- 12 tabelle (10 originali + business_closures + referrals)
+- 2 trigger SQL: trg_recalc_analytics su appointments (analytics), trg_generate_notification su appointments (notifiche in-app)
+- 1 Supabase Realtime publication: tabella notifications (websocket push per badge sidebar + lista notifiche live)
+- 27 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans + add_setup_fee_paid + notifications_system)
+- 13 tabelle (10 originali + business_closures + referrals + notifications)
 
 PWA:
 - public/manifest.json (name "BarberOS", start_url "/dashboard", display "standalone", theme_color "#09090b", lang "it")

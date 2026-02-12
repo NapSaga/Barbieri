@@ -13,9 +13,11 @@ const SettingsManager = dynamic(
       <div className="space-y-6 p-4">
         <Skeleton className="h-10 w-48" />
         <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
-          ))}
+          <Skeleton key="s1" className="h-20 rounded-xl" />
+          <Skeleton key="s2" className="h-20 rounded-xl" />
+          <Skeleton key="s3" className="h-20 rounded-xl" />
+          <Skeleton key="s4" className="h-20 rounded-xl" />
+          <Skeleton key="s5" className="h-20 rounded-xl" />
         </div>
       </div>
     ),

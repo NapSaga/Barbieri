@@ -8,9 +8,10 @@ const AnalyticsDashboard = dynamic(
     loading: () => (
       <div className="space-y-6 p-4">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-xl" />
-          ))}
+          <Skeleton key="s1" className="h-28 rounded-xl" />
+          <Skeleton key="s2" className="h-28 rounded-xl" />
+          <Skeleton key="s3" className="h-28 rounded-xl" />
+          <Skeleton key="s4" className="h-28 rounded-xl" />
         </div>
         <Skeleton className="h-72 rounded-xl" />
         <Skeleton className="h-48 rounded-xl" />

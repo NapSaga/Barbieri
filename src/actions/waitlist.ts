@@ -38,17 +38,19 @@ export async function getWaitlistEntries() {
     .order("desired_date", { ascending: true })
     .order("desired_start_time", { ascending: true });
 
-  return (data as unknown as Array<{
-    id: string;
-    client: { id: string; first_name: string; last_name: string | null; phone: string } | null;
-    service: { id: string; name: string } | null;
-    desired_date: string;
-    desired_start_time: string;
-    desired_end_time: string;
-    status: string;
-    notified_at: string | null;
-    created_at: string;
-  }>) || [];
+  return (
+    (data as unknown as Array<{
+      id: string;
+      client: { id: string; first_name: string; last_name: string | null; phone: string } | null;
+      service: { id: string; name: string } | null;
+      desired_date: string;
+      desired_start_time: string;
+      desired_end_time: string;
+      status: string;
+      notified_at: string | null;
+      created_at: string;
+    }>) || []
+  );
 }
 
 // ─── Remove Waitlist Entry ───────────────────────────────────────────

@@ -63,9 +63,9 @@ async function processSetupFeePaid(customerId: string, invoice: Stripe.Invoice) 
   if (!STRIPE_PRICE_SETUP) return;
 
   // Check if this invoice contains the one-time setup fee line item
-  // biome-ignore lint/suspicious/noExplicitAny: Stripe API returns price on line items at runtime
   const hasSetupFee = invoice.lines?.data?.some(
-    (line: any) => line.price?.id === STRIPE_PRICE_SETUP,
+    (line) =>
+      (line as unknown as Record<string, Record<string, string>>).price?.id === STRIPE_PRICE_SETUP,
   );
   if (!hasSetupFee) return;
 
