@@ -49,20 +49,26 @@ export default async function DashboardPage() {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
 
-  const [appointments, weekAppointments, staffMembers, servicesResult, closureDates, waitlistCounts] =
-    await Promise.all([
-      getAppointmentsForDate(today),
-      getAppointmentsForWeek(toISODate(monday), toISODate(sunday)),
-      getStaffForCalendar(),
-      supabase
-        .from("services")
-        .select("id, name, duration_minutes, price_cents")
-        .eq("business_id", business.id)
-        .eq("active", true)
-        .order("display_order", { ascending: true }),
-      getClosureDates(business.id),
-      getWaitlistCountsByDate(),
-    ]);
+  const [
+    appointments,
+    weekAppointments,
+    staffMembers,
+    servicesResult,
+    closureDates,
+    waitlistCounts,
+  ] = await Promise.all([
+    getAppointmentsForDate(today),
+    getAppointmentsForWeek(toISODate(monday), toISODate(sunday)),
+    getStaffForCalendar(),
+    supabase
+      .from("services")
+      .select("id, name, duration_minutes, price_cents")
+      .eq("business_id", business.id)
+      .eq("active", true)
+      .order("display_order", { ascending: true }),
+    getClosureDates(business.id),
+    getWaitlistCountsByDate(),
+  ]);
 
   const services = servicesResult.data || [];
 

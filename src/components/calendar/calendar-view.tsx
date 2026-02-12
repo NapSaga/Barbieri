@@ -102,8 +102,11 @@ export function CalendarView({
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date(`${initialDate}T00:00:00`));
   const [viewMode, setViewMode] = useState<ViewMode>("day");
-  const [dayAppointments, setDayAppointments] = useState<CalendarAppointment[]>(initialAppointments);
-  const [weekAppointments, setWeekAppointments] = useState<CalendarAppointment[]>(initialWeekAppointments || []);
+  const [dayAppointments, setDayAppointments] =
+    useState<CalendarAppointment[]>(initialAppointments);
+  const [weekAppointments, setWeekAppointments] = useState<CalendarAppointment[]>(
+    initialWeekAppointments || [],
+  );
   const [isPending, startTransition] = useTransition();
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<CalendarAppointment | null>(null);
