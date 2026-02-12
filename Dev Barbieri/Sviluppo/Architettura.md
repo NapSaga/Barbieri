@@ -305,7 +305,7 @@ Attivazione abbonamento:
     - mode: subscription, trial 7gg, allow_promotion_codes
     - line_items[0]: subscription price (ricorrente)
     - line_items[1]: setup fee €500 (one-time, solo se !setup_fee_paid)
-  → redirect a Stripe Checkout hosted page → pagamento setup fee → webhook sync status + piano su DB
+  → redirect a Stripe Checkout hosted page → pagamento setup fee immediato → webhook checkout.session.completed sync setup_fee_paid su DB
 
 Gestione abbonamento:
   SettingsManager > BillingSection → createPortalSession Server Action
@@ -315,9 +315,11 @@ Gestione abbonamento:
 Webhook Stripe:
   Stripe POST /api/stripe/webhook → verifica firma (STRIPE_WEBHOOK_SECRET)
   → Supabase admin client (service role, bypassa RLS)
+  → checkout.session.completed → processCheckoutCompleted(): listLineItems → match product ID (STRIPE_PRODUCT_SETUP)
+    → setta setup_fee_paid=true + setup_fee_paid_at (matching su product ID, non price ID, per robustezza)
   → subscription.created/updated/deleted → detectPlanFromSubscription() + mapStatus()
     → update businesses.subscription_status + subscription_plan
-  → invoice.paid → status active + processSetupFeePaid() (setta setup_fee_paid=true) + processReferralReward() (€50 credito al referrer)
+  → invoice.paid → status active + processReferralReward() (€50 credito al referrer)
   → invoice.payment_failed → status past_due
 
 Flusso conferma intelligente (per ogni appuntamento):
@@ -437,7 +439,7 @@ Supabase Cloud:
 - 2 trigger SQL: trg_recalc_analytics su appointments (analytics), trg_generate_notification su appointments (notifiche in-app)
 - 1 partial unique index: appointments_no_overlap_idx su (staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show') — prevenzione atomica double booking
 - 1 Supabase Realtime publication: tabella notifications (websocket push per badge sidebar + lista notifiche live)
-- 28 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans + add_setup_fee_paid + notifications_system + prevent_double_booking_index)
+- 29 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans + add_setup_fee_paid + notifications_system + prevent_double_booking_index + add_setup_fee_paid_at)
 - 13 tabelle (10 originali + business_closures + referrals + notifications)
 
 PWA:

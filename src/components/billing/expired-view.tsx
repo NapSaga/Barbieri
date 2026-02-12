@@ -104,9 +104,14 @@ export function ExpiredView({
               </div>
 
               {!isEnterprise && showSetupFee && (
-                <p className="mb-4 text-xs text-muted-foreground">
-                  + {STRIPE_CONFIG.setupFeeLabel} setup una tantum
-                </p>
+                <div className="mb-4 space-y-0.5">
+                  <p className="text-xs text-muted-foreground">
+                    + {STRIPE_CONFIG.setupFeeLabel} setup una tantum (addebitato oggi)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Abbonamento parte tra {STRIPE_CONFIG.trialDays} giorni
+                  </p>
+                </div>
               )}
               {isEnterprise && (
                 <p className="mb-4 text-xs text-muted-foreground">Setup White Glove incluso</p>

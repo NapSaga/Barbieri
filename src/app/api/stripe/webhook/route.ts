@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { STRIPE_PRICE_SETUP, STRIPE_PRICES, stripe } from "@/lib/stripe";
+import { STRIPE_PRICES, STRIPE_PRODUCT_SETUP, stripe } from "@/lib/stripe";
 import { mapStatus } from "@/lib/stripe-utils";
 
 // Use Supabase admin client to bypass RLS (same pattern as WhatsApp webhook)
@@ -59,19 +59,26 @@ async function updateSubscriptionStatus(
   }
 }
 
-async function processSetupFeePaid(customerId: string, invoice: Stripe.Invoice) {
-  if (!STRIPE_PRICE_SETUP) return;
+async function processCheckoutCompleted(session: Stripe.Checkout.Session) {
+  if (!STRIPE_PRODUCT_SETUP) return;
 
-  // Check if this invoice contains the one-time setup fee line item
-  const hasSetupFee = invoice.lines?.data?.some(
-    (line) =>
-      (line as unknown as Record<string, Record<string, string>>).price?.id === STRIPE_PRICE_SETUP,
-  );
+  const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
+  if (!customerId) return;
+
+  // Retrieve line items to check for setup fee product
+  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 10 });
+  const hasSetupFee = lineItems.data.some((item) => {
+    const productId =
+      typeof item.price?.product === "string" ? item.price.product : item.price?.product?.id;
+    return productId === STRIPE_PRODUCT_SETUP;
+  });
+
   if (!hasSetupFee) return;
 
+  const now = new Date().toISOString();
   // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
   const { error } = await (getSupabaseAdmin().from("businesses") as any)
-    .update({ setup_fee_paid: true, updated_at: new Date().toISOString() })
+    .update({ setup_fee_paid: true, setup_fee_paid_at: now, updated_at: now })
     .eq("stripe_customer_id", customerId);
 
   if (error) {
@@ -187,6 +194,12 @@ export async function POST(request: NextRequest) {
 
   try {
     switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await processCheckoutCompleted(session);
+        break;
+      }
+
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
@@ -225,7 +238,6 @@ export async function POST(request: NextRequest) {
           typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
         if (customerId) {
           await updateSubscriptionStatus(customerId, "active");
-          await processSetupFeePaid(customerId, invoice);
           await processReferralReward(customerId, invoice);
         }
         break;

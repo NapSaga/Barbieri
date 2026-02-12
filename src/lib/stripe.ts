@@ -30,3 +30,6 @@ export const STRIPE_PRICES: Record<string, string> = {
 
 // One-time setup fee price (shared across all plans)
 export const STRIPE_PRICE_SETUP = (process.env.STRIPE_PRICE_SETUP || "").trim();
+
+// Setup fee product ID — used in webhook for robust matching (survives price changes)
+export const STRIPE_PRODUCT_SETUP = (process.env.STRIPE_PRODUCT_SETUP || "").trim();

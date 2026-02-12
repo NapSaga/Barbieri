@@ -107,6 +107,7 @@ export const businesses = pgTable("businesses", {
   noShowThreshold: integer("no_show_threshold").default(2),
   autoCompleteDelayMinutes: integer("auto_complete_delay_minutes").default(20),
   setupFeePaid: boolean("setup_fee_paid").default(false).notNull(),
+  setupFeePaidAt: timestamp("setup_fee_paid_at", { withTimezone: true }),
   referralCode: text("referral_code").unique(),
   // biome-ignore lint/suspicious/noExplicitAny: self-referencing FK requires any for circular reference
   referredBy: uuid("referred_by").references((): any => businesses.id),

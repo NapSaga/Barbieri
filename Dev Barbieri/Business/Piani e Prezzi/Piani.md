@@ -10,7 +10,8 @@ Setup una tantum: €500 (addebitato via Stripe al checkout, insieme al primo pa
 Include: analisi barberia, configurazione completa, import clienti, training personalizzato, 30 giorni supporto premium.
 Stripe Product: Setup & Onboarding BarberOS (prod_Txi5JcLgAyUgxl)
 Stripe Price: price_1SzmfYK75hVrlrvakliriMVK (€500 one-time)
-Flag DB: setup_fee_paid su businesses — se true, non viene più addebitato (no doppio addebito su resubscribe)
+Flag DB: setup_fee_paid + setup_fee_paid_at su businesses — se true, non viene più addebitato (no doppio addebito su resubscribe)
+Webhook: checkout.session.completed → match su product ID (STRIPE_PRODUCT_SETUP) → setta flag + timestamp
 Enterprise: Setup White Glove €1.500-€2.000 (gestito manualmente, non su Stripe)
 
 Trial: 7 giorni gratuiti per tutti i piani (funzionalità limitate al piano scelto)
@@ -179,7 +180,7 @@ Vecchio prodotto "Barberos Pro" (prod_TwyPNdkh0a8xAT) → deprecato, non più us
 
 Setup fee: €500 una tantum, addebitato subito al checkout come secondo line_items[]
 - Se setup_fee_paid = true nel DB → non viene aggiunto (no doppio addebito su resubscribe)
-- Webhook invoice.paid: processSetupFeePaid() setta il flag quando l'invoice contiene il setup price
+- Webhook checkout.session.completed: processCheckoutCompleted() fa listLineItems → match su product ID (STRIPE_PRODUCT_SETUP) → setta setup_fee_paid=true + setup_fee_paid_at
 
 Trial: 7 giorni (configurato in STRIPE_CONFIG.trialDays)
 - Il trial rispetta il piano scelto (Essential → limiti Essential, Professional → limiti Professional)
@@ -193,12 +194,14 @@ Env vars:
 - STRIPE_PRICE_ESSENTIAL → price_1Sz4yuK75hVrlrva5iqHgE52
 - STRIPE_PRICE_PROFESSIONAL → price_1Sz4yvK75hVrlrvaemSc8lLf
 - STRIPE_PRICE_SETUP → price_1SzmfYK75hVrlrvakliriMVK
+- STRIPE_PRODUCT_SETUP → prod_Txi5JcLgAyUgxl (product ID per matching robusto nel webhook)
 
 Webhook eventi gestiti:
 - customer.subscription.created → sync status + piano su DB
 - customer.subscription.updated → sync status + piano su DB
 - customer.subscription.deleted → status → cancelled
-- invoice.paid → status → active + processSetupFeePaid() + processReferralReward()
+- checkout.session.completed → processCheckoutCompleted() (setup fee via product ID matching)
+- invoice.paid → status → active + processReferralReward()
 - invoice.payment_failed → status → past_due
 
 Stati abbonamento nel DB (subscription_status enum):
@@ -219,7 +222,8 @@ FLUSSO UTENTE
 3. Scelta piano (Essential/Professional) → redirect a Stripe Checkout
    - Line items: subscription (trial 7gg) + setup fee €500 (one-time, addebitato subito)
    - Se referral: sconto 20% primo mese (coupon REFERRAL_20_OFF)
-4. Pagamento setup fee → webhook subscription.created → status = trialing, piano salvato
+4. Pagamento setup fee (€500 addebitato subito) → webhook checkout.session.completed → setup_fee_paid=true
+   webhook subscription.created → status = trialing, piano salvato
 5. 7 giorni di prova con funzionalità del piano scelto (Essential: max 2 staff, Professional: max 5)
 6. Al termine trial: Stripe addebita primo mese → webhook invoice.paid → status = active
 7. Gestione autonoma da "Gestisci abbonamento" → Stripe Customer Portal

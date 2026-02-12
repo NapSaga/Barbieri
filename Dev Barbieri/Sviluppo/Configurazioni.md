@@ -43,6 +43,7 @@ STRIPE_WEBHOOK_SECRET=[da https://dashboard.stripe.com/webhooks → Signing Secr
 STRIPE_PRICE_ESSENTIAL=[creato da scripts/setup-stripe.ts]
 STRIPE_PRICE_PROFESSIONAL=[creato da scripts/setup-stripe.ts]
 STRIPE_PRICE_SETUP=[creato da scripts/setup-stripe.ts — prezzo one-time €500 setup fee]
+STRIPE_PRODUCT_SETUP=[product ID setup fee — usato nel webhook per matching robusto, es. prod_Txi5JcLgAyUgxl]
 
 Nota: la password del database va recuperata dalla Supabase Dashboard > Settings > Database.
 Nota: SUPABASE_SERVICE_ROLE_KEY è server-only, usata dai webhook per bypassare RLS.
@@ -287,6 +288,7 @@ MIGRAZIONI APPLICATE
 26. add_setup_fee_paid — Colonna setup_fee_paid (boolean) su businesses per tracking setup fee
 27. notifications_system — Enum notification_type, tabella notifications con RLS e indici, Supabase Realtime, trigger generate_appointment_notification() su appointments (AFTER INSERT/UPDATE OF status)
 28. prevent_double_booking_index — Partial unique index appointments_no_overlap_idx su (staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show'). Prevenzione atomica double booking a livello DB, fallback per race condition tra hasConflict() SELECT e INSERT.
+29. add_setup_fee_paid_at — Colonna setup_fee_paid_at (timestamptz nullable) su businesses per analytics e tracking temporale del pagamento setup fee
 
 ---
 

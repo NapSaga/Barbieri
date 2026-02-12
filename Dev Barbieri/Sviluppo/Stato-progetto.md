@@ -291,14 +291,15 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
     - Vecchio prodotto "Barberos Pro" (prod_TwyPNdkh0a8xAT) deprecato
     - Setup fee: €500 una tantum, addebitato subito al checkout (anche durante trial)
       - Aggiunto come secondo line_items[] nella Checkout Session (one-time price)
-      - Flag setup_fee_paid su businesses: se true, non viene più addebitato (no doppio addebito su resubscribe)
-      - Webhook invoice.paid: processSetupFeePaid() setta setup_fee_paid=true quando l'invoice contiene il setup fee
-      - UI: "+ €500 setup una tantum" mostrato sotto il prezzo mensile nelle card Essential/Professional
+      - Flag setup_fee_paid + setup_fee_paid_at su businesses: se true, non viene più addebitato (no doppio addebito su resubscribe)
+      - Webhook checkout.session.completed: processCheckoutCompleted() fa listLineItems → match su product ID (STRIPE_PRODUCT_SETUP) → setta setup_fee_paid=true + setup_fee_paid_at
+      - Matching su product ID (non price ID) per robustezza: permette di cambiare prezzo senza rompere la logica
+      - UI: "+ €500 setup una tantum (addebitato oggi)" + "Abbonamento parte tra 7 giorni" sotto il prezzo mensile
       - Enterprise: "Setup White Glove incluso" (gestito manualmente)
     - Trial: 7 giorni gratuiti (configurabile in STRIPE_CONFIG.trialDays)
     - Codici promozionali/coupon abilitati in Checkout (allow_promotion_codes: true)
     - stripe@20.3.1 installato, API version 2026-01-28.clover
-    - src/lib/stripe.ts: Stripe server client + PLANS config (3 piani con features, prezzi, product/price IDs) + STRIPE_PRICE_SETUP
+    - src/lib/stripe.ts: Stripe server client + PLANS config (3 piani con features, prezzi, product/price IDs) + STRIPE_PRICE_SETUP + STRIPE_PRODUCT_SETUP
     - src/actions/billing.ts: 3 server actions
       - createCheckoutSession(planId): crea/ensure Stripe Customer + Checkout Session per piano scelto + setup fee se non pagato
       - createPortalSession(): redirect a Stripe Customer Portal per self-service
@@ -306,8 +307,9 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
     - src/app/api/stripe/webhook/route.ts: webhook handler
       - Verifica firma Stripe (STRIPE_WEBHOOK_SECRET)
       - Supabase admin client (service role, bypassa RLS)
-      - Eventi gestiti: subscription.created/updated/deleted, invoice.paid/failed
-      - invoice.paid: processSetupFeePaid() + processReferralReward()
+      - Eventi gestiti: checkout.session.completed, subscription.created/updated/deleted, invoice.paid/failed
+      - checkout.session.completed: processCheckoutCompleted() (setup fee via product ID matching)
+      - invoice.paid: processReferralReward()
       - mapStatus(): mappa stati Stripe → enum DB (active, past_due, cancelled, trialing, incomplete)
     - Sezione "Abbonamento" in Settings:
       - Banner stato colorato (emerald/blue/amber/red per active/trial/past_due/cancelled)
@@ -318,7 +320,7 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
       - Nota contratto 12 mesi + garanzia risultati
     - proxy.ts aggiornato: /api/stripe/ come path pubblico
     - scripts/setup-stripe.ts: crea prezzi ricorrenti per Essential e Professional + prodotto/prezzo setup fee
-    - Env vars: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ESSENTIAL, STRIPE_PRICE_PROFESSIONAL, STRIPE_PRICE_SETUP
+    - Env vars: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ESSENTIAL, STRIPE_PRICE_PROFESSIONAL, STRIPE_PRICE_SETUP, STRIPE_PRODUCT_SETUP
 
 ---
 
@@ -604,11 +606,11 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
    - src/actions/staff.ts (limit check maxStaff)
    - src/components/staff/staff-manager.tsx (maxStaff prop, banner)
    - src/app/(dashboard)/dashboard/staff/page.tsx (passa maxStaff da getPlanLimits)
-   - 4 migrazioni Supabase: add_subscription_plan, gate_edge_functions_by_plan, auto_cancel_all_plans, add_setup_fee_paid
+   - 29 migrazioni applicate (17 originali + add_welcome_text + auto_complete_appointments + referral_system + referral_trigger_update + analytics_realtime_trigger + add_subscription_plan + gate_edge_functions_by_plan + auto_cancel_all_plans + add_setup_fee_paid + notifications_system + prevent_double_booking_index + add_setup_fee_paid_at)
 
-   typecheck ✅, test 139/139 ✅, lint ✅
+   typecheck , test 139/139 , lint 
 
-19. Pagina ROI & Vantaggi ✅
+19. Pagina ROI & Vantaggi 
    Pagina interattiva per mostrare al barbiere il ritorno sull'investimento e tutti i vantaggi di BarberOS.
 
    Route: /dashboard/roi
@@ -781,7 +783,7 @@ NOTE TECNICHE
 - WhatsApp dual-mode: se variabili TWILIO_* configurate → invio reale via Twilio API. Altrimenti → mock con console.log dettagliato. Trasparente per il resto del codice.
 - Webhook WhatsApp usa Supabase admin client (service role key) per bypassare RLS nelle operazioni server-to-server.
 - Template messaggi: default italiani hardcoded in lib/templates.ts, personalizzabili dal barbiere via UI e salvati su DB (message_templates).
-- Stripe: getStripe() con lazy init + Proxy per alias. stripe-plans.ts separato (importabile da client components, include setupFeeCents/setupFeeLabel). STRIPE_PRICES + STRIPE_PRICE_SETUP server-only da env. Webhook invoice.paid processa setup fee (setup_fee_paid flag) e referral reward (€50 credito via Customer Balance al referrer).
+- Stripe: getStripe() con lazy init + Proxy per alias. stripe-plans.ts separato (importabile da client components, include setupFeeCents/setupFeeLabel). STRIPE_PRICES + STRIPE_PRICE_SETUP + STRIPE_PRODUCT_SETUP server-only da env. Webhook checkout.session.completed processa setup fee (setup_fee_paid + setup_fee_paid_at, match su product ID). Webhook invoice.paid processa referral reward (€50 credito via Customer Balance al referrer).
 - Validazione Zod: tutti i 10 moduli Server Actions usano zod/v4 con safeParse() per validare input utente prima di qualsiasi query DB. Errori restituiti come { error: "messaggio italiano" }, mai eccezioni. Waitlist: .refine() per rifiutare date passate sia server-side che client-side.
 - Deploy: Vercel per frontend/server actions/API routes. Supabase Cloud per DB/auth/edge functions/pg_cron (già attivo).
 - shadcn/ui: 17 componenti Radix-based integrati in src/components/ui/. CLI configurato con components.json.
