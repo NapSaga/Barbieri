@@ -321,19 +321,19 @@ export function CalendarView({
             <div className="space-y-3 p-4 pt-16">
               {viewMode === "week" ? (
                 <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: 7 }).map((_, col) => (
-                    <div key={`sk-col-${col}`} className="space-y-2">
+                  {["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((day) => (
+                    <div key={`sk-col-${day}`} className="space-y-2">
                       <Skeleton className="h-4 w-full" />
-                      {Array.from({ length: 2 }).map((_, row) => (
-                        <Skeleton key={`sk-${col}-${row}`} className="h-7 w-full" />
+                      {["a", "b"].map((row) => (
+                        <Skeleton key={`sk-${day}-${row}`} className="h-7 w-full" />
                       ))}
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={`sk-day-${i}`} className="h-12 w-full" />
+                  {["a", "b", "c", "d"].map((id) => (
+                    <Skeleton key={`sk-day-${id}`} className="h-12 w-full" />
                   ))}
                 </div>
               )}

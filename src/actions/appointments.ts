@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
-import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { renderTemplate, sendWhatsAppMessage } from "@/lib/whatsapp";
 
 // ─── Conflict Helpers ────────────────────────────────────────────────
@@ -14,8 +14,8 @@ interface BookedSlot {
   endTime: string;
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: accepts both typed and admin (untyped) clients
 async function hasConflict(
+  // biome-ignore lint/suspicious/noExplicitAny: accepts both typed and admin (untyped) clients
   supabase: any,
   businessId: string,
   staffId: string,
@@ -734,16 +734,8 @@ async function notifyClientOnCancel(
       .select("first_name, phone")
       .eq("id", appointmentData.client_id)
       .single(),
-    supabase
-      .from("services")
-      .select("name")
-      .eq("id", appointmentData.service_id)
-      .single(),
-    supabase
-      .from("businesses")
-      .select("name, slug")
-      .eq("id", appointmentData.business_id)
-      .single(),
+    supabase.from("services").select("name").eq("id", appointmentData.service_id).single(),
+    supabase.from("businesses").select("name, slug").eq("id", appointmentData.business_id).single(),
   ]);
 
   const client = clientRes.data;

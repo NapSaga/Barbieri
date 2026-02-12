@@ -82,7 +82,8 @@ export default async function proxy(request: NextRequest) {
     const hasStripeCustomer = !!business?.stripe_customer_id;
     const hasActivePlan = !!business?.subscription_plan;
     const allowedStatuses = ["active", "trialing", "past_due"];
-    const isSubscriptionValid = allowedStatuses.includes(status) && hasStripeCustomer && hasActivePlan;
+    const isSubscriptionValid =
+      allowedStatuses.includes(status) && hasStripeCustomer && hasActivePlan;
 
     if (!isSubscriptionValid) {
       const url = request.nextUrl.clone();

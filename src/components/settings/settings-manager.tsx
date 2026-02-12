@@ -1273,8 +1273,10 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>
               L&apos;abbonamento verrà cancellato il{" "}
-              <span className="font-semibold">{formatBillingDate(info?.currentPeriodEnd ?? null)}</span>.
-              Fino a quella data puoi continuare a usare BarberOS normalmente.
+              <span className="font-semibold">
+                {formatBillingDate(info?.currentPeriodEnd ?? null)}
+              </span>
+              . Fino a quella data puoi continuare a usare BarberOS normalmente.
             </p>
           </div>
           <button
@@ -1426,7 +1428,9 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
               <div className="flex items-start gap-2 text-sm text-foreground">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                 <div>
-                  <p className="font-semibold">Sei sicuro di voler cancellare l&apos;abbonamento?</p>
+                  <p className="font-semibold">
+                    Sei sicuro di voler cancellare l&apos;abbonamento?
+                  </p>
                   <p className="mt-1 text-muted-foreground">
                     L&apos;abbonamento resterà attivo fino al{" "}
                     <span className="font-medium text-foreground">
@@ -1468,9 +1472,7 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
       )}
 
       {/* Contratto info */}
-      <p className="text-xs text-muted-foreground">
-        Disdici quando vuoi, senza vincoli.
-      </p>
+      <p className="text-xs text-muted-foreground">Disdici quando vuoi, senza vincoli.</p>
     </div>
   );
 }
