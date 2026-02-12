@@ -332,7 +332,12 @@ export async function addWalkIn(formData: FormData) {
     source: "walk_in",
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Conflitto: il barbiere ha già un appuntamento in questo orario." };
+    }
+    return { error: error.message };
+  }
 
   revalidatePath("/dashboard");
   return { success: true };
@@ -425,6 +430,9 @@ export async function bookAppointment(input: BookAppointmentInput) {
     .single();
 
   if (appointmentError || !appointment) {
+    if (appointmentError?.code === "23505") {
+      return { error: "Questo orario non è più disponibile. Scegli un altro slot." };
+    }
     return { error: appointmentError?.message || "Errore nella creazione dell'appuntamento" };
   }
 

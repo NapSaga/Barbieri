@@ -215,6 +215,8 @@ export const appointments = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
+  // Note: partial unique index `appointments_no_overlap_idx` on (staff_id, date, start_time)
+  // WHERE status NOT IN ('cancelled','no_show') is defined in SQL migration (not expressible in Drizzle).
   (table) => [
     index("appointments_business_date_idx").on(table.businessId, table.date),
     index("appointments_staff_date_idx").on(table.staffId, table.date),
