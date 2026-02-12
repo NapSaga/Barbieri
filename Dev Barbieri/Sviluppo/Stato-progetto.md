@@ -129,7 +129,7 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
    - Altrimenti → mock con log dettagliato in console (sviluppo locale)
 
 3. Template messaggi (src/lib/templates.ts) ✅
-   - 7 tipi: confirmation, reminder_24h, reminder_2h, cancellation, review_request, reactivation, waitlist_notify
+   - 9 tipi: confirmation, confirm_request, confirm_reminder, pre_appointment, cancellation, review_request, reactivation, waitlist_notify, delay_notice
    - Testi italiani con variabili placeholder
    - DEFAULT_TEMPLATES, TEMPLATE_LABELS, TEMPLATE_DESCRIPTIONS
    - Personalizzabili dal barbiere tramite UI settings
@@ -210,9 +210,9 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
    - review-request: 15 * * * * → pg_net → Edge Function
    - reactivation: 0 10 * * * → pg_net → Edge Function
 
-   Template messaggi aggiornati (8 tipi):
+   Template messaggi aggiornati (9 tipi):
    - confirmation, confirm_request, confirm_reminder, pre_appointment
-   - cancellation, review_request, reactivation, waitlist_notify
+   - cancellation, review_request, reactivation, waitlist_notify, delay_notice
    - Ogni messaggio include comandi disponibili (CONFERMA, CANCELLA, CAMBIA ORARIO)
    - Personalizzabili dal barbiere tramite Settings
 
@@ -300,9 +300,11 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
     - Codici promozionali/coupon abilitati in Checkout (allow_promotion_codes: true)
     - stripe@20.3.1 installato, API version 2026-01-28.clover
     - src/lib/stripe.ts: Stripe server client + PLANS config (3 piani con features, prezzi, product/price IDs) + STRIPE_PRICE_SETUP + STRIPE_PRODUCT_SETUP
-    - src/actions/billing.ts: 3 server actions
+    - src/actions/billing.ts: 5 server actions
       - createCheckoutSession(planId): crea/ensure Stripe Customer + Checkout Session per piano scelto + setup fee se non pagato
       - createPortalSession(): redirect a Stripe Customer Portal per self-service
+      - cancelSubscription(): cancellazione soft (cancel_at_period_end: true) — abbonamento resta attivo fino a fine periodo
+      - reactivateSubscription(): annulla cancellazione pendente (cancel_at_period_end: false)
       - getSubscriptionInfo(): legge status + piano attivo da Stripe API, fallback a DB
     - src/app/api/stripe/webhook/route.ts: webhook handler
       - Verifica firma Stripe (STRIPE_WEBHOOK_SECRET)
@@ -316,8 +318,10 @@ Automazioni WhatsApp, impostazioni, webhook, billing.
       - 3 card piani con features, prezzo, badge "Consigliato" su Professional
       - Enterprise: pulsante "Contattaci" via email
       - Pulsante "Gestisci abbonamento" → Stripe Customer Portal (per abbonati attivi)
+      - Cancellazione abbonamento: bottone "Cancella abbonamento" con dialog di conferma → cancellazione soft (cancel_at_period_end)
+      - Banner cancellazione pendente: "L'abbonamento verrà cancellato il [data]" + bottone "Riattiva abbonamento"
       - Info trial con durata e data scadenza
-      - Nota contratto 12 mesi + garanzia risultati
+      - Nota: "Disdici quando vuoi, senza vincoli"
     - proxy.ts aggiornato: /api/stripe/ come path pubblico
     - scripts/setup-stripe.ts: crea prezzi ricorrenti per Essential e Professional + prodotto/prezzo setup fee
     - Env vars: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ESSENTIAL, STRIPE_PRICE_PROFESSIONAL, STRIPE_PRICE_SETUP, STRIPE_PRODUCT_SETUP
@@ -335,10 +339,12 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
 
 2. Subscription Gating ✅
    - proxy.ts aggiornato con gating sulle route /dashboard/*
-   - Se subscription_status non è active/trialing/past_due → redirect a /dashboard/expired
-   - Nuovi utenti (trialing senza stripe_customer_id) → redirect a /dashboard/expired per scelta piano obbligatoria
+   - Validazione a 3 condizioni: subscription_status valido + stripe_customer_id + subscription_plan assegnato
+     - Risolve edge case: utente che clicca checkout (crea stripe_customer_id) ma non completa il pagamento
+   - Se una delle 3 condizioni manca → redirect a /dashboard/expired
+   - Layout dashboard: sidebar nascosta se subscription non completata (stesse 3 condizioni)
    - Pagina /dashboard/expired con ExpiredView component:
-     - Nuovi utenti: icona Rocket, "Scegli il tuo piano", bottone "Inizia ora", setup fee visibile
+     - Nuovi utenti (!hasActivePlan): icona Rocket, "Scegli il tuo piano", bottone "Inizia ora", setup fee visibile
      - Utenti scaduti: icona AlertTriangle, "Abbonamento non attivo", bottone "Abbonati"
      - Props: isNewUser, showSetupFee (calcolati da expired/page.tsx)
    - Settings e expired page esenti dal gating (per permettere riattivazione)
@@ -696,7 +702,31 @@ Polish, deploy, sicurezza, personalizzazione, PWA, performance.
 
    typecheck ✅
 
-21. Da fare (dettagli in Dev Barbieri/Piano/Task-Fase-D-Rimanenti.md):
+21. WhatsApp Cancellazione + Avviso Ritardo ✅
+   Due nuove funzionalità WhatsApp per migliorare la comunicazione barbiere→cliente.
+
+   a) Messaggio WhatsApp al cliente su cancellazione manuale:
+   - Quando il barbiere cancella un appuntamento dal calendario, il cliente riceve un messaggio WhatsApp automatico con il template cancellation ("il tuo appuntamento è stato cancellato + link rebooking")
+   - Funzione notifyClientOnCancel() in appointments.ts: fetch client/service/business in parallelo, renderTemplate, sendWhatsAppMessage, insert record in messages con type "cancellation"
+   - Record salvato in tabella messages con appointment_id e whatsapp_message_id per tracciabilità
+
+   b) Bottone "In ritardo" nell'AppointmentSheet:
+   - Nuovo bottone sky-colored con icona Clock, visibile solo per appuntamenti booked/confirmed di oggi con telefono cliente
+   - Al click: Popover con 5 opzioni rapide (5, 10, 15, 20, 30 minuti)
+   - Server action sendDelayNotice(appointmentId, delayMinutes) con validazione Zod (uuid + int 5-60)
+   - Auth check + ownership check + status guard + today-only guard
+   - Template delay_notice: "Ciao {{client_name}}, ti avvisiamo che siamo in leggero ritardo. Il tuo appuntamento delle {{time}} potrebbe slittare di circa {{delay_minutes}} minuti."
+   - NON salva in tabella messages (il type enum DB non ha delay_notice — solo il type TS è stato esteso)
+   - Feedback UI: banner verde "Avviso ritardo inviato al cliente" o errore
+
+   File modificati:
+   - src/lib/templates.ts (delay_notice type + template + label + description)
+   - src/actions/appointments.ts (notifyClientOnCancel, sendDelayNotice, delayNoticeSchema)
+   - src/components/calendar/appointment-sheet.tsx (bottone "In ritardo" + Popover + handleDelay)
+
+   typecheck ✅, test 139/139 ✅, build ✅
+
+22. Da fare (dettagli in Dev Barbieri/Piano/Task-Fase-D-Rimanenti.md):
    - Dominio custom + DNS (attualmente su barberos-mvp.vercel.app)
    - WhatsApp produzione: sandbox funzionante, Twilio sara' subaccount del cliente
    - Monitoring: Sentry per error tracking

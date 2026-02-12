@@ -129,6 +129,82 @@ export async function createPortalSession() {
   redirect(session.url);
 }
 
+// ─── Cancel Subscription (soft) ─────────────────────────────────────
+
+export async function cancelSubscription() {
+  const { business } = await getAuthenticatedBusiness();
+
+  if (!business.stripe_customer_id) {
+    return { error: "Nessun abbonamento attivo" };
+  }
+
+  try {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: business.stripe_customer_id,
+      limit: 1,
+    });
+
+    // Filter for active or trialing
+    const sub = subscriptions.data.find((s) => s.status === "active" || s.status === "trialing");
+    if (!sub) {
+      return { error: "Nessun abbonamento attivo trovato" };
+    }
+
+    if (sub.cancel_at_period_end) {
+      return { error: "L'abbonamento è già in fase di cancellazione" };
+    }
+
+    const updated = await stripe.subscriptions.update(sub.id, {
+      cancel_at_period_end: true,
+    });
+
+    const periodEnd = updated.items.data[0]?.current_period_end;
+
+    return {
+      success: true,
+      cancelAt: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+    };
+  } catch (err) {
+    console.error("❌ cancelSubscription Stripe error:", err);
+    return { error: "Errore durante la cancellazione. Riprova più tardi." };
+  }
+}
+
+// ─── Reactivate Subscription ────────────────────────────────────────
+
+export async function reactivateSubscription() {
+  const { business } = await getAuthenticatedBusiness();
+
+  if (!business.stripe_customer_id) {
+    return { error: "Nessun abbonamento attivo" };
+  }
+
+  try {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: business.stripe_customer_id,
+      limit: 1,
+    });
+
+    const sub = subscriptions.data.find((s) => s.status === "active" || s.status === "trialing");
+    if (!sub) {
+      return { error: "Nessun abbonamento trovato" };
+    }
+
+    if (!sub.cancel_at_period_end) {
+      return { error: "L'abbonamento non è in fase di cancellazione" };
+    }
+
+    await stripe.subscriptions.update(sub.id, {
+      cancel_at_period_end: false,
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error("❌ reactivateSubscription Stripe error:", err);
+    return { error: "Errore durante la riattivazione. Riprova più tardi." };
+  }
+}
+
 // ─── Get Subscription Info ──────────────────────────────────────────
 
 export async function getSubscriptionInfo() {

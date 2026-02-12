@@ -66,8 +66,12 @@ barberos-mvp/
     │   ├── appointments.ts       # getStaffBookedSlots (public, conflict detection),
     │   │                         # getAppointmentsForDate, getAppointmentsForWeek,
     │   │                         # getStaffForCalendar, addWalkIn, bookAppointment,
-    │   │                         # updateAppointmentStatus, hasConflict (internal)
+    │   │                         # updateAppointmentStatus, revertAppointmentStatus,
+    │   │                         # sendDelayNotice, hasConflict (internal),
+    │   │                         # notifyClientOnCancel (internal), notifyWaitlistOnCancel (internal)
     │   ├── billing.ts            # createCheckoutSession(planId) con setup fee, createPortalSession,
+    │   │                         # cancelSubscription (soft, cancel_at_period_end),
+    │   │                         # reactivateSubscription (annulla cancellazione pendente),
     │   │                         # getSubscriptionInfo, getPlanLimits (legge piano attivo → limiti per piano)
     │   ├── referral.ts           # getReferralInfo, getReferrals, validateReferralCode
     │   ├── business.ts           # getCurrentBusiness, updateBusinessInfo,
@@ -95,7 +99,7 @@ barberos-mvp/
     │   │   ├── day-view.tsx       # Vista giornaliera: timeline oraria con colonne staff
     │   │   ├── week-view.tsx      # Vista settimanale: griglia 7 giorni
     │   │   ├── appointment-card.tsx # Card appuntamento con colori stato (5 varianti)
-    │   │   ├── appointment-sheet.tsx # Pannello dettaglio appuntamento + azioni rapide
+    │   │   ├── appointment-sheet.tsx # Pannello dettaglio appuntamento + azioni rapide + bottone "In ritardo" con Popover
     │   │   └── walk-in-dialog.tsx # Dialog modale per aggiunta walk-in
     │   │
     │   ├── analytics/
@@ -163,7 +167,7 @@ barberos-mvp/
     │   ├── stripe-utils.ts       # mapStatus() estratto da webhook Stripe (testabile senza side-effect)
     │   ├── whatsapp.ts           # WhatsApp dual-mode: Twilio live o mock console.log
     │   │                         # sendWhatsAppMessage(), renderTemplate(), isWhatsAppEnabled()
-    │   ├── templates.ts          # Template messaggi WhatsApp: 8 tipi, DEFAULT_TEMPLATES,
+    │   ├── templates.ts          # Template messaggi WhatsApp: 9 tipi, DEFAULT_TEMPLATES,
     │   │                         # TEMPLATE_LABELS, TEMPLATE_DESCRIPTIONS, types condivisi
     │   ├── __tests__/            # Unit test Vitest (139 test su funzioni pure)
     │   │   ├── time-utils.test.ts    # 24 test: addMinutesToTime, timeToMinutes, formatPrice
@@ -271,8 +275,14 @@ Walk-in:
 Cambio stato appuntamento:
   Dashboard → AppointmentSheet (client) → updateAppointmentStatus Server Action
   → Supabase: update appointment + increment no_show_count o total_visits se necessario
+  → Se cancelled: notifyWaitlistOnCancel() (primo in waitlist) + notifyClientOnCancel() (WhatsApp al cliente con template cancellation + link rebooking + record in messages)
   → Trigger SQL recalc_analytics_on_appointment_change() ricalcola analytics_daily per quella data
   → revalidatePath("/dashboard")
+
+Avviso ritardo:
+  Dashboard → AppointmentSheet (client) → bottone "In ritardo" (Popover con 5/10/15/20/30 min)
+  → sendDelayNotice Server Action → Zod validation (uuid + int 5-60) → auth + ownership + status/date guard
+  → sendWhatsAppMessage con template delay_notice → feedback UI (successo/errore)
 
 Navigazione calendario:
   CalendarView (client) → useTransition + getAppointmentsForDate/getAppointmentsForWeek Server Action
@@ -297,7 +307,7 @@ Salvataggio impostazioni:
   Nota: orari apertura, info business e brand settings invalidano anche la pagina booking pubblica
 
 Attivazione abbonamento:
-  Nuovi utenti: proxy.ts redirect a /dashboard/expired (trialing senza stripe_customer_id)
+  Nuovi utenti: proxy.ts redirect a /dashboard/expired (senza subscription_plan assegnato)
   Utenti scaduti: proxy.ts redirect a /dashboard/expired (subscription non valida)
   → ExpiredView: scelta piano (Essential/Professional/Enterprise)
   → createCheckoutSession(planId) Server Action
@@ -310,7 +320,15 @@ Attivazione abbonamento:
 Gestione abbonamento:
   SettingsManager > BillingSection → createPortalSession Server Action
   → Stripe: create Portal Session → redirect a Customer Portal
-  → utente gestisce carta, cancella, vede fatture → webhook sync eventuali cambi
+  → utente gestisce carta, vede fatture → webhook sync eventuali cambi
+
+Cancellazione abbonamento (dal dashboard):
+  SettingsManager > BillingSection → bottone "Cancella abbonamento" → dialog conferma
+  → cancelSubscription Server Action → stripe.subscriptions.update(subId, { cancel_at_period_end: true })
+  → Abbonamento resta attivo fino a fine periodo, poi si disattiva
+  → UI: banner amber "L'abbonamento verrà cancellato il [data]" + bottone "Riattiva abbonamento"
+  → reactivateSubscription Server Action → stripe.subscriptions.update(subId, { cancel_at_period_end: false })
+  → Annulla cancellazione, abbonamento torna normale
 
 Webhook Stripe:
   Stripe POST /api/stripe/webhook → verifica firma (STRIPE_WEBHOOK_SECRET)

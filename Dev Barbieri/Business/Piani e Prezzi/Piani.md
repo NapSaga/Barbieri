@@ -16,9 +16,8 @@ Enterprise: Setup White Glove €1.500-€2.000 (gestito manualmente, non su Str
 
 Trial: 7 giorni gratuiti per tutti i piani (funzionalità limitate al piano scelto)
 Fatturazione: mensile, tramite Stripe
-Contratto: 12 mesi
+Contratto: nessun vincolo, disdici quando vuoi
 Pagamento: carta di credito/debito (Visa, Mastercard, Amex), Apple Pay, Google Pay
-Garanzia risultati: se dopo 3 mesi non vedi un ritorno almeno 2x, esci senza penali.
 
 ---
 
@@ -134,7 +133,7 @@ Impostazioni
 - Link Google Review per recensioni automatiche
 - Regole automatiche (soglia dormiente, soglia no-show)
 - Stato connessione WhatsApp
-- Gestione abbonamento (attivazione, cambio piano, cancellazione)
+- Gestione abbonamento (attivazione, cambio piano, cancellazione dal dashboard con conferma, riattivazione)
 
 ---
 
@@ -226,7 +225,7 @@ FLUSSO UTENTE
    webhook subscription.created → status = trialing, piano salvato
 5. 7 giorni di prova con funzionalità del piano scelto (Essential: max 2 staff, Professional: max 5)
 6. Al termine trial: Stripe addebita primo mese → webhook invoice.paid → status = active
-7. Gestione autonoma da "Gestisci abbonamento" → Stripe Customer Portal
+7. Gestione autonoma: "Gestisci abbonamento" → Stripe Customer Portal, oppure "Cancella abbonamento" dal dashboard → cancellazione soft (resta attivo fino a fine periodo) → possibilità di riattivare prima della scadenza
 8. Se cancella e riabbona: setup fee NON riaddebitato (setup_fee_paid = true)
 9. Enterprise: contatto diretto via email → setup manuale
 

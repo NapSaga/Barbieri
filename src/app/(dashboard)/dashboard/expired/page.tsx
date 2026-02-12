@@ -14,23 +14,24 @@ export default async function ExpiredPage() {
   // If subscription is actually valid, redirect back to dashboard
   const { data: business } = await supabase
     .from("businesses")
-    .select("subscription_status, stripe_customer_id, setup_fee_paid")
+    .select("subscription_status, stripe_customer_id, subscription_plan, setup_fee_paid")
     .eq("owner_id", user.id)
     .single();
 
   const status = business?.subscription_status || "trialing";
   const hasStripeCustomer = !!business?.stripe_customer_id;
+  const hasActivePlan = !!business?.subscription_plan;
   const allowedStatuses = ["active", "trialing", "past_due"];
 
-  // Only redirect back if subscription is valid AND user has gone through Stripe
-  if (allowedStatuses.includes(status) && hasStripeCustomer) {
+  // Only redirect back if subscription is valid AND user completed checkout (has a plan)
+  if (allowedStatuses.includes(status) && hasStripeCustomer && hasActivePlan) {
     redirect("/dashboard");
   }
 
   const subscriptionInfo = await getSubscriptionInfo();
 
-  // New user = trialing without Stripe customer (never went through checkout)
-  const isNewUser = status === "trialing" && !hasStripeCustomer;
+  // New user = never completed checkout (no plan assigned yet)
+  const isNewUser = !hasActivePlan;
   // Show setup fee if user hasn't paid it yet
   const showSetupFee = !business?.setup_fee_paid;
 

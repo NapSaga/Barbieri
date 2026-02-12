@@ -16,6 +16,7 @@ import {
   Loader2,
   MessageSquare,
   Plus,
+  RotateCcw,
   Settings,
   Shield,
   Smartphone,
@@ -27,7 +28,12 @@ import {
   UserX,
 } from "lucide-react";
 import { useState, useTransition } from "react";
-import { createCheckoutSession, createPortalSession } from "@/actions/billing";
+import {
+  cancelSubscription,
+  createCheckoutSession,
+  createPortalSession,
+  reactivateSubscription,
+} from "@/actions/billing";
 import {
   deleteAccount,
   updateBusinessInfo,
@@ -1133,6 +1139,11 @@ const PLAN_ORDER: PlanId[] = ["essential", "professional", "enterprise"];
 function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionInfo | null }) {
   const [isPending, startTransition] = useTransition();
   const [pendingPlan, setPendingPlan] = useState<PlanId | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [localCancelAtPeriodEnd, setLocalCancelAtPeriodEnd] = useState(
+    subscriptionInfo?.cancelAtPeriodEnd ?? false,
+  );
   const info = subscriptionInfo;
   const status = info?.status || "trialing";
   const statusMeta = STATUS_LABELS[status] || STATUS_LABELS.incomplete;
@@ -1154,6 +1165,31 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
   function handlePortal() {
     startTransition(async () => {
       await createPortalSession();
+    });
+  }
+
+  function handleCancel() {
+    setCancelError(null);
+    startTransition(async () => {
+      const result = await cancelSubscription();
+      if ("error" in result && result.error) {
+        setCancelError(result.error);
+      } else {
+        setLocalCancelAtPeriodEnd(true);
+        setShowCancelConfirm(false);
+      }
+    });
+  }
+
+  function handleReactivate() {
+    setCancelError(null);
+    startTransition(async () => {
+      const result = await reactivateSubscription();
+      if ("error" in result && result.error) {
+        setCancelError(result.error);
+      } else {
+        setLocalCancelAtPeriodEnd(false);
+      }
     });
   }
 
@@ -1218,13 +1254,50 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
             {isTrialing && !info?.trialEnd && `${STRIPE_CONFIG.trialDays} giorni di prova gratuita`}
             {isActive &&
               info?.currentPeriodEnd &&
+              !localCancelAtPeriodEnd &&
               `Prossimo rinnovo: ${formatBillingDate(info.currentPeriodEnd)}`}
-            {isActive && info?.cancelAtPeriodEnd && ` (si disattiva alla scadenza)`}
+            {isActive &&
+              localCancelAtPeriodEnd &&
+              info?.currentPeriodEnd &&
+              `Si disattiva il ${formatBillingDate(info.currentPeriodEnd)}`}
             {isPastDue && "Aggiorna il metodo di pagamento per continuare a usare BarberOS"}
             {isCancelled && "Il tuo abbonamento è stato cancellato"}
           </p>
         </div>
       </div>
+
+      {/* Cancellation pending banner + reactivate */}
+      {(isActive || isTrialing) && localCancelAtPeriodEnd && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-4 space-y-3">
+          <div className="flex items-start gap-2 text-sm text-amber-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              L&apos;abbonamento verrà cancellato il{" "}
+              <span className="font-semibold">{formatBillingDate(info?.currentPeriodEnd ?? null)}</span>.
+              Fino a quella data puoi continuare a usare BarberOS normalmente.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleReactivate}
+            disabled={isPending}
+            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCcw className="h-4 w-4" />
+            )}
+            Riattiva abbonamento
+          </button>
+        </div>
+      )}
+
+      {cancelError && (
+        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {cancelError}
+        </div>
+      )}
 
       {/* Manage button for active subscribers */}
       {hasSubscription && (
@@ -1337,10 +1410,66 @@ function BillingSection({ subscriptionInfo }: { subscriptionInfo?: SubscriptionI
         </div>
       )}
 
+      {/* Cancel subscription button + confirm dialog */}
+      {(isActive || isTrialing) && !localCancelAtPeriodEnd && (
+        <div className="border-t border-border pt-4">
+          {!showCancelConfirm ? (
+            <button
+              type="button"
+              onClick={() => setShowCancelConfirm(true)}
+              className="text-sm text-muted-foreground hover:text-destructive transition-colors"
+            >
+              Cancella abbonamento
+            </button>
+          ) : (
+            <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+              <div className="flex items-start gap-2 text-sm text-foreground">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                <div>
+                  <p className="font-semibold">Sei sicuro di voler cancellare l&apos;abbonamento?</p>
+                  <p className="mt-1 text-muted-foreground">
+                    L&apos;abbonamento resterà attivo fino al{" "}
+                    <span className="font-medium text-foreground">
+                      {formatBillingDate(info?.currentPeriodEnd ?? info?.trialEnd ?? null)}
+                    </span>
+                    , poi verrà disattivato. Potrai riattivarlo in qualsiasi momento prima della
+                    scadenza.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={isPending}
+                  className="flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 transition-colors"
+                >
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4" />
+                  )}
+                  Conferma cancellazione
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setCancelError(null);
+                  }}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
+                >
+                  Annulla
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Contratto info */}
       <p className="text-xs text-muted-foreground">
-        Contratto 12 mesi. Garanzia risultati: se dopo 3 mesi non vedi un ritorno almeno 2x, esci
-        senza penali.
+        Disdici quando vuoi, senza vincoli.
       </p>
     </div>
   );

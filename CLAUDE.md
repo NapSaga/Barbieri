@@ -35,7 +35,7 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 
 ### Data Layer
 
-- **Drizzle ORM** for schema definition (`src/db/schema.ts`) and migrations. Schema has 12 tables, 7 enums.
+- **Drizzle ORM** for schema definition (`src/db/schema.ts`) and migrations. Schema has 13 tables, 8 enums.
 - **Supabase JS client** for runtime queries (benefits from RLS). Drizzle is used for schema-as-code and `db:push`/`db:generate`.
 - **Two DB URLs**: `DATABASE_URL` (connection pooler, port 6543) for Vercel/serverless, `DIRECT_URL` (port 5432) for local/migrations.
 - **RLS enabled** on every table with `business_id` isolation. Webhooks use `SUPABASE_SERVICE_ROLE_KEY` to bypass RLS.
@@ -43,10 +43,11 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 
 ### Server Actions & API Routes
 
-- **10 server action modules** in `src/actions/` handle all authenticated mutations. No REST API for CRUD.
+- **11 server action modules** in `src/actions/` handle all authenticated mutations. No REST API for CRUD.
 - **Only 2 API routes** exist: `/api/stripe/webhook` and `/api/whatsapp/webhook` — both verify signatures.
+- `billing.ts`: `cancelSubscription()` sets `cancel_at_period_end: true` (soft cancel), `reactivateSubscription()` reverses it. Both find active/trialing subscription via `stripe.subscriptions.list()`.
 - `waitlist.ts` includes `addToWaitlistPublic()` (no auth, for booking page) and `getWaitlistCountsByDate()` (calendar badge).
-- `appointments.ts`: `bookAppointment()` rejects past date+time slots server-side. Booking wizard also hides past slots client-side for today's date. Partial unique index `appointments_no_overlap_idx` on `(staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show')` provides atomic DB-level double-booking prevention as fallback for race conditions (error code 23505 caught and translated to user-friendly message).
+- `appointments.ts`: `bookAppointment()` rejects past date+time slots server-side. Booking wizard also hides past slots client-side for today's date. Partial unique index `appointments_no_overlap_idx` on `(staff_id, date, start_time) WHERE status NOT IN ('cancelled','no_show')` provides atomic DB-level double-booking prevention as fallback for race conditions (error code 23505 caught and translated to user-friendly message). `updateAppointmentStatus()` on cancellation sends WhatsApp to client (`notifyClientOnCancel`) + notifies waitlist. `sendDelayNotice(appointmentId, delayMinutes)` sends a delay WhatsApp to the client (today-only, booked/confirmed).
 - Server actions call `revalidatePath()` after mutations.
 
 ### Auth
@@ -58,7 +59,7 @@ Tests use **Vitest** with path alias `@/*`. Test files live in `src/lib/__tests_
 ### External Services
 
 - **Stripe**: Lazy-initialized client (`src/lib/stripe.ts`) to prevent build-time crashes on Vercel. Plans defined in `src/lib/stripe-plans.ts` (includes `setupFeeCents`/`setupFeeLabel`). Checkout sessions include 7-day trial, promotion codes, and a one-time €500 setup fee (`STRIPE_PRICE_SETUP`) as second line item if `setup_fee_paid` is false. Webhook `invoice.paid` processes setup fee flag (`processSetupFeePaid`) and referral rewards (€50 credit via Customer Balance to referrer). Trial respects the chosen plan (Essential limits for Essential trial, Professional limits for Professional trial).
-- **Twilio WhatsApp**: Dual-mode in `src/lib/whatsapp.ts` — sends real messages if `TWILIO_*` env vars are set, otherwise logs to console (mock mode).
+- **Twilio WhatsApp**: Dual-mode in `src/lib/whatsapp.ts` — sends real messages if `TWILIO_*` env vars are set, otherwise logs to console (mock mode). 9 template types in `src/lib/templates.ts` (includes `delay_notice` for manual delay button; DB enum has 8, TS type has 9).
 - **WhatsApp commands**: `CONFERMA`, `CANCELLA`, `CAMBIA ORARIO`, `SI` — handled in the WhatsApp webhook route.
 - **Cron jobs** (Supabase pg_cron + Edge Functions) run confirmation requests, reminders, auto-cancel, pre-appointment messages, review requests, and client reactivation.
 - **Analytics trigger**: `trg_recalc_analytics` on `appointments` table (AFTER INSERT/UPDATE OF status,date,service_id/DELETE) recalculates `analytics_daily` in real-time via `recalc_analytics_on_appointment_change()`. Nightly cron `analytics-daily-calc` (02:05 UTC) recalculates yesterday + today as safety net.

@@ -14,14 +14,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("id, subscription_status, stripe_customer_id")
+    .select("id, subscription_status, stripe_customer_id, subscription_plan")
     .eq("owner_id", user.id)
     .single();
 
   const status = business?.subscription_status || "trialing";
   const hasStripeCustomer = !!business?.stripe_customer_id;
+  const hasActivePlan = !!business?.subscription_plan;
   const allowedStatuses = ["active", "trialing", "past_due"];
-  const showSidebar = allowedStatuses.includes(status) && hasStripeCustomer;
+  const showSidebar = allowedStatuses.includes(status) && hasStripeCustomer && hasActivePlan;
 
   // Fetch unread notification count for sidebar badge
   let unreadCount = 0;

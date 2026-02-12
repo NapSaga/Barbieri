@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 // ─── Zod Schemas ─────────────────────────────────────────────────────
 
@@ -214,7 +215,9 @@ export async function addToWaitlistPublic(input: {
   const parsed = addToWaitlistPublicSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
 
-  const supabase = await createClient();
+  // Use admin client to bypass RLS — this is a public action (no auth)
+  // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
+  const supabase: any = getSupabaseAdmin();
 
   // Find or create client by phone
   const { data: existing } = await supabase

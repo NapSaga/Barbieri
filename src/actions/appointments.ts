@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { renderTemplate, sendWhatsAppMessage } from "@/lib/whatsapp";
 
 // ─── Conflict Helpers ────────────────────────────────────────────────
@@ -13,8 +14,9 @@ interface BookedSlot {
   endTime: string;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: accepts both typed and admin (untyped) clients
 async function hasConflict(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: any,
   businessId: string,
   staffId: string,
   date: string,
@@ -101,6 +103,11 @@ const updateStatusSchema = z.object({
 const revertStatusSchema = z.object({
   appointmentId: uuidSchema,
   from: z.enum(["completed", "no_show"]),
+});
+
+const delayNoticeSchema = z.object({
+  appointmentId: uuidSchema,
+  delayMinutes: z.number().int().min(5, "Minimo 5 minuti").max(60, "Massimo 60 minuti"),
 });
 
 // ─── Calendar Data Fetching ──────────────────────────────────────────
@@ -367,7 +374,9 @@ export async function bookAppointment(input: BookAppointmentInput) {
     return { error: "Non è possibile prenotare un appuntamento nel passato." };
   }
 
-  const supabase = await createClient();
+  // Use admin client to bypass RLS — this is a public action (no auth)
+  // biome-ignore lint/suspicious/noExplicitAny: admin client has no generated types
+  const supabase: any = getSupabaseAdmin();
 
   // Find or create client
   const { data: existingClient } = await supabase
@@ -523,7 +532,7 @@ export async function updateAppointmentStatus(
     return { error: error.message };
   }
 
-  // If cancelled, notify waitlist entries for the freed slot
+  // If cancelled, notify waitlist entries for the freed slot + send WhatsApp to client
   if (status === "cancelled" && appointmentData) {
     await notifyWaitlistOnCancel(supabase, {
       business_id: appointmentData.business_id,
@@ -531,6 +540,8 @@ export async function updateAppointmentStatus(
       start_time: appointmentData.start_time,
       service_id: appointmentData.service_id,
     });
+
+    await notifyClientOnCancel(supabase, appointmentId, appointmentData);
   }
 
   // If no-show, increment client no_show_count
@@ -637,6 +648,134 @@ export async function revertAppointmentStatus(
 
   revalidatePath("/dashboard");
   return { success: true };
+}
+
+// ─── Delay Notice WhatsApp ───────────────────────────────────────────
+
+export async function sendDelayNotice(appointmentId: string, delayMinutes: number) {
+  const parsed = delayNoticeSchema.safeParse({ appointmentId, delayMinutes });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Non autenticato" };
+
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!business) return { error: "Barberia non trovata" };
+
+  const { data: appointment } = await supabase
+    .from("appointments")
+    .select("id, client_id, business_id, start_time, date, status")
+    .eq("id", appointmentId)
+    .eq("business_id", business.id)
+    .single();
+
+  if (!appointment) return { error: "Appuntamento non trovato" };
+
+  if (appointment.status !== "booked" && appointment.status !== "confirmed") {
+    return { error: "Puoi inviare un avviso ritardo solo per appuntamenti prenotati o confermati" };
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  if (appointment.date !== today) {
+    return { error: "Puoi inviare un avviso ritardo solo per appuntamenti di oggi" };
+  }
+
+  if (!appointment.client_id) return { error: "Cliente non associato all'appuntamento" };
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("first_name, phone")
+    .eq("id", appointment.client_id)
+    .single();
+
+  if (!client?.phone) return { error: "Telefono cliente non disponibile" };
+
+  const { DEFAULT_TEMPLATES } = await import("@/lib/templates");
+
+  const body = renderTemplate(DEFAULT_TEMPLATES.delay_notice, {
+    client_name: client.first_name,
+    time: appointment.start_time.slice(0, 5),
+    delay_minutes: String(delayMinutes),
+  });
+
+  const result = await sendWhatsAppMessage({ to: client.phone, body });
+
+  if (!result.success) return { error: "Errore nell'invio del messaggio WhatsApp" };
+
+  return { success: true };
+}
+
+// ─── WhatsApp Notification to Client on Manual Cancellation ─────────
+
+async function notifyClientOnCancel(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  appointmentId: string,
+  appointmentData: {
+    client_id: string;
+    business_id: string;
+    date: string;
+    start_time: string;
+    service_id: string;
+  },
+) {
+  if (!appointmentData.client_id) return;
+
+  const [clientRes, serviceRes, businessRes] = await Promise.all([
+    supabase
+      .from("clients")
+      .select("first_name, phone")
+      .eq("id", appointmentData.client_id)
+      .single(),
+    supabase
+      .from("services")
+      .select("name")
+      .eq("id", appointmentData.service_id)
+      .single(),
+    supabase
+      .from("businesses")
+      .select("name, slug")
+      .eq("id", appointmentData.business_id)
+      .single(),
+  ]);
+
+  const client = clientRes.data;
+  const service = serviceRes.data;
+  const business = businessRes.data;
+
+  if (!client?.phone || !business) return;
+
+  const { DEFAULT_TEMPLATES } = await import("@/lib/templates");
+
+  const bookingLink = `${process.env.NEXT_PUBLIC_APP_URL}/book/${business.slug}`;
+
+  const body = renderTemplate(DEFAULT_TEMPLATES.cancellation, {
+    client_name: client.first_name,
+    service_name: service?.name || "servizio",
+    date: appointmentData.date,
+    time: appointmentData.start_time.slice(0, 5),
+    booking_link: bookingLink,
+  });
+
+  const result = await sendWhatsAppMessage({ to: client.phone, body });
+
+  await supabase.from("messages").insert({
+    business_id: appointmentData.business_id,
+    client_id: appointmentData.client_id,
+    appointment_id: appointmentId,
+    type: "cancellation" as const,
+    status: result.success ? ("sent" as const) : ("failed" as const),
+    whatsapp_message_id: result.messageId || null,
+    scheduled_for: new Date().toISOString(),
+    sent_at: result.success ? new Date().toISOString() : null,
+  });
 }
 
 // ─── Waitlist Notification on Calendar Cancellation ─────────────────

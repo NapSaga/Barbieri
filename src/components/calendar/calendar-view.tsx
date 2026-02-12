@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { CalendarAppointment } from "@/types";
 import { AppointmentSheet } from "./appointment-sheet";
@@ -314,7 +315,31 @@ export function CalendarView({
       )}
 
       {/* Calendar grid */}
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="relative overflow-hidden rounded-xl border border-border bg-card">
+        {isPending && (
+          <div className="absolute inset-0 z-30 bg-card/80 backdrop-blur-[1px]">
+            <div className="space-y-3 p-4 pt-16">
+              {viewMode === "week" ? (
+                <div className="grid grid-cols-7 gap-2">
+                  {Array.from({ length: 7 }).map((_, col) => (
+                    <div key={`sk-col-${col}`} className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      {Array.from({ length: 2 }).map((_, row) => (
+                        <Skeleton key={`sk-${col}-${row}`} className="h-7 w-full" />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={`sk-day-${i}`} className="h-12 w-full" />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {viewMode === "day" ? (
           <DayView
             date={currentDate}

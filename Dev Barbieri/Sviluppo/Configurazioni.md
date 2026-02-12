@@ -163,7 +163,7 @@ Enums (8):
 - appointment_status: booked, confirmed, completed, cancelled, no_show
 - appointment_source: online, walk_in, manual, waitlist
 - waitlist_status: waiting, notified, converted, expired
-- message_type: confirmation, confirm_request, confirm_reminder, pre_appointment, cancellation, review_request, reactivation, waitlist_notify
+- message_type: confirmation, confirm_request, confirm_reminder, pre_appointment, cancellation, review_request, reactivation, waitlist_notify (DB enum; TS type in templates.ts aggiunge anche delay_notice)
 - message_status: queued, sent, delivered, read, failed
 - subscription_status: active, past_due, cancelled, trialing, incomplete
 - referral_status: pending, converted, rewarded, expired

@@ -14,7 +14,12 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState, useTransition } from "react";
-import { revertAppointmentStatus, updateAppointmentStatus } from "@/actions/appointments";
+import {
+  revertAppointmentStatus,
+  sendDelayNotice,
+  updateAppointmentStatus,
+} from "@/actions/appointments";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatPrice } from "@/lib/time-utils";
 import { cn } from "@/lib/utils";
 import type { CalendarAppointment } from "@/types";
@@ -36,6 +41,8 @@ interface AppointmentSheetProps {
 export function AppointmentSheet({ appointment, onClose, onUpdate }: AppointmentSheetProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [delaySuccess, setDelaySuccess] = useState(false);
+  const [delayOpen, setDelayOpen] = useState(false);
 
   if (!appointment) return null;
 
@@ -47,6 +54,7 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
   const today = new Date().toISOString().split("T")[0];
   const isFuture = appointment.date > today;
 
+  const isToday = appointment.date === today;
   const canComplete =
     (appointment.status === "booked" || appointment.status === "confirmed") && !isFuture;
   const canCancel = appointment.status === "booked" || appointment.status === "confirmed";
@@ -54,6 +62,10 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
     (appointment.status === "booked" || appointment.status === "confirmed") && !isFuture;
   const canConfirm = appointment.status === "booked";
   const canRevert = appointment.status === "completed" || appointment.status === "no_show";
+  const canDelay =
+    (appointment.status === "booked" || appointment.status === "confirmed") &&
+    isToday &&
+    !!appointment.client?.phone;
 
   function handleAction(status: "confirmed" | "completed" | "cancelled" | "no_show") {
     setError(null);
@@ -64,6 +76,20 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
       } else {
         onUpdate();
         onClose();
+      }
+    });
+  }
+
+  function handleDelay(minutes: number) {
+    setError(null);
+    setDelaySuccess(false);
+    setDelayOpen(false);
+    startTransition(async () => {
+      const result = await sendDelayNotice(appointment!.id, minutes);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setDelaySuccess(true);
       }
     });
   }
@@ -231,6 +257,51 @@ export function AppointmentSheet({ appointment, onClose, onUpdate }: Appointment
             <p className="mt-3 rounded-lg bg-destructive/10 p-2.5 text-sm text-destructive">
               {error}
             </p>
+          )}
+
+          {delaySuccess && (
+            <p className="mt-3 rounded-lg bg-emerald-500/10 p-2.5 text-sm text-emerald-400">
+              Avviso ritardo inviato al cliente
+            </p>
+          )}
+
+          {/* Delay notice */}
+          {canDelay && (
+            <div className="mt-4">
+              <Popover open={delayOpen} onOpenChange={setDelayOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-sky-700/50 bg-sky-950/30 px-3 py-2.5 text-sm font-semibold text-sky-300 transition-colors hover:bg-sky-950/50 disabled:opacity-50"
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Clock className="h-4 w-4" />
+                    )}
+                    In ritardo
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-3" align="center">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    Quanti minuti di ritardo?
+                  </p>
+                  <div className="flex gap-1.5">
+                    {[5, 10, 15, 20, 30].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => handleDelay(m)}
+                        className="rounded-lg bg-secondary px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           )}
 
           {/* Actions */}

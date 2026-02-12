@@ -600,3 +600,54 @@ Dati trovati su Supabase:
 ### Risultato
 
 D'ora in poi, ogni cambio di stato appuntamento (completato, cancellato, no-show) aggiorna Analytics **istantaneamente**. Il barbiere vede fatturato, appuntamenti e servizi piu' richiesti in tempo reale senza ritardi.
+
+---
+
+## WhatsApp Cancellazione + Avviso Ritardo (12/02/2026 — sessione Windsurf Cascade)
+
+Due nuove funzionalita' WhatsApp implementate per migliorare la comunicazione barbiere→cliente.
+
+### Task 1 — Messaggio WhatsApp al cliente su cancellazione manuale
+
+**Problema:** Quando il barbiere cancellava un appuntamento dal calendario (AppointmentSheet → "Cancella"), il cliente NON riceveva nessun messaggio. Il cliente poteva presentarsi e non trovare l'appuntamento.
+
+**File modificato:** `src/actions/appointments.ts`
+**Implementazione:**
+- Nuova funzione `notifyClientOnCancel()` (interna, non esportata)
+- Chiamata dentro `updateAppointmentStatus()` dopo il blocco cancellazione, insieme a `notifyWaitlistOnCancel()`
+- Fetch parallelo di client (first_name, phone), service (name), business (name, slug) via `Promise.all`
+- Render template `cancellation` con variabili: client_name, service_name, date, time, booking_link
+- `sendWhatsAppMessage()` + insert record in tabella `messages` con type "cancellation", status sent/failed, whatsapp_message_id
+- Guard: skip se client_id mancante o telefono assente
+
+### Task 2 — Bottone "In ritardo" nell'AppointmentSheet
+
+**Problema:** Il barbiere non aveva modo di avvisare il cliente di un ritardo. Serviva un bottone rapido per inviare un WhatsApp con stima minuti.
+
+**File modificati:**
+- `src/lib/templates.ts` — Aggiunto `delay_notice` a `MessageTemplateType` (type TS, NON enum DB), template, label, description
+- `src/actions/appointments.ts` — Nuovo schema Zod `delayNoticeSchema` (uuid + int 5-60) + server action esportata `sendDelayNotice(appointmentId, delayMinutes)` con auth check, ownership check, status guard (solo booked/confirmed), today-only guard, client phone check
+- `src/components/calendar/appointment-sheet.tsx` — Bottone "In ritardo" (sky-colored, icona Clock) + Popover con 5 opzioni rapide (5, 10, 15, 20, 30 min) + feedback successo/errore
+
+**Dettagli tecnici:**
+- Template: "Ciao {{client_name}}, ti avvisiamo che siamo in leggero ritardo. Il tuo appuntamento delle {{time}} potrebbe slittare di circa {{delay_minutes}} minuti. Ci scusiamo per l'attesa!"
+- `sendDelayNotice` NON salva in tabella `messages` perche' il DB enum `message_type` non ha `delay_notice` (regola: non modificare schema DB)
+- Il type TS `MessageTemplateType` in templates.ts e' stato esteso (non e' lo schema DB)
+- Bottone visibile solo se: status booked/confirmed + data = oggi + client ha telefono
+- Import Popover da shadcn/ui (gia' presente in src/components/ui/popover.tsx)
+
+### Verifica
+
+```
+pnpm typecheck → pass
+pnpm test → 139/139 pass
+pnpm build → pass (dopo cleanup .next per disk space)
+```
+
+### Documentazione aggiornata
+
+- `Dev Barbieri/Sviluppo/Stato-progetto.md` — Sezione 21 (WhatsApp Cancellazione + Avviso Ritardo), flussi dati aggiornati, template count 9
+- `Dev Barbieri/Sviluppo/Architettura.md` — appointments.ts exports, appointment-sheet description, templates count, flussi dati (cancellazione + avviso ritardo)
+- `Dev Barbieri/Sviluppo/Scheda-tecnica.md` — CORE 6 (automazioni), CORE 8 (protezioni stato), flusso cancellazione manuale
+- `Dev Barbieri/Sviluppo/Configurazioni.md` — message_type enum nota (DB 8, TS 9)
+- `CLAUDE.md` — appointments.ts info, template count, server action modules count

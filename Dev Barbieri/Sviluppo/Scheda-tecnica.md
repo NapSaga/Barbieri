@@ -102,10 +102,12 @@ Comandi WhatsApp gestiti dal webhook:
 Altre automazioni:
 - Richiesta recensione Google: ~2h dopo completamento (con link diretto).
 - Riattivazione clienti dormienti: 1x/giorno per clienti inattivi > soglia configurabile.
+- Messaggio cancellazione al cliente: quando il barbiere cancella un appuntamento dal calendario, il cliente riceve automaticamente un WhatsApp con link per riprenotare.
+- Avviso ritardo: bottone "In ritardo" nell'AppointmentSheet (solo appuntamenti di oggi booked/confirmed). Il barbiere sceglie i minuti (5-30) e il cliente riceve un WhatsApp: "siamo in leggero ritardo, il tuo appuntamento potrebbe slittare di circa X minuti".
 
 Tutti i messaggi personalizzabili dal barbiere (testo, tono, emoji) tramite UI settings.
 Integrazione tramite Twilio WhatsApp Business API. Dual-mode: live (Twilio) o mock (console.log).
-Il barbiere NON deve fare nulla manualmente: tutto automatico dopo il setup.
+Il barbiere NON deve fare nulla manualmente: tutto automatico dopo il setup (tranne avviso ritardo che è manuale).
 6 Edge Functions + 6 pg_cron schedules + 6 SQL helper functions.
 
 ---
@@ -133,6 +135,8 @@ Protezioni stato appuntamento:
 - Non è possibile segnare "completato" o "no-show" un appuntamento con data futura (blocco server-side + pulsanti disabilitati).
 - Pulsante "Ripristina a Confermato" per annullare completamento o no-show errato (con rollback automatico di total_visits / no_show_count).
 - Auto-complete: appuntamenti confermati vengono segnati automaticamente come completati 20 minuti dopo la fine (ritardo configurabile per barberia da Impostazioni > Regole automatiche).
+- Cancellazione manuale: il barbiere cancella dal calendario → il cliente riceve WhatsApp automatico con link rebooking + la waitlist viene notificata.
+- Avviso ritardo: bottone "In ritardo" con scelta minuti (5/10/15/20/30) → WhatsApp al cliente con stima ritardo.
 
 ---
 
@@ -175,6 +179,7 @@ Giorni di chiusura straordinaria (feste, ferie).
 Testi personalizzabili per tutti i messaggi WhatsApp.
 Link Google Business per recensioni.
 Gestione account: cambio password, email, dati fatturazione.
+Gestione abbonamento: attivazione, cambio piano, cancellazione dal dashboard con dialog di conferma (soft cancel, resta attivo fino a fine periodo), riattivazione. Disdici quando vuoi, senza vincoli.
 
 ---
 
@@ -205,7 +210,7 @@ Notifiche WhatsApp: Twilio (^5.12.1) tramite WhatsApp Business API. Dual-mode: l
 
 Autenticazione: Supabase Auth con magic link email + password. JWT con refresh token. RLS policies per isolamento dati tra barberie.
 
-Pagamenti abbonamento: Stripe Billing con 3 piani (Essential €300/mese, Professional €500/mese, Enterprise custom). Trial 7 giorni. Stripe Checkout per pagamento con selezione piano e codici promozionali/coupon (allow_promotion_codes). Webhook Stripe (/api/stripe/webhook) per sync stato abbonamento su DB + processamento referral reward (€50 credito via Customer Balance al referrer). Customer Portal per self-service (cambio carta, cancellazione, fatture). Setup €1.000 una tantum fatturato separatamente.
+Pagamenti abbonamento: Stripe Billing con 3 piani (Essential €300/mese, Professional €500/mese, Enterprise custom). Trial 7 giorni. Stripe Checkout per pagamento con selezione piano e codici promozionali/coupon (allow_promotion_codes). Webhook Stripe (/api/stripe/webhook) per sync stato abbonamento su DB + processamento referral reward (€50 credito via Customer Balance al referrer). Customer Portal per self-service (cambio carta, fatture). Cancellazione e riattivazione abbonamento direttamente dal dashboard (cancel_at_period_end). Disdici quando vuoi, senza vincoli. Setup €1.000 una tantum fatturato separatamente.
 
 Cron e job scheduling: pg_cron nativo di Supabase per job ricorrenti (reminder, riattivazione, analytics). Supabase Edge Functions triggerati da database webhooks per eventi real-time.
 
@@ -279,7 +284,9 @@ FLUSSI PRINCIPALI
 
 Flusso prenotazione: cliente apre link (barberia.barberos.it o slug custom) → sceglie servizio → sistema filtra barbieri (solo quelli con quel servizio associato, o tutti se nessuno ha servizi configurati) → sceglie barbiere → sceglie data → sistema calcola slot disponibili come INTERSEZIONE tra orari di apertura negozio e orari di lavoro del barbiere selezionato (effectiveStart = MAX dei due inizi, effectiveEnd = MIN delle due chiusure), meno gli slot occupati da appuntamenti booked/confirmed/completed, meno gli slot con orario ≤ ora attuale se la data è oggi → cliente inserisce nome e telefono → conferma → server action crea appointment con status booked + crea client se non esiste + schedula messaggio WhatsApp conferma + broadcast realtime aggiorna calendario dashboard. Se nessun slot disponibile per la data selezionata → bottone "Avvisami se si libera un posto" → form inline (nome, telefono) → iscrizione automatica alla lista d'attesa → notifica WhatsApp automatica su cancellazione. Tutte le modifiche a orari, servizi, staff e associazioni staff-servizi invalidano automaticamente la pagina booking pubblica (revalidatePath).
 
-Flusso cancellazione: cliente risponde CANCELLA/ANNULLA al messaggio WhatsApp → webhook /api/whatsapp/webhook riceve messaggio → trova client per telefono → trova prossimo appuntamento attivo → aggiorna status a cancelled + cancella messaggi pendenti → se waitlist presente per quello slot, notifica primo in coda con WhatsApp → primo che risponde SI, sistema crea nuovo appointment con source waitlist.
+Flusso cancellazione (via WhatsApp): cliente risponde CANCELLA/ANNULLA al messaggio WhatsApp → webhook /api/whatsapp/webhook riceve messaggio → trova client per telefono → trova prossimo appuntamento attivo → aggiorna status a cancelled + cancella messaggi pendenti → se waitlist presente per quello slot, notifica primo in coda con WhatsApp → primo che risponde SI, sistema crea nuovo appointment con source waitlist.
+
+Flusso cancellazione (manuale dal calendario): barbiere clicca "Cancella" nell'AppointmentSheet → updateAppointmentStatus(id, "cancelled") → update DB + notifyWaitlistOnCancel() (primo in waitlist) + notifyClientOnCancel() (WhatsApp al cliente con template cancellation + link rebooking, record salvato in messages).
 
 Flusso walk-in: barbiere clicca aggiungi walk-in → seleziona cliente esistente (ricerca per nome o telefono) o ne crea uno nuovo → seleziona servizio → appointment creato con source walk_in e status confirmed.
 

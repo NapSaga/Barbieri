@@ -10,7 +10,8 @@ export type MessageTemplateType =
   | "cancellation"
   | "review_request"
   | "reactivation"
-  | "waitlist_notify";
+  | "waitlist_notify"
+  | "delay_notice";
 
 export interface MessageTemplate {
   id: string;
@@ -36,6 +37,8 @@ export const DEFAULT_TEMPLATES: Record<MessageTemplateType, string> = {
     "Ciao {{client_name}}, è passato un po'! Vuoi prenotare il prossimo taglio? Prenota qui → {{booking_link}}",
   waitlist_notify:
     "Ciao {{client_name}}! Si è liberato un posto il {{date}} alle {{time}} per {{service_name}}. Vuoi prenotare? Rispondi SI.",
+  delay_notice:
+    "Ciao {{client_name}}, ti avvisiamo che siamo in leggero ritardo. Il tuo appuntamento delle {{time}} potrebbe slittare di circa {{delay_minutes}} minuti. Ci scusiamo per l'attesa!",
 };
 
 export const TEMPLATE_LABELS: Record<MessageTemplateType, string> = {
@@ -47,6 +50,7 @@ export const TEMPLATE_LABELS: Record<MessageTemplateType, string> = {
   review_request: "Richiesta recensione Google",
   reactivation: "Riattivazione cliente dormiente",
   waitlist_notify: "Notifica lista d'attesa",
+  delay_notice: "Avviso ritardo",
 };
 
 export const TEMPLATE_DESCRIPTIONS: Record<MessageTemplateType, string> = {
@@ -58,4 +62,5 @@ export const TEMPLATE_DESCRIPTIONS: Record<MessageTemplateType, string> = {
   review_request: "Inviato 2 ore dopo un appuntamento completato",
   reactivation: "Inviato ai clienti che non prenotano da tempo",
   waitlist_notify: "Inviato quando si libera uno slot dalla lista d'attesa",
+  delay_notice: "Inviato dal barbiere quando è in ritardo su un appuntamento",
 };
