@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { getSubscriptionInfo } from "@/actions/billing";
 import { ExpiredView } from "@/components/billing/expired-view";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,7 +27,16 @@ export default async function ExpiredPage() {
     redirect("/dashboard");
   }
 
-  const subscriptionInfo = await getSubscriptionInfo();
+  // Build subscription info inline to avoid getAuthenticatedBusiness() redirect loop
+  // when business record doesn't exist
+  const subscriptionInfo = {
+    status: status,
+    planId: null as string | null,
+    planName: null as string | null,
+    currentPeriodEnd: null as string | null,
+    cancelAtPeriodEnd: false,
+    trialEnd: null as string | null,
+  };
 
   // New user = never completed checkout (no plan assigned yet)
   const isNewUser = !hasActivePlan;
